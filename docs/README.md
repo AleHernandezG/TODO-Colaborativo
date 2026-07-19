@@ -37,4 +37,5 @@ El proyecto va por fases, de la 0 a la 4, y no se salta a la siguiente sin cerra
 Cada `phases/fase-N.md` lleva qué se hizo, las decisiones que no dieron para ADR, cómo probarlo
 a mano y la deuda técnica que se asume a sabiendas.
 
-- [Fase 0 · Cimientos](./phases/fase-0.md) — en curso
+- [Fase 0 · Cimientos](./phases/fase-0.md) — cerrada
+- [Fase 1 · MVP CRUD local a la nube](./phases/fase-1.md) — en curso

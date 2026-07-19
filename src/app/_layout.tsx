@@ -8,6 +8,7 @@ import { useColorScheme } from 'react-native'
 import { PaperProvider, Portal } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
+import { SessionGate } from '../features/session/presentation/SessionGate'
 import { paperDarkTheme, paperLightTheme } from '../theme'
 
 const queryClient = new QueryClient({
@@ -26,7 +27,9 @@ export default function RootLayout() {
         <PaperProvider theme={theme}>
           <Portal.Host>
             <StatusBar style="auto" />
-            <Stack screenOptions={{ headerShown: false }} />
+            <SessionGate>
+              <Stack screenOptions={{ headerShown: false }} />
+            </SessionGate>
           </Portal.Host>
         </PaperProvider>
       </SafeAreaProvider>

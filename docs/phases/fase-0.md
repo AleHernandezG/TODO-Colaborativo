@@ -1,7 +1,8 @@
 # Fase 0 · Cimientos
 
-- Estado: **en curso**
+- Estado: **cerrada**
 - Inicio: 2026-07-18
+- Cierre: 2026-07-19
 
 Entregable de la fase (§12 del documento maestro): la app arranca, conecta con Supabase y
 muestra la landing vacía.
@@ -209,9 +210,10 @@ App:
 - [x] Estructura de carpetas de §5.2
 - [x] Design tokens en `src/theme` y `Button` en `shared/ui`
 - [x] i18n con ES por defecto
-- [ ] **Landing renderizando en un iPhone real vía Expo Go** — lo único que queda, y hay que
-      hacerlo a mano: `npx expo start` y escanear el QR
-- [ ] `Input` y `Card` en `shared/ui` (se añaden cuando haya pantallas que los pidan, no antes)
+- [x] **Landing renderizando en el Android real vía Expo Go** (2026-07-19). Verificado también
+      modo oscuro y tamaño de fuente del sistema
+- [ ] `Input` y `Card` en `shared/ui` — se añaden en Fase 1, cuando haya pantallas que los
+      pidan. Montarlos sin un caso de uso concreto es adivinar la API
 
 ---
 
@@ -258,11 +260,38 @@ dispositivos.
 
 ---
 
+## Auditoría §11 al cerrar
+
+Solo lo que aplica a esta fase. Lo demás no se evalúa todavía porque no existe el código.
+
+| Apartado | Estado |
+|---|---|
+| C · Versiones fijadas y compatibles | ✅ SDK 54 coherente, `expo install --check` en verde |
+| C · Tipos del esquema generados y usados | ✅ `db.types.ts` tipando el cliente |
+| E · RLS activo y probado | ✅ 11/11 |
+| E · Secretos fuera del repo | ✅ `.env` ignorado; comprobado además que la secret key no acaba en el bundle |
+| E · `join_code` sin caracteres ambiguos | ✅ verificado por el test |
+| E · Rate limit en «unirse» | ❌ **pendiente**, va en Fase 1 |
+| F · Contraste AA, targets ≥ 44 pt, labels | ✅ automatizado en el test de tokens |
+| F · Modo oscuro y tamaño de fuente del sistema | ✅ verificado a mano en Android |
+| G · Lint + typecheck sin errores | ✅ |
+| G · Tests de dominio y repositorios ≥ 70% | ➖ no aplica: aún no hay dominio ni repositorios |
+
+**Matiz sobre el entregable.** La §12 pide "app corre, conecta con Supabase, muestra landing".
+La app corre y muestra la landing, y el backend está verificado por su cuenta, pero **la
+landing no habla con Supabase**: el cliente está escrito y tipado, y nunca se ha ejecutado
+contra la red desde la app. La primera pantalla de Fase 1 lo ejercita de inmediato, así que no
+merece un incremento propio, pero conviene no dar por probado lo que no se ha probado.
+
 ## Deuda técnica asumida
 
 - La identidad vive en el dispositivo: desinstalar la app pierde la sesión y crea un miembro
   nuevo. Consecuencia conocida de ADR-0002, se arregla con auth real post-beta (§9.4).
 - Usuarios anónimos huérfanos acumulándose en `auth.users`. Hará falta una limpieza periódica.
+  Herramienta: `npm run users` los lista y `npm run users -- --delete-orphans` los borra.
+  **Huérfano = anónimo sin ninguna fila en `members`**, así que un móvil con la app instalada
+  que aún no se ha unido a ninguna lista también cuenta: borrarlo le crea sesión nueva. La
+  limpieza automática hay que dejarla para cuando exista una política de caducidad, no antes.
 - Sin rate limiting todavía en `join_community`. Es una mitigación recomendada ya (§9.3), no
   post-beta: sin ella el espacio de códigos se puede barrer a fuerza bruta.
 - **`react-native-mmkv` no funciona en Expo Go.** Es un módulo nativo y necesita development

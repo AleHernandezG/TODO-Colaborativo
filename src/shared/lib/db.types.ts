@@ -111,6 +111,27 @@ export type Database = {
           },
         ]
       }
+      join_attempts: {
+        Row: {
+          attempted_at: string
+          auth_user_id: string
+          id: string
+          succeeded: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          auth_user_id: string
+          id?: string
+          succeeded?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          auth_user_id?: string
+          id?: string
+          succeeded?: boolean
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           auth_user_id: string
@@ -159,7 +180,10 @@ export type Database = {
       generate_join_code: { Args: never; Returns: string }
       join_community: {
         Args: { p_join_code: string; p_username: string }
-        Returns: string
+        Returns: {
+          community_id: string
+          status: string
+        }[]
       }
       member_community_ids: { Args: never; Returns: string[] }
     }

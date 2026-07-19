@@ -206,7 +206,11 @@ npm test
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
 # Aislamiento entre comunidades (RLS). Debe dar 11/11
-node --env-file=.env scripts/rls-isolation-test.mjs
+npm run test:rls
+
+# Usuarios de auth: cuántos hay y cuáles son huérfanos (anónimos sin fila en members)
+npm run users
+npm run users -- --delete-orphans   # limpieza; ver aviso en el propio script
 ```
 
 ---

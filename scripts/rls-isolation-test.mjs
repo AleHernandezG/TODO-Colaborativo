@@ -168,15 +168,42 @@ async function main() {
   const badCode = await rpc(tokenA, 'join_community', { p_join_code: 'ZZZ-9999', p_username: 'ana' })
   check(
     'Un join_code inexistente da invalid_join_code',
-    badCode.status >= 400 && JSON.stringify(badCode.body).includes('invalid_join_code'),
-    `HTTP ${badCode.status}`,
+    badCode.body?.[0]?.status === 'invalid_join_code',
+    badCode.body?.[0]?.status ?? `HTTP ${badCode.status}`,
   )
 
   const takenName = await rpc(tokenA, 'join_community', { p_join_code: joinCodeB, p_username: 'bruno' })
   check(
     'Un username ya usado da username_taken',
-    takenName.status >= 400 && JSON.stringify(takenName.body).includes('username_taken'),
-    `HTTP ${takenName.status}`,
+    takenName.body?.[0]?.status === 'username_taken',
+    takenName.body?.[0]?.status ?? `HTTP ${takenName.status}`,
+  )
+
+  let rateLimited = null
+  for (let i = 0; i < 12; i += 1) {
+    const attempt = await rpc(tokenA, 'join_community', {
+      p_join_code: 'ZZZ-9999',
+      p_username: 'ana',
+    })
+    if (attempt.body?.[0]?.status === 'too_many_attempts') {
+      rateLimited = i + 1
+      break
+    }
+  }
+  check(
+    'El rate limit corta los intentos a fuerza bruta',
+    rateLimited !== null,
+    rateLimited ? `cortado en el intento ${rateLimited + 1}` : 'nunca cortó',
+  )
+
+  const stillWorks = await rpc(tokenB, 'join_community', {
+    p_join_code: joinCodeB,
+    p_username: 'bruno',
+  })
+  check(
+    'El rate limit es por usuario, no global',
+    stillWorks.body?.[0]?.status === 'ok',
+    stillWorks.body?.[0]?.status ?? `HTTP ${stillWorks.status}`,
   )
 
   await cleanup([communityA, communityB])

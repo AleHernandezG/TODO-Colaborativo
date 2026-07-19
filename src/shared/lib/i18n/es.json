@@ -10,6 +10,10 @@
     "undo": "Deshacer",
     "retry": "Reintentar"
   },
+  "session": {
+    "starting": "Preparando la app",
+    "errorTitle": "No se pudo empezar"
+  },
   "errors": {
     "syncFailed": "No se pudo guardar. Lo intentamos otra vez al recuperar la conexión.",
     "invalidJoinCode": "Ese código no existe. Revísalo y vuelve a intentarlo.",

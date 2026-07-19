@@ -133,8 +133,9 @@ función `security definer` que hace la comprobación por dentro y devuelve lo j
 
 ```sql
 create or replace function join_community(p_join_code text, p_username text)
-returns uuid
+returns table (status text, community_id uuid)
 language plpgsql security definer set search_path = public as $$
+#variable_conflict use_column
 declare
   v_community_id uuid;
 begin
@@ -143,16 +144,26 @@ begin
    where join_code = upper(trim(p_join_code));
 
   if v_community_id is null then
-    raise exception 'invalid_join_code' using errcode = 'P0001';
+    insert into join_attempts (auth_user_id, succeeded) values (auth.uid(), false);
+    return query select 'invalid_join_code'::text, null::uuid;
+    return;
   end if;
-
-  insert into members (community_id, username, auth_user_id)
-  values (v_community_id, trim(p_username), auth.uid())
-  on conflict (community_id, auth_user_id) do update set username = excluded.username;
-
-  return v_community_id;
+  ...
 end $$;
 ```
+
+Ver `supabase/migrations/` para la versión completa con el rate limit.
+
+**Devuelve un `status`, no lanza excepciones.** No es una preferencia de estilo: una excepción
+deshace la transacción entera, incluido el `insert` en `join_attempts` que lleva la cuenta de
+intentos. Un rate limit que lanza excepciones no cuenta nada, porque cada intento fallido se
+borra a sí mismo al fallar. Estados: `ok`, `invalid_join_code`, `username_taken`,
+`too_many_attempts`.
+
+**`#variable_conflict use_column` no es decorativo.** El parámetro de salida se llama
+`community_id` y `members` tiene una columna con ese nombre, así que sin esa línea el `insert`
+y el `on conflict` fallan con `column reference "community_id" is ambiguous` (SQLSTATE 42702).
+Si añades parámetros de salida que coincidan con nombres de columna, acuérdate.
 
 El `on conflict` hace que reentrar desde el mismo dispositivo sea idempotente en vez de
 reventar por la clave única. El bloque `exception` traduce el choque contra
