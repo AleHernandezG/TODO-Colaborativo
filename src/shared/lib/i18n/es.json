@@ -1,0 +1,18 @@
+{
+  "landing": {
+    "title": "La lista de la compra, compartida",
+    "subtitle": "Una sola lista para toda la casa. Se actualiza en el móvil de todos a la vez.",
+    "createCommunity": "Crear una lista",
+    "joinCommunity": "Tengo un código"
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "undo": "Deshacer",
+    "retry": "Reintentar"
+  },
+  "errors": {
+    "syncFailed": "No se pudo guardar. Lo intentamos otra vez al recuperar la conexión.",
+    "invalidJoinCode": "Ese código no existe. Revísalo y vuelve a intentarlo.",
+    "usernameTaken": "Ese nombre ya está cogido en esta lista. Prueba con otro."
+  }
+}

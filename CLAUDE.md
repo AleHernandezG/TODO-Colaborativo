@@ -5,22 +5,40 @@ sincronizada en tiempo real aunque estén en redes y países distintos. Acceso p
 código de invitación + nombre de usuario (sin cuentas, versión beta).
 
 > Especificación completa (léela antes de decisiones grandes):
-> `docs/COMPRA-COLABORATIVA-Especificacion-y-Roadmap.md`
+> `docs/especificacion-y-roadmap.md`
 > Trabaja SIEMPRE por fases (0 → 4). No saltes de fase sin cerrar la anterior.
 
 ---
 
+## Plataforma objetivo
+
+**Android es prioritario.** Es donde se prueba, donde se decide si algo funciona y a quién le
+toca ganar cuando dos plataformas piden cosas distintas. iOS es secundario: tiene que
+funcionar, pero no manda.
+
+En la práctica:
+
+- Verifica en Android. Un incremento no está terminado porque compile: está terminado cuando se
+  ha visto en el Android real vía Expo Go.
+- `npx expo export --platform android` es la comprobación de build por defecto.
+- Ante una decisión que beneficie a una plataforma y perjudique a la otra, gana Android. Si el
+  coste para iOS es alto, dímelo antes de aplicarla.
+- El comportamiento propio de Android (botón atrás del sistema, gesto de retroceso predictivo,
+  permisos) se maneja explícitamente, no se deja al comportamiento por defecto.
+
 ## Stack
 
 - **Expo (React Native)** + **Expo Router** (navegación por ficheros) + **TypeScript (strict)**.
-  - Al crear el proyecto se eligió la opción **compatible con la versión de Expo Go de la App Store** (para poder probar en iPhone sin `eas go`). No subas el SDK por encima de esa versión sin avisarme.
+  - **SDK fijado en 54. No lo subas.** El Expo Go del Android de pruebas es cliente **54.0.8** y solo admite **SDK 54**, y ese dispositivo no puede actualizar Expo Go desde el Play Store. Un proyecto en SDK 55+ no arranca ahí: da "Project is incompatible with this version of Expo Go" y no hay forma de sortearlo sin development build.
+  - Antes de tocar la versión del SDK, **pregunta qué SDK admite el Expo Go del dispositivo real**. No lo deduzcas de lo que devuelva `create-expo-app@latest`, que siempre da la última. Se comprueba abriendo Expo Go: muestra "Client version" y "Supported SDK".
 - **Estado servidor:** TanStack Query (caché, refetch, mutaciones, optimistic updates).
 - **Estado cliente:** Zustand (sesión local, tema, UI). **Nunca dupliques el estado del servidor en Zustand.**
 - **Backend (BaaS):** Supabase → Postgres + Realtime + Storage + RLS.
 - **UI:** NativeWind (Tailwind para RN) + componentes propios en `src/shared/ui`. Tokens de diseño en `src/theme`.
+  - **React Native Paper solo para `Snackbar`, `Dialog` y `Portal`.** Nada más. El aspecto de la app es nuestro; Paper aporta las superposiciones accesibles, que son las que cuesta hacer bien a mano. Un import de `react-native-paper` fuera de `src/shared/ui` es un error de revisión. Razonado en [ADR-0004](docs/adr/ADR-0004-libreria-de-ui.md).
 - **Persistencia local:** react-native-mmkv. **Conectividad:** @react-native-community/netinfo.
 - **Imágenes:** expo-image, expo-image-picker, expo-image-manipulator (comprimir antes de subir).
-- **Sesión ligera cifrada:** expo-secure-store.
+- **Sesión:** `@react-native-async-storage/async-storage` como almacén de la sesión de Supabase. **No expo-secure-store**: tiene un límite de ~2048 bytes por valor y la sesión de Supabase (access + refresh token) lo supera, así que falla de forma intermitente y difícil de diagnosticar. Ver `docs/phases/fase-0.md`.
 - **i18n** desde el inicio (ES por defecto, preparado para EN). Nada de textos hardcodeados.
 
 ---
@@ -43,6 +61,34 @@ src/
 ```
 
 Features previstas: `community`, `items`, `session`.
+
+Y el reparto de la raíz:
+
+```
+README.md          qué es esto y cómo arrancarlo
+CLAUDE.md          este fichero: las reglas duras
+.env.example       nombres de variables, sin valores
+docs/              ver abajo
+scripts/           herramientas de CLI/CI, fuera del bundle de la app
+supabase/          migraciones y config de la CLI (no tocar a mano salvo migrations/)
+src/               todo el código de la app
+```
+
+**Una sola app, en la raíz. No hay monorepo** y no lo habrá hasta que haya código real que
+compartir entre dos proyectos. Razonado en
+[ADR-0003](docs/adr/ADR-0003-estructura-del-repositorio.md).
+
+`docs/` se organiza por **para qué sirve** cada documento, no por tema:
+
+| Carpeta | Contiene |
+|---|---|
+| `docs/especificacion-y-roadmap.md` | El documento maestro. Referencia. |
+| `docs/adr/` | Por qué las cosas son como son. Numerados, y **no se editan**: si cambias de opinión, escribe uno nuevo que supersede al viejo. |
+| `docs/phases/` | Diario por fase: qué se hizo, cómo probarlo, deuda asumida. |
+| `docs/guias/` | Instrucciones paso a paso para tareas concretas. |
+
+Nombres de fichero en `kebab-case` minúsculas. Excepciones: los ADR (`ADR-NNNN-...`) y los de
+la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
 
 ---
 
@@ -118,8 +164,26 @@ es el resumen, ellas tienen el detalle con ejemplos de código.
 1. **PLAN primero.** Ante cualquier tarea, muéstrame un plan corto (archivos a crear/editar, decisiones, riesgos) y espera mi OK antes de escribir código.
 2. Implementa en **incrementos pequeños y verificables**.
 3. Tras cada incremento: corre **lint + typecheck** (+ tests si hay) y dime **cómo probarlo a mano**.
-4. **Documenta:** actualiza `docs/phases/fase-N.md` (qué hiciste, decisiones, cómo probar) y crea un ADR en `docs/adr/` si tomaste una decisión de arquitectura.
+4. **Documenta TODO lo que decidas.** Ninguna decisión se queda solo en el chat: el chat se
+   pierde, el repo no. Vale igual para las decisiones pequeñas que tomes sobre la marcha sin
+   preguntarme.
 5. No inventes claves ni valores; pídemelos si faltan. No hagas commits de secretos.
+
+### Dónde va cada cosa
+
+Toda entrada responde a tres preguntas: **qué** se cambió, **por qué** (qué alternativa se
+descartó y a costa de qué) y **qué implica** para quien toque eso después.
+
+| Tipo de decisión | Dónde se escribe |
+|---|---|
+| Arquitectura, seguridad, modelo de datos, elección de librería | ADR nuevo en `docs/adr/`, numerado |
+| Detalle de implementación de una regla que ya existe (un `with check`, un índice, un grant) | La skill del área, junto al código de ejemplo |
+| Qué se hizo en este incremento y cómo probarlo | `docs/phases/fase-N.md` |
+| Procedimiento repetible que alguien tendrá que volver a ejecutar | `docs/guias/<tarea>.md` |
+| Regla que debo seguir siempre a partir de ahora | Este fichero |
+
+Si una decisión no encaja en ninguna, va en `docs/phases/fase-N.md` bajo "Decisiones sobre la
+marcha". Nunca se queda sin escribir.
 
 **Fase actual: FASE 0 (cimientos).** Cuando la termines y pase su auditoría
 (sección 11 del `.md`), pídeme luz verde para la Fase 1.
@@ -138,8 +202,11 @@ npm run lint
 npm run typecheck
 npm test
 
-# Tipos de Supabase
-supabase gen types typescript --local > src/shared/lib/db.types.ts
+# Tipos de Supabase (--linked, contra el proyecto remoto; --local necesita Docker)
+npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
+
+# Aislamiento entre comunidades (RLS). Debe dar 11/11
+node --env-file=.env scripts/rls-isolation-test.mjs
 ```
 
 ---
@@ -152,3 +219,4 @@ supabase gen types typescript --local > src/shared/lib/db.types.ts
 - No mutar sin optimistic UI + rollback.
 - No añadir controles sin label de accesibilidad, contraste AA y target ≥ 44 pt.
 - No editar código sin enseñarme antes el plan.
+- No tomar una decisión "sobre la marcha" y dejarla solo dicha en el chat.

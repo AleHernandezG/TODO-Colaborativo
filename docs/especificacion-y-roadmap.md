@@ -619,7 +619,7 @@ colaborativa" con Expo (React Native) + TypeScript + Supabase. Ya existe CLAUDE.
 en la raíz con el stack, la estructura y las reglas duras: respétalo estrictamente.
 
 OBJETIVO GLOBAL
-Construir el MVP descrito en docs/COMPRA-COLABORATIVA-Especificacion-y-Roadmap.md,
+Construir el MVP descrito en docs/especificacion-y-roadmap.md,
 por fases (0 a 4). No saltes de fase sin cerrar la anterior.
 
 METODOLOGÍA (obligatoria en cada tarea)

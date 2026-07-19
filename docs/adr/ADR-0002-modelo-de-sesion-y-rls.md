@@ -1,6 +1,6 @@
 # ADR-0002: Modelo de sesión sin cuentas y políticas RLS
 
-- Estado: Aceptado
+- Estado: **Aceptado y verificado** (prueba de aislamiento en verde el 2026-07-19)
 - Fecha: 2026-07-18
 
 ## Contexto
@@ -52,8 +52,19 @@ pero la política de `communities` exige ser ya miembro. Se resuelve con una RPC
 inserta la fila de miembro y devuelve solo el `community_id`. El cliente nunca hace un
 `select` contra `communities` para unirse.
 
+Crear una comunidad tiene el mismo problema por el otro lado: hay que insertar en
+`communities` y en `members` de forma atómica, y no existe política de insert en ninguna de
+las dos. Por eso `create_community(p_name, p_username)` es también una RPC `security definer`,
+que además genera el `join_code` dentro de la base de datos. Generarlo en el cliente sería un
+error: dos dispositivos podrían proponer el mismo código y solo la base de datos puede
+comprobar la unicidad en la misma transacción en la que inserta.
+
+En consecuencia, **`communities` y `members` no tienen política de insert, update ni delete**.
+Toda escritura sobre ellas pasa por las dos RPC. Es deliberado: reduce la superficie a dos
+funciones auditables en vez de a un conjunto de políticas repartidas.
+
 El detalle completo de esquema y políticas vive en la skill `.claude/skills/supabase-data/`,
-que es lo que se consulta al programar. Este ADR explica el porqué; la skill, el cómo.
+y el SQL aplicable en `supabase/migrations/`. Este ADR explica el porqué; la skill, el cómo.
 
 ## Alternativas consideradas
 
@@ -98,7 +109,19 @@ que es lo que se consulta al programar. Este ADR explica el porqué; la skill, e
 
 ## Verificación
 
-Esta decisión no está terminada hasta que exista la prueba de aislamiento: dos comunidades,
-un usuario en cada una, y el de A obtiene **cero filas** al consultar los artículos de B.
-El procedimiento está en la skill `supabase-data` y su resultado se registra en
-`docs/phases/fase-0.md`.
+Esta decisión no está terminada hasta que pase la prueba de aislamiento: dos comunidades, un
+usuario anónimo en cada una, y el de A obteniendo **cero filas** de todo lo de B.
+
+Está automatizada en `scripts/rls-isolation-test.mjs`, que abre dos sesiones anónimas reales
+y ataca la API REST igual que hace la app. Se eligió eso frente a simular un usuario en el
+editor SQL con `set local request.jwt.claims`: esa vía prueba las políticas pero se salta
+PostgREST, así que puede dar verde mientras la app real falla.
+
+Requisito previo: **"Allow anonymous sign-ins" activado** en el panel (Authentication →
+Sign In / Providers). Sin eso no hay identidad y no funciona nada de lo descrito aquí.
+
+Pasada el 2026-07-19 contra el proyecto real: 11/11. Salida completa en
+`docs/phases/fase-0.md`. Lo que confirma en concreto es que A no lee artículos, comunidad ni
+miembros de B; que no puede insertar ahí; que no puede modificar un artículo ajeno; y que no
+puede robarlo cambiándole el `community_id`, que era el agujero que dejaba una política de
+update escrita solo con `using`.

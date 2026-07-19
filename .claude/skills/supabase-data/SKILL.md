@@ -155,11 +155,38 @@ end $$;
 ```
 
 El `on conflict` hace que reentrar desde el mismo dispositivo sea idempotente en vez de
-reventar por la clave única.
+reventar por la clave única. El bloque `exception` traduce el choque contra
+`unique (community_id, username)` a `username_taken`: son dos errores distintos para el
+usuario y confundirlos es una mala experiencia en la primera pantalla que ve.
 
-El error de código inválido y el de nombre ya cogido deben distinguirse en el cliente: son
-dos mensajes distintos para el usuario y confundirlos es una mala experiencia en la primera
-pantalla que ve.
+Crear comunidad es RPC por lo mismo, más un motivo propio: el `join_code` se genera dentro de
+la base de datos (`generate_join_code()`), que es el único sitio donde se puede comprobar la
+unicidad en la misma transacción que inserta. Generarlo en el cliente admite colisiones.
+
+Consecuencia de todo esto: **`communities` y `members` no tienen política de insert, update ni
+delete.** Si necesitas escribir en ellas, la respuesta casi siempre es una RPC nueva, no una
+política nueva. Ver `supabase/migrations/` para el SQL vigente.
+
+## Permisos de las funciones
+
+Postgres da `execute` a `public` por defecto en cualquier función nueva. En una función
+`security definer` eso es un agujero: la ejecutaría cualquiera, incluido el rol `anon`, con
+privilegios de su dueño. Por eso las migraciones cierran y reabren a mano:
+
+```sql
+revoke execute on function join_community(text, text) from public, anon;
+grant  execute on function join_community(text, text) to authenticated;
+```
+
+Con sesión anónima de Supabase el rol efectivo es `authenticated`, no `anon` — `anon` es quien
+llega sin ningún token. Así que la app no pierde nada y el acceso sin sesión queda cerrado.
+
+`generate_join_code()` no recibe grant a nadie: es una función interna que solo llama
+`create_community` por dentro. Si algún día la necesitas desde fuera, es señal de que falta
+una RPC, no un grant.
+
+Cualquier función nueva repite las dos líneas. Sin ellas, el `revoke` que protege a las demás
+da una falsa sensación de que el patrón está aplicado.
 
 ## join_code
 
@@ -185,20 +212,43 @@ podría leer. Eso significa que **si una política está mal, el síntoma puede 
 los eventos" en vez de un error**. Cuando Realtime no dispare, sospecha de RLS antes que del
 canal.
 
-## Verificar RLS de verdad
+## Migraciones
 
-Que las políticas existan no prueba que funcionen. Antes de cerrar cualquier trabajo de
-esquema, ejecuta la prueba de aislamiento: dos comunidades, un usuario en cada una, y
-comprueba que el de A obtiene **cero filas** de los artículos de B, no un error de permisos.
+El esquema vive en `supabase/migrations/`, nunca en SQL pegado a mano en el panel. Un cambio
+aplicado solo por el editor web no está en el repo, no se puede revisar y no se puede
+reproducir en otro proyecto.
 
-```sql
-set local role authenticated;
-set local request.jwt.claims = '{"sub":"<uid-del-usuario-A>","role":"authenticated"}';
-select count(*) from items where community_id = '<id-comunidad-B>';
+```bash
+npx supabase migration new <nombre>
+npx supabase db push
 ```
 
-Cero. Si sale otra cosa, hay un agujero. Deja esta comprobación escrita en
-`docs/phases/fase-N.md` con su resultado, que es parte de la auditoría de seguridad.
+Las migraciones no se editan una vez aplicadas: se añade una nueva encima. Editar una ya
+aplicada hace que el historial local y el remoto discrepen, y `db push` empieza a mentir.
+
+## Verificar RLS de verdad
+
+Que las políticas existan no prueba que funcionen.
+
+```bash
+node --env-file=.env scripts/rls-isolation-test.mjs
+```
+
+El script abre **dos sesiones anónimas reales** y ataca la API REST igual que la app: lectura
+cruzada de artículos, de comunidad y de miembros, insert en comunidad ajena, update de un
+artículo ajeno, e intento de robarlo moviéndole el `community_id`. Todo debe dar cero filas o
+error.
+
+Se hace así, y no simulando un usuario con `set local request.jwt.claims` en el editor SQL,
+porque esa vía prueba las políticas pero se salta PostgREST. Puede dar verde mientras la app
+falla, que es exactamente el fallo que no quieres tener.
+
+Ejecútalo después de **cualquier** cambio en políticas o RPCs, no solo al final de la fase.
+El resultado se registra en `docs/phases/fase-N.md`.
+
+Si falla la creación de sesión anónima, revisa que **"Allow anonymous sign-ins"** esté activo
+en Authentication → Sign In / Providers. Viene desactivado de fábrica y sin eso no funciona
+ningún flujo de la app.
 
 ## Claves
 
@@ -212,8 +262,12 @@ Cero. Si sale otra cosa, hay un agujero. Deja esta comprobación escrita en
 ## Tipos
 
 ```bash
-supabase gen types typescript --local > src/shared/lib/db.types.ts
+npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 ```
+
+`--linked` genera contra el proyecto remoto ya enlazado. `--local` apunta a la instancia de
+Docker, que en esta máquina no existe: la documentación de Supabase lo usa por defecto y falla
+con un error de `docker_engine` que no dice nada útil.
 
 Regenera **en el mismo cambio** en que alteres el esquema. Un `db.types.ts` desfasado es peor
 que no tenerlo: TypeScript pasa en verde y el fallo aparece en tiempo de ejecución.
