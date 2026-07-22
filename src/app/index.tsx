@@ -1,11 +1,34 @@
+import { Redirect, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { Text, View } from 'react-native'
+import { ActivityIndicator, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import {
+  useActiveCommunityHydrated,
+  useActiveCommunityStore,
+} from '../features/community/presentation/active-community-store'
 import { Button } from '../shared/ui/Button'
 
 export default function Landing() {
   const { t } = useTranslation()
+  const router = useRouter()
+  const hydrated = useActiveCommunityHydrated()
+  const membership = useActiveCommunityStore((state) => state.membership)
+
+  if (!hydrated) {
+    return (
+      <View
+        accessibilityLabel={t('session.starting')}
+        className="flex-1 items-center justify-center bg-background dark:bg-background-dark"
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    )
+  }
+
+  if (membership) {
+    return <Redirect href="/list" />
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
@@ -21,8 +44,12 @@ export default function Landing() {
         </View>
 
         <View className="gap-3">
-          <Button label={t('landing.createCommunity')} onPress={() => {}} />
-          <Button label={t('landing.joinCommunity')} onPress={() => {}} variant="secondary" />
+          <Button label={t('landing.createCommunity')} onPress={() => router.push('/create')} />
+          <Button
+            label={t('landing.joinCommunity')}
+            onPress={() => router.push('/join')}
+            variant="secondary"
+          />
         </View>
       </View>
     </SafeAreaView>

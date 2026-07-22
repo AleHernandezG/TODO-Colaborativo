@@ -103,6 +103,9 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
 
 - Server state **solo** en TanStack Query. Client state (tema, sesión, UI) en Zustand.
 - Toda mutación con **actualización optimista + rollback** ante error de red (+ aviso discreto, snackbar).
+  - Única excepción: cuando el valor que la pantalla necesita lo genera el servidor y no se
+    puede adivinar (el `join_code` de `create_community`). Ahí el botón se queda en carga y se
+    espera. Si dudas, la mutación sí puede ser optimista. Razonado en `docs/phases/fase-1.md`.
 
 ## Reglas de UX y accesibilidad (no negociables)
 
@@ -116,6 +119,7 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
 - Fuente de verdad = Supabase. Cada cliente **se suscribe a Realtime** de su `community_id`; los eventos reconcilian la caché de TanStack Query.
 - Los cambios se propagan entre redes/países porque todos hablan con el mismo backend (no entre sí).
 - Offline pragmático: última lista cacheada (TanStack persist + MMKV); mutaciones encoladas y reenviadas al reconectar (NetInfo). Conflictos simples → last-write-wins por `updated_at`.
+- **Todo método de `data/` que toque la red empieza por `assertOnline()`** (`src/shared/lib/network.ts`). En Android una petición sin red no se rechaza: se encola y se ejecuta al reconectar, así que sin esa comprobación el usuario ve un spinner eterno y la escritura ocurre a su espalda. El timeout del cliente de Supabase cubre el otro caso (con red pero sin servidor). Razonado en `docs/phases/fase-1.md`.
 
 ---
 
@@ -201,6 +205,11 @@ npx expo start --tunnel        # si el móvil y el PC no están en la misma Wi-F
 npm run lint
 npm run typecheck
 npm test
+
+# Tras añadir un fichero de ruta en src/app, arranca el server una vez antes del typecheck:
+# .expo/types/router.d.ts lo genera el dev server, no `expo export`, y hasta entonces tsc
+# falla con "is not assignable to type RelativePathString".
+npx expo start
 
 # Tipos de Supabase (--linked, contra el proyecto remoto; --local necesita Docker)
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Lista de la compra",
-    "slug": "lista-compra-colaborativa",
+    "slug": "agora",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -35,6 +35,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "71d86290-0336-43db-8359-f9809c7b0dc2"
+      }
+    },
+    "owner": "alejes0407s-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/71d86290-0336-43db-8359-f9809c7b0dc2"
     }
   }
 }

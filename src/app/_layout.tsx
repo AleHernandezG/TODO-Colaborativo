@@ -9,6 +9,7 @@ import { PaperProvider, Portal } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { SessionGate } from '../features/session/presentation/SessionGate'
+import { SnackbarHost } from '../shared/ui/SnackbarHost'
 import { paperDarkTheme, paperLightTheme } from '../theme'
 
 const queryClient = new QueryClient({
@@ -29,6 +30,7 @@ export default function RootLayout() {
             <StatusBar style="auto" />
             <SessionGate>
               <Stack screenOptions={{ headerShown: false }} />
+              <SnackbarHost />
             </SessionGate>
           </Portal.Host>
         </PaperProvider>

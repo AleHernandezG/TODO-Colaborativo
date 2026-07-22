@@ -14,7 +14,73 @@
     "starting": "Preparando la app",
     "errorTitle": "No se pudo empezar"
   },
+  "community": {
+    "usernameLabel": "Tu nombre",
+    "usernamePlaceholder": "Como te ven los demás",
+    "create": {
+      "title": "Crear una lista",
+      "subtitle": "Te damos un código para que la comparta quien quieras.",
+      "nameLabel": "Nombre de la lista",
+      "namePlaceholder": "La compra de casa",
+      "submit": "Crear la lista",
+      "submitHint": "Crea la lista y te lleva a ella"
+    },
+    "join": {
+      "title": "Entrar con un código",
+      "subtitle": "Pide el código a quien creó la lista.",
+      "codeLabel": "Código de la lista",
+      "codePlaceholder": "PAN-42XK",
+      "submit": "Entrar en la lista",
+      "submitHint": "Te une a la lista y te lleva a ella"
+    },
+    "errors": {
+      "invalidName": "Ponle un nombre de al menos dos letras.",
+      "invalidUsername": "Tu nombre necesita al menos dos letras.",
+      "invalidJoinCode": "Ese código no existe. Revísalo y vuelve a intentarlo.",
+      "usernameTaken": "Ese nombre ya está cogido en esta lista. Prueba con otro.",
+      "tooManyAttempts": "Demasiados intentos seguidos. Espera un rato y vuelve a probar."
+    }
+  },
+  "list": {
+    "signedInAs": "Estás dentro como {{username}}",
+    "joinCodeLabel": "Código para invitar",
+    "joinCodeAccessible": "Código para invitar: {{code}}",
+    "joinCodeHint": "Pásaselo a quien quieras que comparta la lista.",
+    "leave": "Salir de esta lista",
+    "leaveHint": "Vuelve a la pantalla de inicio en este móvil"
+  },
+  "items": {
+    "add": {
+      "label": "Añadir a la lista",
+      "placeholder": "Leche, pan, huevos…",
+      "submit": "Añadir",
+      "submitHint": "Añade el artículo a la lista"
+    },
+    "quantity": {
+      "decrement": "Quitar uno",
+      "increment": "Añadir uno",
+      "value": "Cantidad: {{count}}"
+    },
+    "sections": {
+      "pending": "Por comprar",
+      "purchased": "Comprados"
+    },
+    "markPurchased": "Marcar {{name}} como comprado",
+    "markPending": "Marcar {{name}} como pendiente",
+    "delete": "Borrar {{name}}",
+    "deleted": "{{name}} borrado",
+    "empty": "La lista está vacía. Añade lo primero que necesites comprar.",
+    "loading": "Cargando la lista…",
+    "loadError": "No se pudieron cargar los artículos.",
+    "errors": {
+      "addFailed": "No se pudo añadir el artículo. Inténtalo otra vez.",
+      "updateFailed": "No se pudo actualizar. Inténtalo otra vez.",
+      "deleteFailed": "No se pudo borrar. Inténtalo otra vez."
+    }
+  },
   "errors": {
+    "offline": "No tienes conexión. Conéctate y vuelve a intentarlo.",
+    "network": "No se pudo conectar con el servidor. Revisa la conexión y vuelve a intentarlo.",
     "syncFailed": "No se pudo guardar. Lo intentamos otra vez al recuperar la conexión.",
     "invalidJoinCode": "Ese código no existe. Revísalo y vuelve a intentarlo.",
     "usernameTaken": "Ese nombre ya está cogido en esta lista. Prueba con otro."

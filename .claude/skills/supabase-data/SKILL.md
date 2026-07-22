@@ -66,6 +66,10 @@ create trigger items_touch_updated_at
   for each row execute function touch_updated_at();
 ```
 
+Por eso el adaptador **nunca** mete `updated_at` en un `update` (ni en `setPurchased` ni en
+nada): mandarlo desde el cliente lo único que hace es competir con el trigger. La columna es
+del servidor.
+
 ## Identidad: sesión anónima + fila de miembro
 
 Al abrir la app por primera vez se llama a `supabase.auth.signInAnonymously()`. Eso da un

@@ -1,12 +1,13 @@
-import { Pressable, Text } from 'react-native'
+import { ActivityIndicator, Pressable, Text } from 'react-native'
 
-import { minTouchTarget } from '../../theme'
+import { colors, minTouchTarget } from '../../theme'
 
 type ButtonProps = {
   label: string
   onPress: () => void
   variant?: 'primary' | 'secondary'
   disabled?: boolean
+  loading?: boolean
   accessibilityHint?: string
 }
 
@@ -25,22 +26,29 @@ export function Button({
   onPress,
   variant = 'primary',
   disabled = false,
+  loading = false,
   accessibilityHint,
 }: ButtonProps) {
+  const blocked = disabled || loading
+
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
+      disabled={blocked}
       accessibilityRole="button"
       accessibilityLabel={text}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled: blocked, busy: loading }}
       style={{ minHeight: minTouchTarget }}
       className={`w-full items-center justify-center rounded-md px-6 py-3 ${container[variant]} ${
-        disabled ? 'opacity-50' : 'active:opacity-80'
+        blocked ? 'opacity-50' : 'active:opacity-80'
       }`}
     >
-      <Text className={`text-lg font-semibold ${label[variant]}`}>{text}</Text>
+      {loading ? (
+        <ActivityIndicator color={variant === 'primary' ? colors.light.onPrimary : undefined} />
+      ) : (
+        <Text className={`text-lg font-semibold ${label[variant]}`}>{text}</Text>
+      )}
     </Pressable>
   )
 }

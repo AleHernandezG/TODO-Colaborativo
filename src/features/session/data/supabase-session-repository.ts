@@ -1,3 +1,4 @@
+import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
 import type { SessionRepository } from '../domain/session-repository'
 
@@ -12,6 +13,8 @@ export const supabaseSessionRepository: SessionRepository = {
   },
 
   async signInAnonymously() {
+    await assertOnline()
+
     const { data, error } = await supabase.auth.signInAnonymously()
     if (error) {
       if (error.code === 'anonymous_provider_disabled') {
