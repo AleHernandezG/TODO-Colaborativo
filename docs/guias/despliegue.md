@@ -35,28 +35,40 @@ npx eas-cli@latest init
 ```
 
 `init` crea el proyecto en tu cuenta de Expo y escribe `extra.eas.projectId` en `app.json`. Ese
-id sí se commitea (no es secreto): identifica el proyecto, no da acceso a nada.
+id sí se commitea (no es secreto): identifica el proyecto, no da acceso a nada. En este repo
+quedó con `slug: agora` y `owner: alejes0407s-team`; el `slug` es el identificador interno del
+proyecto en Expo, no el nombre visible de la app (ese sigue siendo "Lista de la compra" en
+`name`). El `projectId` es lo que de verdad ata el repo a su proyecto de EAS.
+
+> No confundas `eas init` con `create-expo-app`. `npx create-expo-app` **crea un proyecto en
+> blanco nuevo** en una subcarpeta; no enlaza este. Si lo lanzas por error dentro del repo, borra
+> la carpeta que genere (era código de andamiaje que no usamos) y vuelve a `eas init`.
 
 ## 2. Variables de entorno en EAS
 
 El build de EAS **no lee tu `.env` local** (está en `.gitignore` y no viaja). Las variables
 `EXPO_PUBLIC_*` se incrustan en el bundle en tiempo de compilación, así que si faltan durante el
-build, el APK sale sin URL ni clave de Supabase y no conecta con nada. Hay que subirlas a EAS:
+build, el APK sale sin URL ni clave de Supabase y no conecta con nada. Hay que subirlas a EAS.
+
+`env:create` está **deprecado** y su modo interactivo tiene una trampa: el "Select environment"
+es un **multi-select**, hay que marcar con **Espacio** antes de dar a Enter, y si le das a Enter
+directamente sale `No environments selected` y no crea nada. Es más fiable pasar todo por flags
+con `env:set`, que además vale para crear y para actualizar:
 
 ```powershell
-npx eas-cli@latest env:create
+npx eas-cli@latest env:set --name EXPO_PUBLIC_SUPABASE_URL --value "https://TU-PROYECTO.supabase.co" --environment preview --visibility plaintext
+npx eas-cli@latest env:set --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "sb_publishable_..." --environment preview --visibility plaintext
 ```
 
-Es interactivo. Créalas para el entorno **preview** (o "todos"), con visibilidad **Plain text**:
+Los valores salen de tu `.env`. El nombre del perfil de `eas.json` mapea al nombre del entorno:
+un build `--profile preview` lee el entorno **preview**, así que ahí es donde tienen que estar.
 
-- `EXPO_PUBLIC_SUPABASE_URL` → el valor de tu `.env`
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY` → el valor de tu `.env` (la publishable key)
-
-Plain text es correcto aquí: las dos son públicas por diseño y acaban dentro del APK de todas
+`plaintext` es correcto aquí: las dos son públicas por diseño y acaban dentro del APK de todas
 formas; la seguridad la da RLS, no esconderlas. Aun así no las metemos en `eas.json` ni en el
 repo, por la misma regla de higiene que mantiene `.env.example` sin valores.
 
-Comprueba que quedaron subidas:
+Comprueba que quedaron subidas (y que el build las lee: al arrancar imprime
+`Environment variables ... loaded from the 'preview' environment`):
 
 ```powershell
 npx eas-cli@latest env:list
@@ -96,10 +108,19 @@ Dos caminos según qué toques:
 - **Cambios solo de JS/TS** (casi todo lo que tocamos): se pueden enviar por aire con **EAS
   Update**, sin reinstalar. El móvil se los descarga al reabrir la app.
 
-EAS Update todavía **no está montado**: falta instalar `expo-updates`, fijar un `runtimeVersion`
-y hacer un build que lo incluya. Hasta entonces, cualquier cambio = APK nuevo. Los canales ya
-están puestos en `eas.json` (`preview`/`production`) para cuando se active. Montarlo es una
-tarea aparte con su propio plan; se documentará aquí cuando se haga.
+EAS Update **ya está montado**. `expo-updates` quedó instalado y `app.json` tiene el
+`runtimeVersion` con `policy: appVersion` y la `updates.url` apuntando al proyecto. Los canales
+(`preview`/`production`) ya estaban en `eas.json`. Para publicar un cambio de JS al APK de la
+beta sin reconstruir:
+
+```powershell
+npx eas-cli@latest update --branch preview --message "Descripción del cambio"
+```
+
+El `runtimeVersion` va atado a la `version` de `app.json` (`appVersion`): mientras no cambien
+partes nativas y la `version` sea la misma, el update es compatible con el APK instalado. Si
+tocas algo nativo (dependencia con código nativo, permisos, icono, SDK) sube la `version` y haz
+**build nuevo** (paso 3); un update de JS no puede arreglar un cambio nativo.
 
 ## El backend: Supabase gratis
 
@@ -109,14 +130,38 @@ serverless. El plan **Free** sobra para la beta: 500 MB de base de datos y ~5 GB
 mes, muy por encima de lo que gasta una lista de la compra.
 
 Lo único que "se duerme": **un proyecto Free se pausa tras 7 días sin actividad** y se
-reactiva a mano desde el panel (botón *Restore*, un par de minutos). Con uso normal —una lista
-compartida se abre varias veces por semana— nunca llega a pausarse y no hay que hacer nada.
+reactiva a mano desde el panel (botón *Restore*, un par de minutos). Al pausarse, el subdominio
+del proyecto **deja de resolver en DNS**, así que la app no lo encuentra y falla al arrancar con
+`Network request failed` / "no se pudo crear la sesión anónima". No es un fallo de la app: es el
+backend dormido. Pasó la primera vez que se probó el APK, con la beta unos días parada.
 
-Si algún día ves que se pausó por estar la beta parada, el seguro barato es un **ping externo
-diario** a la API REST que reinicie el contador de inactividad: un cron gratis de `cron-job.org`
-o un GitHub Action programado pegándole a un endpoint una vez al día. Que sea externo; un
-`pg_cron` interno puede no contar como actividad para la pausa. No hace falta pagar el plan Pro
-solo por esto.
+### El ping diario que lo evita
+
+Para que no vuelva a pausarse hay un **GitHub Action programado** en
+`.github/workflows/keep-supabase-awake.yml`: una vez al día le hace una petición REST al
+proyecto, lo que reinicia el contador de inactividad. Se eligió un Action (y no `cron-job.org`)
+porque el repo ya vive en GitHub, no depende de otro servicio y no cuesta nada. Que el ping sea
+**externo** importa: un `pg_cron` dentro de la propia base puede no contar como actividad para la
+pausa.
+
+La petición es un `SELECT` mínimo sobre `communities` con la publishable key. Aunque RLS
+devuelva cero filas (la hace un cliente anónimo sin sesión), la consulta llega a Postgres, que es
+lo que cuenta como actividad.
+
+Para que funcione hay que darle las dos variables como **secrets del repo** (Settings → Secrets
+and variables → Actions → New repository secret). Van como secrets y no en el YAML por higiene,
+aunque la anon key sea pública:
+
+- `SUPABASE_URL` → `https://TU-PROYECTO.supabase.co`
+- `SUPABASE_ANON_KEY` → la publishable key (`sb_publishable_...`)
+
+Puedes lanzarlo a mano para probarlo sin esperar al cron: en la pestaña **Actions** del repo,
+"Keep Supabase awake" → **Run workflow**. Debe salir `Supabase responded HTTP 200`.
+
+Dos avisos del plan gratis de Actions: los workflows programados **se desactivan solos tras 60
+días sin commits** en el repo (con desarrollo normal no llega a pasar; si la beta se congela,
+un push cualquiera los reactiva), y la hora del cron puede retrasarse en horas punta, lo que a un
+ping diario le da igual. No hace falta pagar el plan Pro de Supabase solo por esto.
 
 > Números a reconfirmar contra la documentación oficial de cada servicio, que cambian: la
 > ventana de pausa de Supabase Free (7 días) y el límite de builds/mes del plan Free de EAS.

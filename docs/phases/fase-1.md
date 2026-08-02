@@ -1,22 +1,20 @@
 # Fase 1 · MVP CRUD local a la nube
 
-- Estado: **en curso**
+- Estado: **5/5 incrementos hechos y probados en el APK; pendiente de luz verde para la Fase 2**
 - Inicio: 2026-07-19
 
 Entregable de la fase (§12 del documento maestro): una persona usa la lista completa contra la
 nube.
 
 Incrementos, en orden. Los tres primeros se probaron en el Android real (Expo Go) antes de
-seguir. El 4 y el 5 se construyeron seguidos para llegar antes a una beta instalable; se
-prueban juntos sobre el APK, no por QR (ver [despliegue](../guias/despliegue.md)).
+seguir. El 4 y el 5 se construyeron seguidos para llegar antes a una beta instalable y se
+probaron juntos sobre el APK, no por QR (ver [despliegue](../guias/despliegue.md)).
 
 1. [x] Sesión anónima
 2. [x] Crear y unirse a comunidad por código (RF-2, RF-5) + rate limit
 3. [x] Lista de artículos: leer y añadir (RF-3)
-4. [ ] Marcar comprado y borrar con deshacer (RF-1, RF-4 sin imagen) — código, tests y doc
-   listos; **pendiente de la prueba en el APK**
-5. [ ] Estados vacíos, errores y repaso de accesibilidad — código, tests y doc listos;
-   **pendiente de la prueba en el APK**
+4. [x] Marcar comprado y borrar con deshacer (RF-1, RF-4 sin imagen)
+5. [x] Estados vacíos, errores y repaso de accesibilidad
 
 ---
 
@@ -596,7 +594,8 @@ En el Android real, con `npx expo start`:
 - `jest`: 79 tests (10 nuevos: cantidad, `set-purchased`, `delete-item`, y `add`/`setPurchased`/
   `remove`/offline del adaptador)
 - `npx expo export --platform android`: compila, bundle 5.3 MB
-- **En el Android real:** pendiente de probar (pasos de arriba).
+- **En el APK (2026-08-02):** confirmado por el usuario. Marcar/desmarcar, cantidad al añadir y
+  el borrado con deshacer (dentro y fuera de los 5 s) funcionan.
 
 ### Deuda que se asume aquí
 
@@ -687,7 +686,9 @@ Sobre el APK (o `npx expo start` mientras tanto):
 - `jest`: 79 tests (sin tests nuevos: los cambios son de presentación, que por convención no se
   cubre con tests unitarios; dominio y datos siguen cubiertos)
 - `npx expo export --platform android`: compila, bundle 5.3 MB
-- **En el dispositivo:** pendiente (pasos de arriba, sobre el APK)
+- **En el APK (2026-08-02):** confirmado por el usuario. Carga, vacío, error offline, tirar
+  para refrescar y modo claro/oscuro correctos. Queda pendiente solo el repaso fino de a11y en
+  dispositivo (TalkBack, medición de contraste, fuente al máximo).
 
 ### Deuda que se asume aquí
 
@@ -706,11 +707,20 @@ raíz (perfiles `development`, `preview` y `production`) y la guía
 
 - **Backend gratis.** No hay servidor propio que desplegar; todo el lado servidor es Supabase.
   El plan Free sobra para la beta. Su única pega es que un proyecto Free **se pausa tras 7 días
-  sin actividad** y se reactiva a mano; con uso normal no llega a pasar, y si pasara, un ping
-  externo diario lo evita. No se paga Pro solo por esto.
+  sin actividad**: al pausarse deja de resolver en DNS y la app arranca con `Network request
+  failed`. Pasó en la primera prueba del APK (beta parada unos días); se recupera a mano con
+  *Restore* en el panel. Para que no vuelva, se montó un **ping diario** como GitHub Action
+  (`.github/workflows/keep-supabase-awake.yml`) que le pega a la REST una vez al día. No se paga
+  Pro solo por esto.
 - **App en el móvil.** Un APK del perfil `preview` (`distribution: internal`), que empaqueta el
   JS y arranca solo, sin Metro ni QR en ejecución. Se instala una vez y se reparte el mismo
-  enlace a la beta. El bucle de desarrollo diario sigue siendo Expo Go.
-- **Actualizaciones OTA (EAS Update) pendientes de montar.** Falta instalar `expo-updates` y un
-  `runtimeVersion`; hasta entonces, cada cambio es un APK nuevo. Los canales ya están en
-  `eas.json`. Es tarea aparte, se documentará en la guía cuando se haga.
+  enlace a la beta. El proyecto de EAS quedó con `slug: agora` y `owner: alejes0407s-team`; el
+  nombre visible de la app sigue siendo "Lista de la compra". El bucle de desarrollo diario
+  sigue siendo Expo Go.
+- **Actualizaciones OTA (EAS Update) montadas.** `expo-updates` instalado, `runtimeVersion` con
+  `policy: appVersion` y `updates.url` en `app.json`. Los cambios de solo JS se publican con
+  `eas update --branch preview` sin reconstruir; los cambios nativos siguen pidiendo APK nuevo.
+- **Camino real vs. plan.** Las variables se subieron con `eas env:set` (el `env:create`
+  interactivo está deprecado y tiene la trampa del multi-select), y a mitad se coló un
+  `create-expo-app` por error que dejó una carpeta de andamiaje, ya borrada. Todo ello queda en
+  la [guía de despliegue](../guias/despliegue.md).
