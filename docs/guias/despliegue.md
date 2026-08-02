@@ -144,9 +144,16 @@ porque el repo ya vive en GitHub, no depende de otro servicio y no cuesta nada. 
 **externo** importa: un `pg_cron` dentro de la propia base puede no contar como actividad para la
 pausa.
 
-La petición es un `SELECT` mínimo sobre `communities` con la publishable key. Aunque RLS
-devuelva cero filas (la hace un cliente anónimo sin sesión), la consulta llega a Postgres, que es
-lo que cuenta como actividad.
+La petición llama a una RPC mínima, `public.ping()` (`select 'pong'`), con la publishable key.
+No vale leer una tabla: el ping va como rol `anon` (sin sesión), y todas las políticas RLS pasan
+por `member_community_ids()`, que `anon` no puede ejecutar; una lectura anónima da
+`permission denied` (HTTP 401), no 200. `ping()` es la única función que se concede a `anon` a
+propósito (la migración `20260802120000_keep_alive_ping.sql`), y ejecutarla es una consulta real
+a Postgres, que es lo que cuenta como actividad. El `/auth/v1/health` daría 200 pero no toca la
+base, así que no serviría para evitar la pausa.
+
+Esa migración tiene que estar aplicada en el proyecto (`npx supabase db push`) antes de que el
+ping funcione; si no, la RPC no existe y el Action da 404.
 
 Para que funcione hay que darle las dos variables como **secrets del repo** (Settings → Secrets
 and variables → Actions → New repository secret). Van como secrets y no en el YAML por higiene,

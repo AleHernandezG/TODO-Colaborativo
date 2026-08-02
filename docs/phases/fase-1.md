@@ -710,8 +710,10 @@ raíz (perfiles `development`, `preview` y `production`) y la guía
   sin actividad**: al pausarse deja de resolver en DNS y la app arranca con `Network request
   failed`. Pasó en la primera prueba del APK (beta parada unos días); se recupera a mano con
   *Restore* en el panel. Para que no vuelva, se montó un **ping diario** como GitHub Action
-  (`.github/workflows/keep-supabase-awake.yml`) que le pega a la REST una vez al día. No se paga
-  Pro solo por esto.
+  (`.github/workflows/keep-supabase-awake.yml`) que llama una vez al día a la RPC `public.ping()`
+  (migración `20260802120000`), concedida a `anon` a propósito porque una lectura de tabla como
+  anónimo choca con RLS (`member_community_ids` no es ejecutable por `anon`). No se paga Pro solo
+  por esto.
 - **App en el móvil.** Un APK del perfil `preview` (`distribution: internal`), que empaqueta el
   JS y arranca solo, sin Metro ni QR en ejecución. Se instala una vez y se reparte el mismo
   enlace a la beta. El proyecto de EAS quedó con `slug: agora` y `owner: alejes0407s-team`; el

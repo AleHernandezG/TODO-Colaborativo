@@ -1,0 +1,6 @@
+- Es necesario que al agregar un ingrediente a las listas el usuario tenga la posibilidad opcional de poder adjuntar un una foto del mismo para que a la hora de hacer la compra sea mas sencillo
+
+- Es necesario un boton para permitir crea un documento pdf con las cosas de una lista que hay aque comprar para mayo sencuillez y funcionamiento offline y que el usuario pueda descargarse ese pdf
+
+- Es necesario una subfuncion estilo tricount donde se pueda reflejar los costes de cada ingrediente comprado como en tricount y que se haga lñas divisiones de precios dentre los usuarios de una lista de manera automatica como tricount busca referencias. Seria que si un usuario compra un obkjeto de la lsita puede de manera opcional poner su precio y a quienes repercute como tricount y en una vista secundaria ver las cuentas.
+

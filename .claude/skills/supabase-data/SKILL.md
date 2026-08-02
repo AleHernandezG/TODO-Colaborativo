@@ -203,6 +203,13 @@ una RPC, no un grant.
 Cualquier función nueva repite las dos líneas. Sin ellas, el `revoke` que protege a las demás
 da una falsa sensación de que el patrón está aplicado.
 
+**Excepción a propósito: `public.ping()`** (migración `20260802120000_keep_alive_ping.sql`) SÍ
+se concede a `anon`. Es un `select 'pong'` sin acceso a ninguna tabla, y existe para que el
+GitHub Action que evita la pausa del proyecto Free pueda generar actividad en Postgres sin
+sesión. No leemos una tabla desde el ping porque toda lectura pasa por `member_community_ids()`,
+que `anon` no ejecuta, así que da `permission denied`. Si ves ese `grant ... to anon`, no es un
+descuido; no lo revoques.
+
 ## join_code
 
 Alfabeto sin caracteres ambiguos, que estos códigos se dictan por WhatsApp y en voz alta:
