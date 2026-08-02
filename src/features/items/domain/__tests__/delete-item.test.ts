@@ -7,6 +7,7 @@ it('le pide al repositorio borrar el artículo', async () => {
     add: jest.fn(),
     setPurchased: jest.fn(),
     remove: jest.fn().mockResolvedValue(undefined),
+    subscribe: jest.fn(),
   }
 
   await deleteItem(repository, 'i1')

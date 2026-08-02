@@ -16,6 +16,7 @@ it('pide al repositorio los artículos de la comunidad', async () => {
     add: jest.fn(),
     setPurchased: jest.fn(),
     remove: jest.fn(),
+    subscribe: jest.fn(),
   }
 
   await expect(listItems(repository, 'c1')).resolves.toBe(items)

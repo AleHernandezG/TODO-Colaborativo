@@ -7,6 +7,7 @@ import { OfflineError } from '../../../shared/lib/network'
 import { supabaseItemRepository } from '../data/supabase-item-repository'
 import { deleteItem } from '../domain/delete-item'
 import type { Item } from '../domain/item'
+import { useDeletingItemsStore } from './deleting-items-store'
 import { itemsKey } from './use-items'
 
 export const deleteUndoWindowMs = 5000
@@ -19,25 +20,30 @@ export function useDeleteItem(communityId: string) {
   return useCallback(
     (item: Item) => {
       const key = itemsKey(communityId)
-      const previous = queryClient.getQueryData<Item[]>(key)
+      const { markDeleting, clearDeleting } = useDeletingItemsStore.getState()
 
-      queryClient.setQueryData<Item[]>(key, (current = []) =>
-        current.filter((i) => i.id !== item.id),
-      )
+      markDeleting(item.id)
 
       let undone = false
       const timer = setTimeout(() => {
         if (undone) {
           return
         }
-        deleteItem(supabaseItemRepository, item.id).catch((error: unknown) => {
-          queryClient.setQueryData<Item[]>(key, (current = []) =>
-            current.some((i) => i.id === item.id) ? current : [item, ...current],
-          )
-          showSnackbar(
-            error instanceof OfflineError ? t('errors.offline') : t('items.errors.deleteFailed'),
-          )
-        })
+        deleteItem(supabaseItemRepository, item.id)
+          .then(() => {
+            queryClient.setQueryData<Item[]>(key, (current = []) =>
+              current.filter((i) => i.id !== item.id),
+            )
+            void queryClient.invalidateQueries({ queryKey: key })
+          })
+          .catch((error: unknown) => {
+            showSnackbar(
+              error instanceof OfflineError ? t('errors.offline') : t('items.errors.deleteFailed'),
+            )
+          })
+          .finally(() => {
+            clearDeleting(item.id)
+          })
       }, deleteUndoWindowMs)
 
       showSnackbar(t('items.deleted', { name: item.name }), {
@@ -45,7 +51,7 @@ export function useDeleteItem(communityId: string) {
         onPress: () => {
           undone = true
           clearTimeout(timer)
-          queryClient.setQueryData<Item[]>(key, previous ?? [])
+          clearDeleting(item.id)
         },
       })
     },

@@ -7,6 +7,7 @@ it('le pide al repositorio marcar el estado indicado', async () => {
     add: jest.fn(),
     setPurchased: jest.fn().mockResolvedValue(undefined),
     remove: jest.fn(),
+    subscribe: jest.fn(),
   }
 
   await setPurchased(repository, 'i1', true)

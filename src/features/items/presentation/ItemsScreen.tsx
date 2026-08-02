@@ -5,15 +5,20 @@ import { ActivityIndicator, RefreshControl, SectionList, Text, View } from 'reac
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { OfflineError } from '../../../shared/lib/network'
+import { BuildTag } from '../../../shared/ui/BuildTag'
 import { Button } from '../../../shared/ui/Button'
 import type { Community } from '../../community/domain/community'
 import { useActiveCommunityStore } from '../../community/presentation/active-community-store'
+import { useViewers } from '../../community/presentation/use-viewers'
+import { ViewersLine } from '../../community/presentation/ViewersLine'
 import type { Item } from '../domain/item'
 import { AddItemBar } from './components/AddItemBar'
 import { ItemRow } from './components/ItemRow'
+import { RealtimeStatus } from './components/RealtimeStatus'
 import { useAddItem } from './use-add-item'
 import { useDeleteItem } from './use-delete-item'
 import { useItems } from './use-items'
+import { useItemsRealtime } from './use-items-realtime'
 import { useTogglePurchased } from './use-toggle-purchased'
 
 type Section = { title: string; data: Item[] }
@@ -36,6 +41,9 @@ function ItemsView({ community, username }: { community: Community; username: st
   const addItem = useAddItem(community.id)
   const togglePurchased = useTogglePurchased(community.id)
   const removeItem = useDeleteItem(community.id)
+
+  const realtimeStatus = useItemsRealtime(community.id)
+  const viewers = useViewers(community.id, username)
 
   const sections = useMemo<Section[]>(() => {
     const all = items ?? []
@@ -67,7 +75,10 @@ function ItemsView({ community, username }: { community: Community; username: st
           <Text className="text-base text-muted dark:text-muted-dark">
             {t('list.signedInAs', { username })}
           </Text>
+          <ViewersLine names={viewers} />
         </View>
+
+        <RealtimeStatus status={realtimeStatus} />
 
         <AddItemBar onAdd={(input) => addItem.mutate(input)} />
 
@@ -134,6 +145,7 @@ function ItemsView({ community, username }: { community: Community; username: st
             variant="secondary"
             accessibilityHint={t('list.leaveHint')}
           />
+          <BuildTag />
         </View>
       </View>
     </SafeAreaView>

@@ -13,6 +13,7 @@ function fakeRepository(): jest.Mocked<ItemRepository> {
     list: jest.fn(),
     setPurchased: jest.fn(),
     remove: jest.fn(),
+    subscribe: jest.fn(),
   }
 }
 

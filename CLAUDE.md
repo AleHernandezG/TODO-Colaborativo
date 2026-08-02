@@ -119,7 +119,35 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
 - Fuente de verdad = Supabase. Cada cliente **se suscribe a Realtime** de su `community_id`; los eventos reconcilian la caché de TanStack Query.
 - Los cambios se propagan entre redes/países porque todos hablan con el mismo backend (no entre sí).
 - Offline pragmático: última lista cacheada (TanStack persist + MMKV); mutaciones encoladas y reenviadas al reconectar (NetInfo). Conflictos simples → last-write-wins por `updated_at`.
-- **Todo método de `data/` que toque la red empieza por `assertOnline()`** (`src/shared/lib/network.ts`). En Android una petición sin red no se rechaza: se encola y se ejecuta al reconectar, así que sin esa comprobación el usuario ve un spinner eterno y la escritura ocurre a su espalda. El timeout del cliente de Supabase cubre el otro caso (con red pero sin servidor). Razonado en `docs/phases/fase-1.md`.
+- **Todo método de `data/` que haga una petición suelta empieza por `assertOnline()`** (`src/shared/lib/network.ts`). En Android una petición sin red no se rechaza: se encola y se ejecuta al reconectar, así que sin esa comprobación el usuario ve un spinner eterno y la escritura ocurre a su espalda. El timeout del cliente de Supabase cubre el otro caso (con red pero sin servidor). Razonado en `docs/phases/fase-1.md`.
+  - **Única excepción: abrir un canal de Realtime** (`subscribe()`). Un canal no es una petición suelta: reconecta solo y avisa de su estado por `onStatus`. Bloquearlo porque NetInfo diga que no hay red sería no reconectar nunca al volver. Razonado en `docs/phases/fase-2.md`.
+- **Suscribirse a Realtime es un método del repositorio, no un import de Supabase en `presentation/`.** Siempre con `filter: community_id=eq.<id>`: sin filtro llegan los borrados de otras comunidades. Razonado en `docs/phases/fase-2.md`.
+
+## Cambios de esquema (SQL): el diseño va antes que la migración
+
+Una migración aplicada **no se edita**, se corrige con otra encima. Eso hace que equivocarse en
+el esquema cueste mucho más que equivocarse en una pantalla, así que el orden es:
+
+1. **Enséñame el diseño y espera OK** antes de escribir el `.sql`: tablas, claves, `on delete`
+   de cada FK, índices, políticas RLS y qué alternativa descartas y a costa de qué. No vale
+   "creo la tabla y luego vemos la RLS": la política va en la misma migración que crea la tabla.
+2. **Aplica las buenas prácticas por defecto**, y si te sales de alguna, dilo y explica por qué:
+   - Dinero en **enteros de céntimos**, nunca flotantes. Moneda explícita.
+   - Fechas siempre `timestamptz`, nunca `timestamp`.
+   - Un hecho se guarda una vez. Nada de totales o contadores denormalizados que haya que
+     mantener a mano: se calculan, y si el rendimiento lo pide, con vista o índice.
+   - Las invariantes las comprueba la BD (`check`, `unique`, FK), no la confianza en el cliente.
+   - Lo que escribe varias tablas a la vez va en una RPC transaccional, no en tres llamadas
+     desde el móvil.
+   - Índice en toda columna por la que se filtre o se haga join.
+   - La lógica de negocio vive en `domain/`, no en SQL. Postgres guarda e impone reglas de
+     integridad; los algoritmos se prueban con Jest.
+3. **Documenta el porqué** donde toque: ADR nuevo si cambia el modelo de datos o la seguridad;
+   la skill `supabase-data` si es el detalle de una regla que ya existe; `docs/phases/fase-N.md`
+   si es de la fase en curso. Nunca solo en el chat.
+
+Ejemplo de esto hecho bien, con el diseño fijado antes de existir el código:
+[ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md).
 
 ---
 
@@ -189,8 +217,17 @@ descartó y a costa de qué) y **qué implica** para quien toque eso después.
 Si una decisión no encaja en ninguna, va en `docs/phases/fase-N.md` bajo "Decisiones sobre la
 marcha". Nunca se queda sin escribir.
 
-**Fase actual: FASE 0 (cimientos).** Cuando la termines y pase su auditoría
-(sección 11 del `.md`), pídeme luz verde para la Fase 1.
+**Fase actual: FASE 3 (imágenes y pulido UX).** Las fases 0, 1 y 2 están cerradas y probadas en
+el APK con dos dispositivos; su diario está en `docs/phases/`. Cuando termines la 3 y pase su
+auditoría (sección 11 del `.md`, apartado F), pídeme luz verde para la Fase 4.
+
+La versión que corre en el móvil se ve al pie de la pantalla de lista (`v1.0.0 · base` si es el
+bundle del APK, `v1.0.0 · <id>` si es un update por aire). Compruébala ahí antes de dar por
+hecho que un cambio llegó al dispositivo.
+
+RF-8 (PDF) y RF-9 (reparto de gastos) son **post-MVP**: están registrados en §3 y §12 del
+documento maestro y no se tocan antes de tiempo. El reparto de gastos además tiene un
+requisito de entrada, ver [ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md).
 
 ---
 
@@ -212,10 +249,14 @@ npm test
 npx expo start
 
 # Tipos de Supabase (--linked, contra el proyecto remoto; --local necesita Docker)
+# Desde Git Bash. En PowerShell 5.1 el '>' escribe UTF-16 y rompe ESLint: ver skill supabase-data
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
-# Aislamiento entre comunidades (RLS). Debe dar 11/11
+# Aislamiento entre comunidades (RLS). Debe dar 13/13
 npm run test:rls
+
+# Realtime: eventos, filtro por comunidad, aislamiento y presencia. Debe dar 12/12
+npm run test:realtime
 
 # Usuarios de auth: cuántos hay y cuáles son huérfanos (anónimos sin fila en members)
 npm run users

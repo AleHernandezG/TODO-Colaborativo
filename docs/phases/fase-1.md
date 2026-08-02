@@ -1,7 +1,7 @@
 # Fase 1 · MVP CRUD local a la nube
 
-- Estado: **5/5 incrementos hechos y probados en el APK; pendiente de luz verde para la Fase 2**
-- Inicio: 2026-07-19
+- Estado: **Cerrada.** 5/5 incrementos hechos y probados en el APK
+- Inicio: 2026-07-19 · Cierre: 2026-08-02
 
 Entregable de la fase (§12 del documento maestro): una persona usa la lista completa contra la
 nube.

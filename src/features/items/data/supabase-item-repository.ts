@@ -78,4 +78,32 @@ export const supabaseItemRepository: ItemRepository = {
       throw new Error(`No se pudo borrar el artículo: ${error.message}`)
     }
   },
+
+  subscribe(communityId, { onChange, onStatus }) {
+    const channel = supabase
+      .channel(`items:${communityId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'items',
+          filter: `community_id=eq.${communityId}`,
+        },
+        () => onChange(),
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          onStatus('connected')
+          return
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          onStatus('disconnected')
+        }
+      })
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  },
 }

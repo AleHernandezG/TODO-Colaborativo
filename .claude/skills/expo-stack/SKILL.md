@@ -181,9 +181,9 @@ un diálogo de confirmación (fricción en la acción común para protegerse del
 borra de la lista al instante y se ofrece "Deshacer" en el snackbar durante ~5s.
 
 **El `delete` real se difiere: no se dispara hasta que se cierra la ventana de deshacer.** Por
-eso esto no es una `useMutation` normal, sino un `useCallback` que quita la fila de la caché,
-programa el `delete` con un `setTimeout` y enseña el snackbar. Si el usuario deshace, cancelas
-el timer y restauras desde el snapshot; el servidor nunca se enteró.
+eso esto no es una `useMutation` normal, sino un `useCallback` que marca el artículo como "en
+borrado", programa el `delete` con un `setTimeout` y enseña el snackbar. Si el usuario deshace,
+cancelas el timer y quitas la marca; el servidor nunca se enteró.
 
 ```ts
 export function useDeleteItem(communityId: string) {
@@ -194,18 +194,22 @@ export function useDeleteItem(communityId: string) {
   return useCallback(
     (item: Item) => {
       const key = itemKeys.list(communityId)
-      const previous = queryClient.getQueryData<Item[]>(key)
-      queryClient.setQueryData<Item[]>(key, (cur = []) => cur.filter((i) => i.id !== item.id))
+      const { markDeleting, clearDeleting } = useDeletingItemsStore.getState()
+
+      markDeleting(item.id)
 
       let undone = false
       const timer = setTimeout(() => {
         if (undone) return
-        deleteItem(itemRepository, item.id).catch((error: unknown) => {
-          queryClient.setQueryData<Item[]>(key, (cur = []) =>
-            cur.some((i) => i.id === item.id) ? cur : [item, ...cur],
-          )
-          showSnackbar(error instanceof OfflineError ? t('errors.offline') : t('items.errors.deleteFailed'))
-        })
+        deleteItem(itemRepository, item.id)
+          .then(() => {
+            queryClient.setQueryData<Item[]>(key, (cur = []) => cur.filter((i) => i.id !== item.id))
+            void queryClient.invalidateQueries({ queryKey: key })
+          })
+          .catch((error: unknown) => {
+            showSnackbar(error instanceof OfflineError ? t('errors.offline') : t('items.errors.deleteFailed'))
+          })
+          .finally(() => clearDeleting(item.id))
       }, 5000)
 
       showSnackbar(t('items.deleted', { name: item.name }), {
@@ -213,7 +217,7 @@ export function useDeleteItem(communityId: string) {
         onPress: () => {
           undone = true
           clearTimeout(timer)
-          queryClient.setQueryData<Item[]>(key, previous ?? [])
+          clearDeleting(item.id)
         },
       })
     },
@@ -225,51 +229,155 @@ export function useDeleteItem(communityId: string) {
 Por qué diferir en vez de borrar ya y que "Deshacer" re-inserte: re-insertar crea una fila
 nueva con otro `id` y otra fecha, así que "deshacer" no devolvería el artículo original.
 
-Tres detalles que importan:
+Cuatro detalles que importan:
 
-- **El timer sobrevive a desmontar la pantalla.** Es una promesa suelta con `queryClient`
-  (que es de app), no estado de componente. Si el usuario borra y se va, el borrado se
-  confirma igual, que es lo que espera.
-- **Si el `delete` diferido falla, re-metes el artículo, no restauras el snapshot.** Un
-  `delete` que falla significa que la fila sigue en el servidor; restaurar el snapshot entero
-  pisaría lo que se haya tocado en esos 5s.
+- **La fila se esconde marcándola, no quitándola de la caché.** La caché es el reflejo del
+  servidor y el servidor todavía la tiene. Ver "Realtime contra el borrado con deshacer" más
+  abajo: quitarla a mano hace que reaparezca sola en cuanto alguien más toque la lista.
+- **El timer sobrevive a desmontar la pantalla.** Es una promesa suelta con `queryClient` (que
+  es de app) y un store de módulo, no estado de componente. Si el usuario borra y se va, el
+  borrado se confirma igual, que es lo que espera.
+- **En el camino de éxito se quita la fila de la caché ANTES de desmarcarla.** `setQueryData`
+  es síncrono y el `.finally()` corre después del `.then()`, así que no hay ningún instante en
+  que la fila esté sin marca y todavía en la caché. Al revés, parpadea.
 - **La clave (`itemKeys.list`) se recalcula dentro del callback** y las deps llevan
   `communityId`, no la clave: un array nuevo en cada render invalidaría el `useCallback` sin
   necesidad.
 
+Si el `delete` diferido falla, no hay nada que restaurar: la fila sigue en la caché y quitarle
+la marca la devuelve a la pantalla. Solo queda avisar por snackbar.
+
 ## Realtime
 
-Hasta que Realtime esté puesto (Fase 2), la pantalla de lista se sincroniza a mano con un
-`RefreshControl` (tirar para refrescar) enganchado al `refetch` de la query. Ese gesto no se
-quita cuando llegue Realtime: pasa a ser el respaldo para cuando el canal se cae. Y el estado de
-error de la **lectura** distingue `OfflineError` igual que las mutaciones: `errors.offline` si
-el móvil sabe que no hay red, el mensaje de carga genérico en cualquier otro caso.
+El `RefreshControl` (tirar para refrescar) enganchado al `refetch` de la query **no se quita**
+ahora que hay Realtime: es el respaldo para cuando el canal se cae. Y el estado de error de la
+**lectura** distingue `OfflineError` igual que las mutaciones: `errors.offline` si el móvil
+sabe que no hay red, el mensaje de carga genérico en cualquier otro caso.
 
-Cada pantalla de lista se suscribe al canal de su comunidad y deja que Query reconcilie:
+### La suscripción es un método del puerto, no un import de Supabase
+
+Suscribirse es acceso a datos, así que va en el repositorio como cualquier otra lectura. Un
+`supabase.channel(...)` dentro de `presentation/` rompe la tabla de fronteras de arriba y ata
+la pantalla al proveedor.
 
 ```ts
-useEffect(() => {
-  const channel = supabase
-    .channel(`items:${communityId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'items', filter: `community_id=eq.${communityId}` },
-      () => queryClient.invalidateQueries({ queryKey: itemKeys.list(communityId) }),
-    )
-    .subscribe()
+export type ItemsChannelStatus = 'connecting' | 'connected' | 'disconnected'
 
-  return () => {
-    supabase.removeChannel(channel)
-  }
-}, [communityId, queryClient])
+export interface ItemRepository {
+  // ...
+  subscribe(communityId: string, handlers: {
+    onChange: () => void
+    onStatus: (status: ItemsChannelStatus) => void
+  }): () => void
+}
+```
+
+Devuelve la función de baja en vez de una promesa: el que se suscribe es un `useEffect` y lo
+que necesita es algo que llamar en el cleanup. El adaptador traduce los estados del canal
+(`SUBSCRIBED`, `CHANNEL_ERROR`, `TIMED_OUT`, `CLOSED`) a los tres del dominio, igual que
+traduce `is_purchased` a `isPurchased`.
+
+**`subscribe()` es el único método de `data/` que NO empieza por `assertOnline()`.** La regla
+existe porque una petición suelta sin red se queda colgada para siempre; un canal no es una
+petición suelta, tiene su propio bucle de reconexión y ya informa de que está caído por
+`onStatus`. Bloquear la suscripción porque NetInfo diga que no hay red significaría no
+reconectar nunca cuando vuelva. Además `subscribe` es síncrono, así que no hay dónde esperar.
+
+### El hook: invalidar, con dos temporizadores
+
+```ts
+const eventCoalesceMs = 300
+const subscribeSettleMs = 1500
 ```
 
 Invalidar y refetchear es más tosco que parchear la caché con el payload del evento, pero es
-correcto por construcción y una lista de la compra tiene decenas de filas, no miles. Si el
-refetch llega a molestar, parchea entonces, no antes.
+correcto por construcción y una lista de la compra tiene decenas de filas, no miles. Además el
+payload de un `DELETE` trae solo el `id` (ver la skill `supabase-data`), así que parchear la
+caché con datos del evento no es siquiera posible para los borrados.
 
-El `removeChannel` en el cleanup no es opcional: sin él acumulas suscripciones en cada
-remontaje y acabas con eventos duplicados.
+Los dos retardos no son adorno:
+
+- **`eventCoalesceMs`**: marcar cinco artículos seguidos son cinco eventos. Sin agrupar, cinco
+  refetches. Cada evento reprograma el temporizador, así que la ráfaga acaba en una sola
+  lectura.
+- **`subscribeSettleMs`**: hay ~1s tras `SUBSCRIBED` en que el servidor todavía no tiene
+  registrada la suscripción y **los eventos se pierden sin dejar rastro**. Por eso, al pasar a
+  `connected`, se programa un refetch pasado ese margen. Lo que se haya perdido entra por la
+  lectura normal. No es un caso de red mala: es el arranque normal de cualquier pantalla.
+
+**No invalides con una mutación en vuelo.** Tu propio `insert` genera un evento que te llega a
+ti también (comprobado en `npm run test:realtime`). Si ese evento invalida mientras el alta
+optimista está a medias, el refetch aterriza con datos del servidor que aún no incluyen la
+fila y el artículo parpadea. `queryClient.isMutating() > 0` → reprograma en vez de invalidar;
+el `onSuccess` de la mutación ya invalida por su cuenta.
+
+El `unsubscribe()` del cleanup no es opcional: sin él acumulas canales en cada remontaje y
+acabas con eventos duplicados.
+
+### Realtime contra el borrado con deshacer
+
+Durante los 5 s de "Deshacer" la fila ya no se ve pero **sigue en el servidor**. Si en esa
+ventana llega un evento de otra persona y se invalida, el refetch la trae de vuelta y el
+artículo reaparece con el botón Deshacer todavía en pantalla.
+
+Por eso el borrado diferido no toca la caché: marca el id en un store de ids en curso
+(`useDeletingItemsStore`) y la query los filtra en su `select` con `visibleItems()`. La caché
+es del servidor y refleja lo que el servidor tiene; lo que se esconde por decisión local es
+estado de UI y vive en Zustand. Deshacer es quitar el id del store, sin restaurar nada.
+
+Esto sustituye al patrón de la sección anterior, que restauraba un snapshot: el snapshot pisa
+lo que otras personas hayan cambiado en esos 5 s, y con Realtime eso pasa de "poco probable" a
+"lo normal".
+
+### Recuperarse: tres caminos, y ninguno sobra
+
+1. El canal reconecta solo y vuelve a `SUBSCRIBED`. El `onStatus` ya programa el refetch de
+   `subscribeSettleMs`: reconectar y arrancar son el mismo caso, un canal que empieza a
+   escuchar sin saber qué se perdió.
+2. Volver a primer plano. Android congela los temporizadores en segundo plano y puede cerrar el
+   socket sin avisar. `useAppForeground` (en `shared/hooks`) refresca al volver, que es justo
+   cuando el usuario mira la pantalla. Se refresca con `eventCoalesceMs`, no con el retardo
+   largo: volver de segundo plano no crea ninguna suscripción.
+3. Tirar para refrescar. El único que controla el usuario, y el que le queda si fallan los dos.
+
+El aviso de estado (`RealtimeStatus`) devuelve `null` mientras haya conexión: un indicador
+verde permanente ocupa sitio y enseña a ignorar la zona donde luego sale lo importante. Y lleva
+**2 s de gracia** antes de aparecer, porque el estado arranca en `connecting` y sin ese margen
+cada entrada en la pantalla enseñaría un aviso que se va solo. El texto de `disconnected` dice
+qué hacer ("tira hacia abajo"), y no dice "sin conexión": se puede tener red perfecta y el canal
+caído, y en ese caso escribir sigue funcionando.
+
+### Presencia
+
+Quién más tiene la lista abierta. Mismo patrón de puerto y adaptador, en `community`:
+
+```ts
+export interface PresenceRepository {
+  watch(
+    input: { communityId: string; username: string },
+    onChange: (usernames: string[]) => void,
+  ): () => void
+}
+```
+
+El puerto habla de nombres, no de `presenceState()`. Los detalles de la API de Supabase (y sus
+tres trampas silenciosas) están en la skill `supabase-data`; aquí importa dónde vive el estado:
+
+**Ni Query ni Zustand: `useState` en el hook.** No es server state (no se lee, no se invalida,
+no se cachea, no sobrevive a la pantalla) ni client state compartido (solo lo usa quien lo
+mira). Es la tercera categoría, y forzar cualquiera de las dos herramientas solo añade
+ceremonia y estado global que limpiar. La regla que sigue en pie es no duplicar en un store
+nada que venga del servidor, y esto no viene de ninguna tabla.
+
+**Canal aparte de `items`.** Dos canales son dos topics sobre el mismo websocket, no dos
+conexiones: no hay coste de red. Compartirlo sí costaría, atando el ciclo de vida de dos
+features distintas.
+
+**Qué se enseña**: nada si no hay nadie más (`null`, no un "no hay nadie" permanente), sin
+incluirte a ti, ordenado alfabéticamente (sin orden estable la línea baila en cada `sync`), tres
+nombres como mucho y el resto por número, plurales por i18n (`_one`/`_other`) y no concatenando.
+Si el canal se cae, la lista se vacía: enseñar a alguien de quien hace rato que no se sabe nada
+es peor que no enseñar nada.
 
 ## Offline
 

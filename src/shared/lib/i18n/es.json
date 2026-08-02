@@ -47,7 +47,17 @@
     "joinCodeAccessible": "Código para invitar: {{code}}",
     "joinCodeHint": "Pásaselo a quien quieras que comparta la lista.",
     "leave": "Salir de esta lista",
-    "leaveHint": "Vuelve a la pantalla de inicio en este móvil"
+    "leaveHint": "Vuelve a la pantalla de inicio en este móvil",
+    "realtime": {
+      "connecting": "Conectando para ver los cambios al momento…",
+      "disconnected": "Los cambios de los demás no llegan solos. Tira hacia abajo para actualizar."
+    },
+    "viewers": {
+      "viewing_one": "{{names}} está viendo la lista",
+      "viewing_other": "{{names}} están viendo la lista",
+      "andMore_one": "{{names}} y otra persona están viendo la lista",
+      "andMore_other": "{{names}} y otras {{count}} personas están viendo la lista"
+    }
   },
   "items": {
     "add": {
@@ -84,5 +94,11 @@
     "syncFailed": "No se pudo guardar. Lo intentamos otra vez al recuperar la conexión.",
     "invalidJoinCode": "Ese código no existe. Revísalo y vuelve a intentarlo.",
     "usernameTaken": "Ese nombre ya está cogido en esta lista. Prueba con otro."
+  },
+  "build": {
+    "embedded": "v{{version}} · base",
+    "withUpdate": "v{{version}} · {{updateId}}",
+    "accessibleEmbedded": "Versión {{version}}, sin actualizaciones",
+    "accessibleWithUpdate": "Versión {{version}}, actualización {{updateId}}"
   }
 }

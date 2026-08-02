@@ -122,6 +122,36 @@ partes nativas y la `version` sea la misma, el update es compatible con el APK i
 tocas algo nativo (dependencia con código nativo, permisos, icono, SDK) sube la `version` y haz
 **build nuevo** (paso 3); un update de JS no puede arreglar un cambio nativo.
 
+### `eas update` empaqueta para todas las plataformas, incluida web
+
+La primera vez que se lanzó, el comando murió antes de subir nada:
+
+```
+CommandError: It looks like you're trying to use web support but don't have the
+required dependencies installed. Install react-native-web@^0.21.0
+✖ Export failed
+```
+
+`eas update` llama por dentro a `expo export --platform=all`, y "all" son las plataformas del
+config. `app.json` no traía array `platforms`, así que valía el de por defecto de Expo:
+`["ios", "android", "web"]`. Web nunca ha sido objetivo de este proyecto y `react-native-web`
+no está instalado, así que el export se caía ahí. Lo confuso es que `npx expo export --platform
+android`, que es la comprobación de build habitual, pasa sin enterarse: nunca toca web.
+
+Se arregla declarando los objetivos de verdad, no instalando una dependencia para satisfacer
+un target que no existe:
+
+```json
+"platforms": ["android", "ios"]
+```
+
+**No obliga a build nuevo.** `platforms` solo decide qué bundles se generan al exportar; no es
+configuración nativa y el `runtimeVersion` no se mueve, así que el APK instalado sigue siendo
+compatible con el update.
+
+Si algún día se quiere web, la respuesta es `npx expo install react-native-web react-dom` y
+añadirlo al array, no quitarlo de ahí.
+
 ## El backend: Supabase gratis
 
 No hay servidor propio que desplegar. Todo el lado servidor lo pone Supabase (Postgres +

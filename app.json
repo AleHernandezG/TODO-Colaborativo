@@ -3,6 +3,7 @@
     "name": "Lista de la compra",
     "slug": "agora",
     "version": "1.0.0",
+    "platforms": ["android", "ios"],
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "listacompra",

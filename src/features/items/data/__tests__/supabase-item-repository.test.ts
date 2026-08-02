@@ -7,10 +7,14 @@ import { supabaseItemRepository } from '../supabase-item-repository'
 jest.mock('../../../../shared/lib/supabase', () => ({
   supabase: {
     from: jest.fn(),
+    channel: jest.fn(),
+    removeChannel: jest.fn(),
   },
 }))
 
 const from = supabase.from as jest.Mock
+const channel = supabase.channel as jest.Mock
+const removeChannel = supabase.removeChannel as jest.Mock
 const netInfoFetch = NetInfo.fetch as jest.Mock
 
 function mockList(data: unknown, error: unknown = null) {
@@ -159,5 +163,92 @@ describe('remove', () => {
     mockDelete({ message: 'no encontrado' })
 
     await expect(supabaseItemRepository.remove('i1')).rejects.toThrow('no encontrado')
+  })
+})
+
+describe('subscribe', () => {
+  type FakeChannel = {
+    on: jest.Mock
+    subscribe: jest.Mock
+  }
+
+  function mockChannel() {
+    const listeners: { config: Record<string, unknown>; handler: () => void }[] = []
+    let statusCallback: ((status: string) => void) | undefined
+    const built: FakeChannel = {
+      on: jest.fn((_event: string, config: Record<string, unknown>, handler: () => void) => {
+        listeners.push({ config, handler })
+        return built
+      }),
+      subscribe: jest.fn((callback: (status: string) => void) => {
+        statusCallback = callback
+        return built
+      }),
+    }
+    channel.mockReturnValue(built)
+    return { built, listeners, emitStatus: (status: string) => statusCallback?.(status) }
+  }
+
+  it('escucha solo los cambios de su comunidad', () => {
+    const { listeners } = mockChannel()
+
+    supabaseItemRepository.subscribe('c1', { onChange: jest.fn(), onStatus: jest.fn() })
+
+    expect(channel).toHaveBeenCalledWith('items:c1')
+    expect(listeners).toHaveLength(1)
+    expect(listeners[0].config).toEqual({
+      event: '*',
+      schema: 'public',
+      table: 'items',
+      filter: 'community_id=eq.c1',
+    })
+  })
+
+  it('avisa de cada cambio sin mirar el contenido del evento', () => {
+    const { listeners } = mockChannel()
+    const onChange = jest.fn()
+
+    supabaseItemRepository.subscribe('c1', { onChange, onStatus: jest.fn() })
+    listeners[0].handler()
+    listeners[0].handler()
+
+    expect(onChange).toHaveBeenCalledTimes(2)
+  })
+
+  it('traduce el estado del canal a conectado o desconectado', () => {
+    const { emitStatus } = mockChannel()
+    const onStatus = jest.fn()
+
+    supabaseItemRepository.subscribe('c1', { onChange: jest.fn(), onStatus })
+
+    emitStatus('SUBSCRIBED')
+    expect(onStatus).toHaveBeenLastCalledWith('connected')
+
+    for (const status of ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED']) {
+      emitStatus(status)
+      expect(onStatus).toHaveBeenLastCalledWith('disconnected')
+    }
+  })
+
+  it('la función que devuelve cierra el canal', () => {
+    const { built } = mockChannel()
+
+    const unsubscribe = supabaseItemRepository.subscribe('c1', {
+      onChange: jest.fn(),
+      onStatus: jest.fn(),
+    })
+
+    expect(removeChannel).not.toHaveBeenCalled()
+    unsubscribe()
+    expect(removeChannel).toHaveBeenCalledWith(built)
+  })
+
+  it('se suscribe aunque NetInfo diga que no hay red', () => {
+    netInfoFetch.mockResolvedValue({ isConnected: false })
+    mockChannel()
+
+    supabaseItemRepository.subscribe('c1', { onChange: jest.fn(), onStatus: jest.fn() })
+
+    expect(channel).toHaveBeenCalledWith('items:c1')
   })
 })

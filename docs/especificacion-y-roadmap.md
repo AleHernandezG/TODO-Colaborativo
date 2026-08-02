@@ -49,7 +49,7 @@ Una app móvil donde varias personas (una familia, un piso compartido, un equipo
 
 **Incluye:** crear/unirse a comunidad por código, CRUD completo de artículos (nombre, cantidad, imagen opcional), sincronización en tiempo real, sesión ligera (código + usuario), UI accesible.
 
-**Excluye (fases posteriores):** autenticación robusta, roles/permisos avanzados, historial/analytics, notificaciones push, modo offline avanzado con resolución de conflictos, monetización.
+**Excluye (fases posteriores):** autenticación fuerte, roles/permisos avanzados, historial/analytics, notificaciones push, modo offline avanzado con resolución de conflictos, exportación a PDF (RF-8), reparto de gastos (RF-9), monetización.
 
 ---
 
@@ -127,6 +127,39 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 - **Qué:** cambios visibles para todos aunque no compartan red y estén lejos.
 - **Cómo:** el BaaS actúa como fuente de verdad en la nube; cada cliente **se suscribe a cambios en tiempo real** de su comunidad (websockets/streams del BaaS). Un cambio en Madrid llega a Buenos Aires porque ambos hablan con el mismo backend, no entre sí. Se añade **presencia** (quién está viendo la lista) como coordinación ligera.
 - **Aceptación:** dos dispositivos en redes distintas ven el mismo cambio en < 2 s; sin conexión, los cambios se encolan y se sincronizan al reconectar.
+
+---
+
+> **RF-8 y RF-9 están fuera del MVP.** Salieron después de escribir esta especificación, de
+> `docs/funcionalidades.txt`. Se registran aquí para que no vivan solo en un `.txt` suelto, pero
+> el alcance de la beta sigue siendo RF-1…RF-7.
+
+### RF-8 · Exportar la lista a PDF (post-MVP)
+
+- **Qué:** un botón que genera un PDF con la lista y lo deja guardar o compartir. Sirve para
+  llevar la compra en papel o para mandársela a alguien que no tiene la app.
+- **Cómo:** `expo-print` renderiza un HTML propio a PDF y `expo-sharing` abre el share sheet
+  nativo. El PDF se compone **en el cliente** con lo que ya hay en la caché de TanStack Query,
+  así que no hace falta red si la lista está cargada. No toca el esquema ni añade backend.
+- **Aceptación:** desde la lista, un toque produce un PDF legible con nombre, cantidad y estado
+  de cada artículo, agrupado igual que la pantalla (por comprar / comprados). Se puede guardar
+  en el móvil o mandar por cualquier app. Con la lista ya cacheada, funciona sin conexión.
+
+### RF-9 · Reparto de gastos entre miembros, estilo Tricount (post-MVP)
+
+- **Qué:** al marcar un artículo como comprado, poder anotar **opcionalmente** cuánto costó,
+  quién lo pagó y entre quiénes se reparte. Una pantalla aparte muestra el balance de cada
+  miembro y la liquidación mínima («Ana debe 7,30 € a Luis»).
+- **Cómo:** el gasto es una entidad propia ligada al artículo, con una tabla puente para los
+  participantes del reparto. Los balances **se calculan, no se guardan**: funciones puras en
+  `domain/`, testeables sin red. Importes en enteros (céntimos), nunca en coma flotante.
+- **Aceptación:** dos miembros ven exactamente el mismo balance; editar un precio recalcula en
+  ambos; ningún miembro puede modificar el gasto que registró otro (comprobado con RLS, como
+  el aislamiento entre comunidades).
+- **Depende de:** identidad fiable. Hoy el modelo de sesión es débil a propósito (§9.2) y
+  `items.created_by` va a `null` por deuda de la Fase 1. Repartir dinero sobre nombres
+  suplantables no es aceptable, así que esto llega **después** del refuerzo de auth. Decidido y
+  razonado en [ADR-0005](adr/ADR-0005-reparto-de-gastos.md).
 
 ---
 
@@ -452,7 +485,7 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 > Checklist de calidad para revisar cada área **antes de dar por buena** cada fase. Marca ✅ solo cuando se cumple.
 
 ### A. Funcionalidad
-- [ ] Los 7 requisitos funcionales (RF-1…RF-7) tienen criterio de aceptación verificado.
+- [ ] Los 7 requisitos funcionales del MVP (RF-1…RF-7) tienen criterio de aceptación verificado. RF-8 y RF-9 son post-MVP y se auditan en su fase.
 - [ ] CRUD completo probado con datos reales en 2 dispositivos.
 - [ ] Casos límite: nombre vacío, cantidad 0, imagen que falla al subir, código inexistente.
 
@@ -518,8 +551,11 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 - Presencia básica (quién está viendo).
 - **Entregable:** dos dispositivos en redes distintas ven cambios en vivo.
 
-### Fase 3 · Imágenes y pulido UX (2–3 días)
+### Fase 3 · Imágenes y pulido UX (3–4 días)
 - Imagen de referencia: captura/galería, compresión, subida a Storage (RF-4 completo).
+- **Editar un artículo ya creado** (nombre y cantidad): es la «M» de RF-3, quedó como deuda en la Fase 1.
+- **Copiar y compartir el `join_code`** con el share sheet nativo: lo pide el criterio de aceptación de RF-2 y hoy solo se muestra el código.
+- **Exportar la lista a PDF (RF-8).** Entra aquí por ser barato y no tocar el modelo de datos.
 - Micro-interacciones, «deshacer», estados vacíos y de error.
 - Accesibilidad y modo oscuro (RF-6).
 - **Entregable:** experiencia completa y estética; auditoría F superada.
@@ -530,10 +566,18 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 - Tests de dominio/repos + un E2E feliz con Maestro.
 - **Entregable:** beta estable, auditoría global (§11) superada.
 
-### Fase 5 · Endurecimiento (post-beta, opcional)
+### Fase 5 · Endurecimiento (post-beta)
 - Refuerzo de auth (§9.4), roles, notificaciones push, i18n EN, analytics.
+- Deja de ser «opcional» en cuanto se quiera la Fase 6: el punto 1 de §9.4 (PIN o passphrase por miembro) es requisito previo del reparto de gastos.
 
-**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code).
+### Fase 6 · Reparto de gastos (RF-9)
+- Modelo de datos del gasto y del reparto, con su ADR y sus políticas RLS antes de escribir la primera migración.
+- Atribución real de quién añadió y quién compró cada artículo (cerrar la deuda de `items.created_by`).
+- Registro opcional de precio y participantes al marcar comprado; pantalla de balances con liquidación mínima.
+- **Requisito de entrada:** el PIN por miembro de la Fase 5. Sin identidad no suplantable, los balances no valen nada. Ver [ADR-0005](adr/ADR-0005-reparto-de-gastos.md).
+- **Entregable:** dos miembros ven el mismo balance y nadie puede tocar el gasto de otro.
+
+**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 y 6 son posteriores a la beta y no entran en esa cuenta.
 
 ---
 
@@ -717,7 +761,7 @@ Usar Supabase (Postgres + Realtime + Storage + RLS).
 
 ## 16. Checklist final de entrega
 
-- [ ] Los 7 requisitos funcionales cumplidos y verificados en 2 dispositivos/redes.
+- [ ] Los 7 requisitos funcionales del MVP (RF-1…RF-7) cumplidos y verificados en 2 dispositivos/redes.
 - [ ] Sincronización < 2 s entre países; offline abre y encola; rollback probado.
 - [ ] RLS impide fugas entre comunidades (test explícito).
 - [ ] Accesibilidad AA verificada + test con usuario novato superado.

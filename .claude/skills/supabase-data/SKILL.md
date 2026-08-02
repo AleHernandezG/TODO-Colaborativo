@@ -234,6 +234,88 @@ podría leer. Eso significa que **si una política está mal, el síntoma puede 
 los eventos" en vez de un error**. Cuando Realtime no dispare, sospecha de RLS antes que del
 canal.
 
+### `replica identity full` es obligatorio para los borrados
+
+```sql
+alter table items replica identity full;
+```
+
+Por defecto Postgres solo mete la **clave primaria** de la fila borrada en el WAL. Sin el
+resto de columnas, Realtime no puede evaluar `filter: community_id=eq.<id>` sobre un `DELETE`,
+y ahí se rompe el aislamiento: o el borrado no llega a quien le toca, o llega a todo el
+mundo. Con `replica identity full` la fila vieja entera viaja en el WAL y el filtro se
+resuelve en el servidor.
+
+Verificado con `npm run test:realtime` (migración `20260802140000`).
+
+Tres cosas que sorprenden y conviene saber antes de perder la tarde:
+
+**El payload del `DELETE` sigue trayendo solo el `id`, y es correcto.** Realtime recorta a
+propósito la fila borrada a su clave primaria antes de mandarla, tenga la tabla la replica
+identity que tenga. Lo que arregla `replica identity full` no es lo que recibes, es que el
+**enrutado** sea correcto. Se comprueba mirando el `old` de un `UPDATE`: si trae la fila
+anterior completa, `full` está activo. Si te fías del `old` de un `DELETE` para saberlo,
+concluyes que la migración no sirvió, que es justo lo que pasó al escribirla.
+
+**Un canal sin `filter` recibe los borrados de todas las comunidades**, reducidos a un uuid
+suelto. RLS no se puede evaluar sobre una fila que ya no existe, así que Realtime no lo
+intenta. Por eso **la app se suscribe siempre con `filter: community_id=eq.<id>`**: con filtro
+esos borrados ajenos no llegan. Suscribirse a `items` sin filtro es un error de revisión.
+
+**Tras `SUBSCRIBED` hay una ventana de en torno a un segundo en la que los eventos se pierden.**
+El canal dice que está suscrito antes de que el servidor tenga registrada la suscripción a los
+cambios de Postgres. Se nota justo en el peor sitio: lo que otro añada en ese momento no llega
+nunca. La app **refresca la query después de suscribirse**, no solo al reconectar, y así lo que
+se haya perdido entra por la puerta de la lectura normal.
+
+### Presencia
+
+Quién tiene la lista abierta ahora. No es una tabla ni pasa por RLS: vive solo en el canal.
+
+```ts
+const channel = supabase.channel(`presence:${communityId}`, {
+  config: { presence: { key: username, enabled: true } },
+})
+
+channel.on('presence', { event: 'sync' }, publish).subscribe((status) => {
+  if (status === 'SUBSCRIBED') {
+    void channel.track({ username })
+    setTimeout(() => void channel.track({ username }), 2000)
+  }
+})
+
+return () => {
+  void channel.untrack()
+  void supabase.removeChannel(channel)
+}
+```
+
+Cada línea rara de ahí arriba tapa un fallo silencioso, todos encontrados con
+`npm run test:realtime`, ninguno con un mensaje de error:
+
+**`enabled: true` hace falta.** El canal solo pide presencia al servidor si tiene un binding de
+`presence` **o** si lleva `config.presence.enabled === true`. Con solo `key`, `track()` resuelve
+sin error y `presenceState()` devuelve `{}` para siempre. Se ponen las dos cosas para que quitar
+el listener no rompa nada.
+
+**El `track()` repetido a los 2 s no sobra.** Es la misma ventana de ~1 s de arriba vista desde
+la presencia: si dos personas entran a la vez, el diff de una sale antes de que la otra esté
+registrada y esta se queda sin verla. Repetir el `track` con la misma clave es idempotente y
+genera un diff nuevo que sí llega.
+
+**`untrack()` antes de `removeChannel()`, y sin `await`.** Sin `untrack`, quien sale sigue
+apareciendo como presente en la pantalla de los demás. Y `send()` (que es lo que hay debajo)
+espera el ack del servidor con timeout de 10 s para todo lo que no sea broadcast, así que
+esperarlo en el cleanup síncrono de un `useEffect` colgaría la baja diez segundos sin red. Los
+dos mensajes salen por el mismo socket en orden; el `untrack` gana igual.
+
+**La clave es el `username`**, que es único por comunidad (`unique (community_id, username)`).
+Así la misma persona con dos dispositivos se agrupa sola y no hay que resolver uid → nombre.
+
+**Lo que se anuncia no lo valida nadie.** El canal se autoriza por token, pero el contenido del
+`track()` es lo que el cliente diga. Lo único que impide anunciarse en una comunidad ajena es
+no conocer su uuid. Vale para pintar un nombre; no vale para nada de lo que dependa un dato.
+
 ## Migraciones
 
 El esquema vive en `supabase/migrations/`, nunca en SQL pegado a mano en el panel. Un cambio
@@ -293,6 +375,18 @@ con un error de `docker_engine` que no dice nada útil.
 
 Regenera **en el mismo cambio** en que alteres el esquema. Un `db.types.ts` desfasado es peor
 que no tenerlo: TypeScript pasa en verde y el fallo aparece en tiempo de ejecución.
+
+**No uses `>` desde PowerShell 5.1 para escribir este fichero.** Redirige en UTF-16LE con BOM,
+y el resultado es un `db.types.ts` que `tsc` lee sin quejarse (entiende el BOM) pero que ESLint
+descarta con `Parsing error: File appears to be binary`. O sea: typecheck en verde, lint roto y
+ninguna pista de por qué. Pasó y estuvo commiteado así. Genera desde Git Bash, o fuerza la
+codificación:
+
+```powershell
+npx supabase gen types typescript --linked | Out-File -Encoding utf8 src/shared/lib/db.types.ts
+```
+
+Si sospechas, los dos primeros bytes lo cantan: `ff fe` es UTF-16LE.
 
 Estos tipos son los de las filas de Postgres y se quedan en `data/`. El dominio tiene sus
 propias entidades; el adaptador traduce entre ambos. Si `Database['public']['Tables']`
