@@ -1,6 +1,6 @@
-import { Text, TextInput, useColorScheme, View } from 'react-native'
+import { Text, TextInput, View } from 'react-native'
 
-import { colors, minTouchTarget } from '../../theme'
+import { minTouchTarget, usePalette } from '../../theme'
 
 type InputProps = {
   label: string
@@ -29,8 +29,7 @@ export function Input({
   returnKeyType = 'done',
   onSubmitEditing,
 }: InputProps) {
-  const scheme = useColorScheme()
-  const palette = scheme === 'dark' ? colors.dark : colors.light
+  const palette = usePalette()
 
   return (
     <View className="gap-2">
@@ -51,7 +50,9 @@ export function Input({
         accessibilityHint={error ?? undefined}
         style={{ minHeight: minTouchTarget, color: palette.text }}
         className={`rounded-md border bg-surface px-4 py-3 text-lg dark:bg-surface-dark ${
-          error ? 'border-danger dark:border-danger-dark' : 'border-line dark:border-line-dark'
+          error
+            ? 'border-danger dark:border-danger-dark'
+            : 'border-line-strong dark:border-line-strong-dark'
         }`}
       />
 

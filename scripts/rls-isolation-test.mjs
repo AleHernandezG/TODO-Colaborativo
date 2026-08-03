@@ -73,11 +73,57 @@ async function patchItem(token, itemId, patch) {
   return { status: res.status, body: await res.json().catch(() => null) }
 }
 
-async function cleanup(communityIds) {
+const imagesBucket = 'item-images'
+const fakeJpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0xff, 0xd9])
+
+async function uploadImage(token, path) {
+  const res = await fetch(`${url}/storage/v1/object/${imagesBucket}/${path}`, {
+    method: 'POST',
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'image/jpeg',
+      'x-upsert': 'true',
+    },
+    body: fakeJpeg,
+  })
+  return { status: res.status, body: await res.json().catch(() => null) }
+}
+
+async function listImages(token, prefix) {
+  const res = await fetch(`${url}/storage/v1/object/list/${imagesBucket}`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ prefix, limit: 100, offset: 0 }),
+  })
+  return { status: res.status, body: await res.json().catch(() => null) }
+}
+
+async function signImage(token, path) {
+  const res = await fetch(`${url}/storage/v1/object/sign/${imagesBucket}/${path}`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ expiresIn: 60 }),
+  })
+  return { status: res.status, body: await res.json().catch(() => null) }
+}
+
+async function fetchPublicImage(path) {
+  const res = await fetch(`${url}/storage/v1/object/public/${imagesBucket}/${path}`)
+  return { status: res.status }
+}
+
+async function cleanup(communityIds, imagePaths) {
   if (!secretKey) {
     console.log('\nSin SUPABASE_SECRET_KEY: las comunidades de prueba se quedan en la base.')
     console.log(`Bórralas desde el panel: ${communityIds.join(', ')}`)
     return
+  }
+  for (const path of imagePaths) {
+    await fetch(`${url}/storage/v1/object/${imagesBucket}/${path}`, {
+      method: 'DELETE',
+      headers: { apikey: secretKey, Authorization: `Bearer ${secretKey}` },
+    })
   }
   for (const id of communityIds) {
     await fetch(`${url}/rest/v1/communities?id=eq.${id}`, {
@@ -85,7 +131,7 @@ async function cleanup(communityIds) {
       headers: { apikey: secretKey, Authorization: `Bearer ${secretKey}` },
     })
   }
-  console.log('\nComunidades de prueba borradas.')
+  console.log('\nComunidades y fotos de prueba borradas.')
 }
 
 async function main() {
@@ -165,6 +211,43 @@ async function main() {
     `${escape.body?.length ?? '?'} filas afectadas`,
   )
 
+  const imagePathB = `${communityB}/${itemBId}.jpg`
+  const imagePathIntruso = `${communityB}/intruso.jpg`
+
+  const ownUpload = await uploadImage(tokenB, imagePathB)
+  check('B puede subir una foto a la carpeta de su comunidad', ownUpload.status === 200, `HTTP ${ownUpload.status}`)
+
+  const crossUpload = await uploadImage(tokenA, imagePathIntruso)
+  check(
+    'A no puede subir una foto a la carpeta de B',
+    crossUpload.status >= 400,
+    `HTTP ${crossUpload.status}`,
+  )
+
+  const crossList = await listImages(tokenA, `${communityB}/`)
+  check(
+    'A no lista las fotos de B',
+    Array.isArray(crossList.body) && crossList.body.length === 0,
+    `${crossList.body?.length ?? '?'} objetos`,
+  )
+
+  const crossSign = await signImage(tokenA, imagePathB)
+  check(
+    'A no puede firmar una foto de B',
+    crossSign.status >= 400,
+    `HTTP ${crossSign.status}`,
+  )
+
+  const ownSign = await signImage(tokenB, imagePathB)
+  check('B sí puede firmar su propia foto', ownSign.status === 200, `HTTP ${ownSign.status}`)
+
+  const publicRead = await fetchPublicImage(imagePathB)
+  check(
+    'El bucket no sirve la foto por URL pública',
+    publicRead.status >= 400,
+    `HTTP ${publicRead.status}`,
+  )
+
   const badCode = await rpc(tokenA, 'join_community', { p_join_code: 'ZZZ-9999', p_username: 'ana' })
   check(
     'Un join_code inexistente da invalid_join_code',
@@ -206,7 +289,7 @@ async function main() {
     stillWorks.body?.[0]?.status ?? `HTTP ${stillWorks.status}`,
   )
 
-  await cleanup([communityA, communityB])
+  await cleanup([communityA, communityB], [imagePathB, imagePathIntruso])
 
   const failed = results.filter((r) => !r.passed)
   console.log(`\n${results.length - failed.length}/${results.length} comprobaciones correctas`)

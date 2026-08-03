@@ -14,19 +14,40 @@ function contrastRatio(foreground: string, background: string) {
   return (light + 0.05) / (dark + 0.05)
 }
 
-describe('tokens de color', () => {
+describe('contraste de texto (AA, 4.5:1)', () => {
   const pairs = [
     ['text', 'background'],
     ['textMuted', 'background'],
     ['text', 'surface'],
+    ['textMuted', 'surface'],
     ['onPrimary', 'primary'],
+    ['danger', 'background'],
+    ['danger', 'surface'],
+    ['success', 'background'],
   ] as const
 
   for (const scheme of ['light', 'dark'] as const) {
     for (const [foreground, background] of pairs) {
-      it(`${scheme}: ${foreground} sobre ${background} cumple AA`, () => {
+      it(`${scheme}: ${foreground} sobre ${background}`, () => {
         const ratio = contrastRatio(colors[scheme][foreground], colors[scheme][background])
         expect(ratio).toBeGreaterThanOrEqual(4.5)
+      })
+    }
+  }
+})
+
+describe('contraste de controles (AA no textual, 3:1)', () => {
+  const pairs = [
+    ['borderStrong', 'background'],
+    ['borderStrong', 'surface'],
+    ['primary', 'background'],
+  ] as const
+
+  for (const scheme of ['light', 'dark'] as const) {
+    for (const [foreground, background] of pairs) {
+      it(`${scheme}: ${foreground} sobre ${background}`, () => {
+        const ratio = contrastRatio(colors[scheme][foreground], colors[scheme][background])
+        expect(ratio).toBeGreaterThanOrEqual(3)
       })
     }
   }

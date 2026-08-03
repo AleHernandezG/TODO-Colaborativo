@@ -1,41 +1,20 @@
+import { fakeItem, fakeItemRepository } from '../__fixtures__/item-repository'
 import { addItem } from '../add-item'
-import type { ItemRepository } from '../item-repository'
 
-function fakeRepository(): jest.Mocked<ItemRepository> {
-  return {
-    add: jest.fn().mockResolvedValue({
-      id: 'i1',
-      name: 'Leche',
-      quantity: 1,
-      isPurchased: false,
-      createdAt: '2026-07-20T10:00:00.000Z',
-    }),
-    list: jest.fn(),
-    setPurchased: jest.fn(),
-    remove: jest.fn(),
-    subscribe: jest.fn(),
-  }
+function repositoryThatAdds() {
+  return fakeItemRepository({ add: jest.fn().mockResolvedValue(fakeItem()) })
 }
 
 it('añade el artículo y devuelve lo que guardó el repositorio', async () => {
-  const repository = fakeRepository()
+  const repository = repositoryThatAdds()
 
   const result = await addItem(repository, { communityId: 'c1', name: 'Leche' })
 
-  expect(result).toEqual({
-    status: 'ok',
-    item: {
-      id: 'i1',
-      name: 'Leche',
-      quantity: 1,
-      isPurchased: false,
-      createdAt: '2026-07-20T10:00:00.000Z',
-    },
-  })
+  expect(result).toEqual({ status: 'ok', item: fakeItem() })
 })
 
 it('normaliza el nombre y usa cantidad 1 por defecto', async () => {
-  const repository = fakeRepository()
+  const repository = repositoryThatAdds()
 
   await addItem(repository, { communityId: 'c1', name: '  pan   de   molde ' })
 
@@ -47,7 +26,7 @@ it('normaliza el nombre y usa cantidad 1 por defecto', async () => {
 })
 
 it('pasa la cantidad indicada al repositorio', async () => {
-  const repository = fakeRepository()
+  const repository = repositoryThatAdds()
 
   await addItem(repository, { communityId: 'c1', name: 'Huevos', quantity: 12 })
 
@@ -59,7 +38,7 @@ it('pasa la cantidad indicada al repositorio', async () => {
 })
 
 it('rechaza un nombre vacío sin tocar la red', async () => {
-  const repository = fakeRepository()
+  const repository = repositoryThatAdds()
 
   const result = await addItem(repository, { communityId: 'c1', name: '   ' })
 
@@ -68,7 +47,7 @@ it('rechaza un nombre vacío sin tocar la red', async () => {
 })
 
 it('rechaza una cantidad menor que 1', async () => {
-  const repository = fakeRepository()
+  const repository = repositoryThatAdds()
 
   const result = await addItem(repository, { communityId: 'c1', name: 'Pan', quantity: 0 })
 

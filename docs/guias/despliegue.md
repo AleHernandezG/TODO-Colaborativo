@@ -122,6 +122,13 @@ partes nativas y la `version` sea la misma, el update es compatible con el APK i
 tocas algo nativo (dependencia con código nativo, permisos, icono, SDK) sube la `version` y haz
 **build nuevo** (paso 3); un update de JS no puede arreglar un cambio nativo.
 
+**Subir la `version` no es opcional en ese caso, es lo que protege al APK viejo.** Si añades una
+dependencia nativa y publicas un update dejando la `version` como estaba, EAS considera ese
+update compatible y el APK instalado se lo traga. Entonces el JS nuevo llama a un módulo nativo
+que ese binario no tiene y la app revienta al usar la función, con el update ya cacheado: no se
+arregla reabriendo, hay que reinstalar. Cambiando la `version` el APK viejo deja de ser destino
+de esos updates y se queda con el último que le servía.
+
 ### `eas update` empaqueta para todas las plataformas, incluida web
 
 La primera vez que se lanzó, el comando murió antes de subir nada:

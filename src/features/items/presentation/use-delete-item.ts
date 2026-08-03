@@ -29,7 +29,7 @@ export function useDeleteItem(communityId: string) {
         if (undone) {
           return
         }
-        deleteItem(supabaseItemRepository, item.id)
+        deleteItem(supabaseItemRepository, item)
           .then(() => {
             queryClient.setQueryData<Item[]>(key, (current = []) =>
               current.filter((i) => i.id !== item.id),

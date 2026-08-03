@@ -2,17 +2,20 @@ import NetInfo from '@react-native-community/netinfo'
 
 import { OfflineError } from '../../../../shared/lib/network'
 import { supabase } from '../../../../shared/lib/supabase'
+import { imageUrlTtlSeconds } from '../../domain/item-image'
 import { supabaseItemRepository } from '../supabase-item-repository'
 
 jest.mock('../../../../shared/lib/supabase', () => ({
   supabase: {
     from: jest.fn(),
+    storage: { from: jest.fn() },
     channel: jest.fn(),
     removeChannel: jest.fn(),
   },
 }))
 
 const from = supabase.from as jest.Mock
+const storageFrom = supabase.storage.from as jest.Mock
 const channel = supabase.channel as jest.Mock
 const removeChannel = supabase.removeChannel as jest.Mock
 const netInfoFetch = NetInfo.fetch as jest.Mock
@@ -45,6 +48,19 @@ function mockDelete(error: unknown = null) {
   return { delete: del, eq }
 }
 
+function mockStorage(overrides: Record<string, jest.Mock> = {}) {
+  const bucket = {
+    upload: jest.fn(() => Promise.resolve({ error: null })),
+    remove: jest.fn(() => Promise.resolve({ error: null })),
+    createSignedUrl: jest.fn(() =>
+      Promise.resolve({ data: { signedUrl: 'https://cdn/firmada' }, error: null }),
+    ),
+    ...overrides,
+  }
+  storageFrom.mockReturnValue(bucket)
+  return bucket
+}
+
 beforeEach(() => {
   jest.clearAllMocks()
   netInfoFetch.mockResolvedValue({ isConnected: true })
@@ -55,16 +71,32 @@ describe('sin conexión', () => {
     netInfoFetch.mockResolvedValue({ isConnected: false })
   })
 
-  it('no lee, no añade, no marca ni borra', async () => {
+  it('no lee, no añade, no edita, no marca ni borra', async () => {
     await expect(supabaseItemRepository.list('c1')).rejects.toBeInstanceOf(OfflineError)
     await expect(
       supabaseItemRepository.add({ communityId: 'c1', name: 'Leche', quantity: 1 }),
+    ).rejects.toBeInstanceOf(OfflineError)
+    await expect(
+      supabaseItemRepository.edit('i1', { name: 'Leche', quantity: 1 }),
     ).rejects.toBeInstanceOf(OfflineError)
     await expect(supabaseItemRepository.setPurchased('i1', true)).rejects.toBeInstanceOf(
       OfflineError,
     )
     await expect(supabaseItemRepository.remove('i1')).rejects.toBeInstanceOf(OfflineError)
     expect(from).not.toHaveBeenCalled()
+  })
+
+  it('tampoco sube, borra ni firma fotos', async () => {
+    await expect(
+      supabaseItemRepository.uploadImage({ communityId: 'c1', itemId: 'i1', uri: 'file:///f.jpg' }),
+    ).rejects.toBeInstanceOf(OfflineError)
+    await expect(supabaseItemRepository.removeImage('c1/i1.jpg')).rejects.toBeInstanceOf(
+      OfflineError,
+    )
+    await expect(supabaseItemRepository.signImageUrl('c1/i1.jpg')).rejects.toBeInstanceOf(
+      OfflineError,
+    )
+    expect(storageFrom).not.toHaveBeenCalled()
   })
 })
 
@@ -76,6 +108,7 @@ describe('list', () => {
         name: 'Leche',
         quantity: 2,
         is_purchased: false,
+        image_path: 'c1/i1.jpg',
         created_at: '2026-07-20T10:00:00.000Z',
       },
     ])
@@ -86,6 +119,7 @@ describe('list', () => {
         name: 'Leche',
         quantity: 2,
         isPurchased: false,
+        imagePath: 'c1/i1.jpg',
         createdAt: '2026-07-20T10:00:00.000Z',
       },
     ])
@@ -111,6 +145,7 @@ describe('add', () => {
       name: 'Huevos',
       quantity: 12,
       is_purchased: false,
+      image_path: null,
       created_at: '2026-07-20T10:05:00.000Z',
     })
 
@@ -121,6 +156,7 @@ describe('add', () => {
       name: 'Huevos',
       quantity: 12,
       isPurchased: false,
+      imagePath: null,
       createdAt: '2026-07-20T10:05:00.000Z',
     })
     expect(insert).toHaveBeenCalledWith({ community_id: 'c1', name: 'Huevos', quantity: 12 })
@@ -132,6 +168,109 @@ describe('add', () => {
     await expect(
       supabaseItemRepository.add({ communityId: 'c1', name: 'Pan', quantity: 1 }),
     ).rejects.toThrow('fila viola la política')
+  })
+})
+
+describe('edit', () => {
+  it('actualiza nombre y cantidad, y deja updated_at al trigger', async () => {
+    const { update, eq } = mockUpdate()
+
+    await expect(
+      supabaseItemRepository.edit('i1', { name: 'Pan de molde', quantity: 3 }),
+    ).resolves.toBeUndefined()
+    expect(update).toHaveBeenCalledWith({ name: 'Pan de molde', quantity: 3 })
+    expect(eq).toHaveBeenCalledWith('id', 'i1')
+  })
+
+  it('escribe image_path cuando la foto cambia', async () => {
+    const { update } = mockUpdate()
+
+    await supabaseItemRepository.edit('i1', {
+      name: 'Pan',
+      quantity: 1,
+      imagePath: 'c1/i1.jpg',
+    })
+
+    expect(update).toHaveBeenCalledWith({ name: 'Pan', quantity: 1, image_path: 'c1/i1.jpg' })
+  })
+
+  it('escribe image_path a null cuando se quita la foto', async () => {
+    const { update } = mockUpdate()
+
+    await supabaseItemRepository.edit('i1', { name: 'Pan', quantity: 1, imagePath: null })
+
+    expect(update).toHaveBeenCalledWith({ name: 'Pan', quantity: 1, image_path: null })
+  })
+
+  it('falla con un mensaje que dice qué pasó', async () => {
+    mockUpdate({ message: 'no encontrado' })
+
+    await expect(supabaseItemRepository.edit('i1', { name: 'Pan', quantity: 1 })).rejects.toThrow(
+      'no encontrado',
+    )
+  })
+})
+
+describe('fotos', () => {
+  const fetchMock = jest.fn()
+
+  beforeEach(() => {
+    fetchMock.mockResolvedValue({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) })
+    global.fetch = fetchMock as unknown as typeof fetch
+  })
+
+  it('sube la foto a la carpeta de su comunidad y devuelve la ruta', async () => {
+    const bucket = mockStorage()
+
+    await expect(
+      supabaseItemRepository.uploadImage({
+        communityId: 'c1',
+        itemId: 'i1',
+        uri: 'file:///tmp/foto.jpg',
+      }),
+    ).resolves.toBe('c1/i1.jpg')
+
+    expect(storageFrom).toHaveBeenCalledWith('item-images')
+    expect(bucket.upload).toHaveBeenCalledWith('c1/i1.jpg', expect.any(ArrayBuffer), {
+      contentType: 'image/jpeg',
+      upsert: true,
+    })
+  })
+
+  it('falla con un mensaje que dice qué pasó al subir', async () => {
+    mockStorage({ upload: jest.fn(() => Promise.resolve({ error: { message: 'demasiado grande' } })) })
+
+    await expect(
+      supabaseItemRepository.uploadImage({
+        communityId: 'c1',
+        itemId: 'i1',
+        uri: 'file:///tmp/foto.jpg',
+      }),
+    ).rejects.toThrow('demasiado grande')
+  })
+
+  it('borra la foto por su ruta', async () => {
+    const bucket = mockStorage()
+
+    await expect(supabaseItemRepository.removeImage('c1/i1.jpg')).resolves.toBeUndefined()
+    expect(bucket.remove).toHaveBeenCalledWith(['c1/i1.jpg'])
+  })
+
+  it('firma la ruta con la caducidad del dominio', async () => {
+    const bucket = mockStorage()
+
+    await expect(supabaseItemRepository.signImageUrl('c1/i1.jpg')).resolves.toBe(
+      'https://cdn/firmada',
+    )
+    expect(bucket.createSignedUrl).toHaveBeenCalledWith('c1/i1.jpg', imageUrlTtlSeconds)
+  })
+
+  it('falla si la firma no devuelve URL', async () => {
+    mockStorage({
+      createSignedUrl: jest.fn(() => Promise.resolve({ data: null, error: null })),
+    })
+
+    await expect(supabaseItemRepository.signImageUrl('c1/i1.jpg')).rejects.toThrow('sin respuesta')
   })
 })
 

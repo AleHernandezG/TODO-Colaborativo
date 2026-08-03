@@ -22,6 +22,15 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+async function waitUntil(condition, timeoutMs) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (condition()) return true
+    await wait(200)
+  }
+  return condition()
+}
+
 function newClient() {
   return createClient(url, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
@@ -272,7 +281,10 @@ async function main() {
   const presenceC = watchPresence(clientC, communityA, 'carla')
 
   await Promise.all([presenceA.joined, presenceC.joined])
-  await wait(4000)
+  await waitUntil(
+    () => presenceA.names().includes('carla') && presenceC.names().includes('ana'),
+    10000,
+  )
 
   check(
     'Cada uno ve quién más tiene la lista abierta',
@@ -281,7 +293,7 @@ async function main() {
   )
 
   presenceC.leave()
-  await wait(2500)
+  await waitUntil(() => !presenceA.names().includes('carla'), 10000)
 
   check(
     'Al cerrar la lista se deja de aparecer',

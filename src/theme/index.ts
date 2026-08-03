@@ -1,3 +1,4 @@
+import { useColorScheme } from 'react-native'
 import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper'
 
 import tokens from './tokens'
@@ -17,10 +18,15 @@ export type ThemeColors = {
   text: string
   textMuted: string
   border: string
+  borderStrong: string
   primary: string
   onPrimary: string
   danger: string
   success: string
+}
+
+export function usePalette(): ThemeColors {
+  return useColorScheme() === 'dark' ? colors.dark : colors.light
 }
 
 export const paperLightTheme = {

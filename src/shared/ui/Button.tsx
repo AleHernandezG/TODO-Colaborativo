@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, Text } from 'react-native'
 
-import { colors, minTouchTarget } from '../../theme'
+import { minTouchTarget, usePalette } from '../../theme'
 
 type ButtonProps = {
   label: string
@@ -29,6 +29,7 @@ export function Button({
   loading = false,
   accessibilityHint,
 }: ButtonProps) {
+  const palette = usePalette()
   const blocked = disabled || loading
 
   return (
@@ -45,7 +46,7 @@ export function Button({
       }`}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.light.onPrimary : undefined} />
+        <ActivityIndicator color={variant === 'primary' ? palette.onPrimary : palette.text} />
       ) : (
         <Text className={`text-lg font-semibold ${label[variant]}`}>{text}</Text>
       )}

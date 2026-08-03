@@ -1,5 +1,5 @@
 import { Redirect, useRouter } from 'expo-router'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, RefreshControl, SectionList, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -9,14 +9,17 @@ import { BuildTag } from '../../../shared/ui/BuildTag'
 import { Button } from '../../../shared/ui/Button'
 import type { Community } from '../../community/domain/community'
 import { useActiveCommunityStore } from '../../community/presentation/active-community-store'
+import { JoinCodeCard } from '../../community/presentation/JoinCodeCard'
 import { useViewers } from '../../community/presentation/use-viewers'
 import { ViewersLine } from '../../community/presentation/ViewersLine'
 import type { Item } from '../domain/item'
 import { AddItemBar } from './components/AddItemBar'
+import { EditItemDialog } from './components/EditItemDialog'
 import { ItemRow } from './components/ItemRow'
 import { RealtimeStatus } from './components/RealtimeStatus'
 import { useAddItem } from './use-add-item'
 import { useDeleteItem } from './use-delete-item'
+import { useEditItem } from './use-edit-item'
 import { useItems } from './use-items'
 import { useItemsRealtime } from './use-items-realtime'
 import { useTogglePurchased } from './use-toggle-purchased'
@@ -40,12 +43,19 @@ function ItemsView({ community, username }: { community: Community; username: st
   const { data: items, isLoading, isError, error, isFetching, refetch } = useItems(community.id)
   const addItem = useAddItem(community.id)
   const togglePurchased = useTogglePurchased(community.id)
+  const editItem = useEditItem(community.id)
   const removeItem = useDeleteItem(community.id)
+  const [itemBeingEdited, setItemBeingEdited] = useState<Item | null>(null)
+
+  const uploadingImageItemId =
+    editItem.isPending && editItem.variables?.image.kind === 'replace'
+      ? editItem.variables.itemId
+      : null
 
   const realtimeStatus = useItemsRealtime(community.id)
   const viewers = useViewers(community.id, username)
 
-  const sections = useMemo<Section[]>(() => {
+  const { sections, allDone } = useMemo(() => {
     const all = items ?? []
     const pending = all.filter((item) => !item.isPurchased)
     const purchased = all.filter((item) => item.isPurchased)
@@ -56,7 +66,7 @@ function ItemsView({ community, username }: { community: Community; username: st
     if (purchased.length > 0) {
       result.push({ title: t('items.sections.purchased'), data: purchased })
     }
-    return result
+    return { sections: result, allDone: all.length > 0 && pending.length === 0 }
   }, [items, t])
 
   const loadErrorMessage =
@@ -64,91 +74,102 @@ function ItemsView({ community, username }: { community: Community; username: st
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="flex-1 gap-4 px-6 py-6">
-        <View className="gap-1">
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ItemRow
+            item={item}
+            uploadingImage={item.id === uploadingImageItemId}
+            onToggle={() => togglePurchased.mutate(item)}
+            onEdit={() => setItemBeingEdited(item)}
+            onDelete={() => removeItem(item)}
+          />
+        )}
+        renderSectionHeader={({ section }) => (
           <Text
             accessibilityRole="header"
-            className="text-3xl font-bold text-content dark:text-content-dark"
+            className="pt-2 text-sm font-semibold uppercase text-muted dark:text-muted-dark"
           >
-            {community.name}
+            {section.title}
           </Text>
-          <Text className="text-base text-muted dark:text-muted-dark">
-            {t('list.signedInAs', { username })}
-          </Text>
-          <ViewersLine names={viewers} />
-        </View>
+        )}
+        contentContainerStyle={{ gap: 8, flexGrow: 1, paddingHorizontal: 24, paddingVertical: 24 }}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={isFetching && !isLoading} onRefresh={() => void refetch()} />
+        }
+        ListHeaderComponent={
+          <View className="gap-4 pb-2">
+            <View className="gap-1">
+              <Text
+                accessibilityRole="header"
+                className="text-3xl font-bold text-content dark:text-content-dark"
+              >
+                {community.name}
+              </Text>
+              <Text className="text-base text-muted dark:text-muted-dark">
+                {t('list.signedInAs', { username })}
+              </Text>
+              <ViewersLine names={viewers} />
+            </View>
 
-        <RealtimeStatus status={realtimeStatus} />
+            <RealtimeStatus status={realtimeStatus} />
 
-        <AddItemBar onAdd={(input) => addItem.mutate(input)} />
+            <AddItemBar onAdd={(input) => addItem.mutate(input)} />
 
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <ItemRow
-              item={item}
-              onToggle={() => togglePurchased.mutate(item)}
-              onDelete={() => removeItem(item)}
-            />
-          )}
-          renderSectionHeader={({ section }) => (
-            <Text
-              accessibilityRole="header"
-              className="pt-2 text-sm font-semibold uppercase text-muted dark:text-muted-dark"
-            >
-              {section.title}
-            </Text>
-          )}
-          contentContainerStyle={{ gap: 8, flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl
-              refreshing={isFetching && !isLoading}
-              onRefresh={() => void refetch()}
-            />
-          }
-          ListEmptyComponent={
-            isLoading ? (
-              <LoadingList />
-            ) : isError ? (
-              <ListError message={loadErrorMessage} onRetry={() => void refetch()} />
-            ) : (
-              <EmptyList />
-            )
-          }
-        />
-
-        <View className="gap-3 border-t border-line pt-4 dark:border-line-dark">
-          <View className="gap-1">
-            <Text className="text-sm text-muted dark:text-muted-dark">
-              {t('list.joinCodeLabel')}
-            </Text>
-            <Text
-              accessibilityLabel={t('list.joinCodeAccessible', {
-                code: community.joinCode.split('').join(' '),
-              })}
-              className="text-2xl font-bold tracking-widest text-content dark:text-content-dark"
-            >
-              {community.joinCode}
-            </Text>
-            <Text className="text-sm text-muted dark:text-muted-dark">
-              {t('list.joinCodeHint')}
-            </Text>
+            {allDone ? <AllDoneBanner /> : null}
           </View>
-          <Button
-            label={t('list.leave')}
-            onPress={() => {
-              leave()
-              router.replace('/')
-            }}
-            variant="secondary"
-            accessibilityHint={t('list.leaveHint')}
-          />
-          <BuildTag />
-        </View>
-      </View>
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <LoadingList />
+          ) : isError ? (
+            <ListError message={loadErrorMessage} onRetry={() => void refetch()} />
+          ) : (
+            <EmptyList />
+          )
+        }
+        ListFooterComponent={
+          <View className="mt-6 gap-3 border-t border-line pt-6 dark:border-line-dark">
+            <JoinCodeCard communityName={community.name} joinCode={community.joinCode} />
+            <Button
+              label={t('list.leave')}
+              onPress={() => {
+                leave()
+                router.replace('/')
+              }}
+              variant="secondary"
+              accessibilityHint={t('list.leaveHint')}
+            />
+            <BuildTag />
+          </View>
+        }
+      />
+
+      <EditItemDialog
+        item={itemBeingEdited}
+        onDismiss={() => setItemBeingEdited(null)}
+        onSave={(input) => editItem.mutate(input)}
+      />
     </SafeAreaView>
+  )
+}
+
+function AllDoneBanner() {
+  const { t } = useTranslation()
+  return (
+    <View
+      accessible
+      accessibilityLiveRegion="polite"
+      accessibilityLabel={t('items.allDone')}
+      className="flex-row items-center gap-2 rounded-md bg-surface px-3 py-2 dark:bg-surface-dark"
+    >
+      <Text className="text-base">🎉</Text>
+      <Text className="flex-1 text-sm font-medium text-content dark:text-content-dark">
+        {t('items.allDone')}
+      </Text>
+    </View>
   )
 }
 
@@ -158,9 +179,10 @@ function LoadingList() {
     <View
       accessible
       accessibilityLabel={t('items.loading')}
-      className="flex-1 items-center justify-center py-10"
+      className="flex-1 items-center justify-center gap-3 py-10"
     >
       <ActivityIndicator size="large" />
+      <Text className="text-base text-muted dark:text-muted-dark">{t('items.loading')}</Text>
     </View>
   )
 }
@@ -168,7 +190,14 @@ function LoadingList() {
 function EmptyList() {
   const { t } = useTranslation()
   return (
-    <View className="flex-1 items-center justify-center py-10">
+    <View accessible className="flex-1 items-center justify-center gap-2 py-10">
+      <Text className="text-5xl">🛒</Text>
+      <Text
+        accessibilityRole="header"
+        className="text-center text-lg font-semibold text-content dark:text-content-dark"
+      >
+        {t('items.emptyTitle')}
+      </Text>
       <Text className="text-center text-base text-muted dark:text-muted-dark">
         {t('items.empty')}
       </Text>

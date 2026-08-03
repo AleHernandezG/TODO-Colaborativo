@@ -66,7 +66,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
-          image_url: string | null
+          image_path: string | null
           is_purchased: boolean
           name: string
           quantity: number
@@ -77,7 +77,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          image_url?: string | null
+          image_path?: string | null
           is_purchased?: boolean
           name: string
           quantity?: number
@@ -88,7 +88,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          image_url?: string | null
+          image_path?: string | null
           is_purchased?: boolean
           name?: string
           quantity?: number

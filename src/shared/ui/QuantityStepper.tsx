@@ -31,7 +31,7 @@ export function QuantityStepper({
       />
       <Text
         accessibilityLabel={valueLabel}
-        className="min-w-8 text-center text-lg font-semibold text-content dark:text-content-dark"
+        className="min-w-10 text-center text-lg font-semibold text-content dark:text-content-dark"
       >
         {value}
       </Text>
@@ -63,7 +63,7 @@ function StepperButton({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
       style={{ minWidth: minTouchTarget, minHeight: minTouchTarget }}
-      className={`items-center justify-center rounded-md border border-line dark:border-line-dark ${
+      className={`items-center justify-center rounded-md border border-line-strong dark:border-line-strong-dark ${
         disabled ? 'opacity-40' : 'active:opacity-70'
       }`}
     >

@@ -35,7 +35,7 @@ create table items (
   community_id  uuid not null references communities(id) on delete cascade,
   name          text not null check (char_length(name) between 1 and 120),
   quantity      int not null default 1 check (quantity >= 1),
-  image_url     text,
+  image_path    text,
   is_purchased  boolean not null default false,
   created_by    uuid references members(id) on delete set null,
   created_at    timestamptz not null default now(),
@@ -222,6 +222,70 @@ Fuera `O`, `0`, `I`, `1`. Genera en el servidor, formato tipo `PAN-42XK`, y norm
 mayúsculas al comparar (la RPC ya lo hace). Rate limit en `join_community`: sin él, el
 espacio de códigos se puede barrer a fuerza bruta y ese código es el único secreto que
 protege la lista.
+
+## Storage
+
+Los buckets se crean **en una migración**, igual que las tablas, y con sus políticas en la misma
+migración. Un bucket creado desde el panel no está en el repo y nadie sabe si es público.
+
+```sql
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('item-images', 'item-images', false, 2097152, array['image/jpeg'])
+on conflict (id) do update set
+  public             = excluded.public,
+  file_size_limit    = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+```
+
+`public = false` **siempre**. Un bucket público sirve por una URL que se deriva del nombre del
+objeto, y nuestros nombres llevan ids que circulan por Realtime y por la API: haría públicas
+las fotos de cualquier comunidad. El `on conflict` hace la migración reejecutable sin romper.
+
+Los límites van aquí y no en el cliente. El cliente ya comprime, pero una app modificada no.
+
+### La primera carpeta del nombre es el `community_id`
+
+Esa es la convención que hace posible escribir políticas sobre `storage.objects` sin consultar
+las tablas de la app. Ruta: `<community_id>/<item_id>.jpg`.
+
+```sql
+create policy item_images_select on storage.objects for select to authenticated
+  using (
+    bucket_id = 'item-images'
+    and (storage.foldername(name))[1] in (
+      select c.community_id::text from public.member_community_ids() as c(community_id)
+    )
+  );
+```
+
+Cuatro políticas, una por operación. La de `update` lleva `using` **y** `with check`, por lo
+mismo que `items_update`: sin `with check` se puede mover un objeto propio a la carpeta de otra
+comunidad.
+
+Tres detalles que cuesta descubrir solo:
+
+- **`to authenticated`, no a `public`.** Con sesión anónima de Supabase el rol efectivo es
+  `authenticated`; `anon` es quien llega sin token.
+- **Se compara texto contra texto** (`community_id::text`), no se castea la carpeta a `uuid`. Un
+  objeto con una ruta que no sea un uuid haría fallar el cast con un error de tipo dentro de la
+  política; como texto, simplemente no coincide y se deniega, que es lo correcto.
+- **`member_community_ids()` devuelve `setof uuid`**, así que en un `select ... from` hay que
+  darle alias de columna (`as c(community_id)`) para poder castear.
+
+### Firmar, no publicar
+
+Con bucket privado, la app guarda la **ruta** en la columna (`image_path`, no `image_url`) y
+firma al pintar:
+
+```ts
+const { data } = await supabase.storage.from('item-images').createSignedUrl(path, ttl)
+```
+
+La caducidad es una regla de producto, así que la constante vive en `domain/`
+(`imageUrlTtlSeconds`), no en `data/`. La query que envuelve la firma refresca al 90 % del TTL
+para no pintar nunca un enlace muerto.
+
+Razonado entero en [ADR-0006](../../../docs/adr/ADR-0006-fotos-de-articulos-en-storage.md).
 
 ## Realtime
 

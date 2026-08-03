@@ -1,14 +1,8 @@
-import type { Item } from '../item'
+import { fakeItem } from '../__fixtures__/item-repository'
 import { visibleItems } from '../visible-items'
 
-function item(id: string): Item {
-  return {
-    id,
-    name: `Artículo ${id}`,
-    quantity: 1,
-    isPurchased: false,
-    createdAt: '2026-08-02T10:00:00.000Z',
-  }
+function item(id: string) {
+  return fakeItem({ id, name: `Artículo ${id}` })
 }
 
 it('devuelve la misma lista cuando no hay borrados en curso', () => {

@@ -1,5 +1,10 @@
+import type { Item } from './item'
 import type { ItemRepository } from './item-repository'
 
-export function deleteItem(repository: ItemRepository, itemId: string): Promise<void> {
-  return repository.remove(itemId)
+export async function deleteItem(repository: ItemRepository, item: Item): Promise<void> {
+  if (item.imagePath) {
+    await repository.removeImage(item.imagePath)
+  }
+
+  await repository.remove(item.id)
 }

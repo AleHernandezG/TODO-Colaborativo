@@ -1,15 +1,18 @@
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
 import type { Item } from '../domain/item'
+import { imageUrlTtlSeconds } from '../domain/item-image'
 import type { ItemRepository } from '../domain/item-repository'
 
-const columns = 'id, name, quantity, is_purchased, created_at'
+const columns = 'id, name, quantity, is_purchased, image_path, created_at'
+const imagesBucket = 'item-images'
 
 type ItemRow = {
   id: string
   name: string
   quantity: number
   is_purchased: boolean
+  image_path: string | null
   created_at: string
 }
 
@@ -19,6 +22,7 @@ function toItem(row: ItemRow): Item {
     name: row.name,
     quantity: row.quantity,
     isPurchased: row.is_purchased,
+    imagePath: row.image_path,
     createdAt: row.created_at,
   }
 }
@@ -56,6 +60,21 @@ export const supabaseItemRepository: ItemRepository = {
     return toItem(data)
   },
 
+  async edit(itemId, { name, quantity, imagePath }) {
+    await assertOnline()
+
+    const patch: { name: string; quantity: number; image_path?: string | null } = { name, quantity }
+    if (imagePath !== undefined) {
+      patch.image_path = imagePath
+    }
+
+    const { error } = await supabase.from('items').update(patch).eq('id', itemId)
+
+    if (error) {
+      throw new Error(`No se pudo editar el artículo: ${error.message}`)
+    }
+  },
+
   async setPurchased(itemId, isPurchased) {
     await assertOnline()
 
@@ -77,6 +96,47 @@ export const supabaseItemRepository: ItemRepository = {
     if (error) {
       throw new Error(`No se pudo borrar el artículo: ${error.message}`)
     }
+  },
+
+  async uploadImage({ communityId, itemId, uri }) {
+    await assertOnline()
+
+    const body = await fetch(uri).then((response) => response.arrayBuffer())
+    const path = `${communityId}/${itemId}.jpg`
+
+    const { error } = await supabase.storage
+      .from(imagesBucket)
+      .upload(path, body, { contentType: 'image/jpeg', upsert: true })
+
+    if (error) {
+      throw new Error(`No se pudo subir la foto: ${error.message}`)
+    }
+
+    return path
+  },
+
+  async removeImage(path) {
+    await assertOnline()
+
+    const { error } = await supabase.storage.from(imagesBucket).remove([path])
+
+    if (error) {
+      throw new Error(`No se pudo borrar la foto: ${error.message}`)
+    }
+  },
+
+  async signImageUrl(path) {
+    await assertOnline()
+
+    const { data, error } = await supabase.storage
+      .from(imagesBucket)
+      .createSignedUrl(path, imageUrlTtlSeconds)
+
+    if (error || !data) {
+      throw new Error(`No se pudo abrir la foto: ${error?.message ?? 'sin respuesta'}`)
+    }
+
+    return data.signedUrl
   },
 
   subscribe(communityId, { onChange, onStatus }) {

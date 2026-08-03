@@ -21,7 +21,9 @@ export function Checkbox({ checked, onToggle, accessibilityLabel }: CheckboxProp
     >
       <View
         className={`h-7 w-7 items-center justify-center rounded-md ${
-          checked ? 'bg-primary dark:bg-primary-dark' : 'border-2 border-line dark:border-line-dark'
+          checked
+            ? 'bg-primary dark:bg-primary-dark'
+            : 'border-2 border-line-strong dark:border-line-strong-dark'
         }`}
       >
         {checked ? (

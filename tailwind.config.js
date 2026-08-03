@@ -12,6 +12,7 @@ module.exports = {
         content: { DEFAULT: colors.light.text, dark: colors.dark.text },
         muted: { DEFAULT: colors.light.textMuted, dark: colors.dark.textMuted },
         line: { DEFAULT: colors.light.border, dark: colors.dark.border },
+        'line-strong': { DEFAULT: colors.light.borderStrong, dark: colors.dark.borderStrong },
         primary: { DEFAULT: colors.light.primary, dark: colors.dark.primary },
         'on-primary': { DEFAULT: colors.light.onPrimary, dark: colors.dark.onPrimary },
         danger: { DEFAULT: colors.light.danger, dark: colors.dark.danger },

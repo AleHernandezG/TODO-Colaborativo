@@ -252,7 +252,7 @@ npx expo start
 # Desde Git Bash. En PowerShell 5.1 el '>' escribe UTF-16 y rompe ESLint: ver skill supabase-data
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
-# Aislamiento entre comunidades (RLS). Debe dar 13/13
+# Aislamiento entre comunidades (RLS + Storage). Debe dar 19/19
 npm run test:rls
 
 # Realtime: eventos, filtro por comunidad, aislamiento y presencia. Debe dar 12/12

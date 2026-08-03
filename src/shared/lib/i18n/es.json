@@ -46,6 +46,13 @@
     "joinCodeLabel": "Código para invitar",
     "joinCodeAccessible": "Código para invitar: {{code}}",
     "joinCodeHint": "Pásaselo a quien quieras que comparta la lista.",
+    "copyCode": "Copiar",
+    "copyCodeHint": "Copia el código al portapapeles",
+    "codeCopied": "Código copiado",
+    "shareCode": "Compartir",
+    "shareCodeHint": "Abre el menú de compartir del móvil",
+    "shareMessage": "Entra en mi lista de la compra «{{name}}» con el código {{code}}",
+    "shareFailed": "No se pudo compartir el código.",
     "leave": "Salir de esta lista",
     "leaveHint": "Vuelve a la pantalla de inicio en este móvil",
     "realtime": {
@@ -66,6 +73,29 @@
       "submit": "Añadir",
       "submitHint": "Añade el artículo a la lista"
     },
+    "edit": {
+      "open_one": "{{name}}",
+      "open_other": "{{name}}, cantidad {{count}}",
+      "openHint": "Abre una ventana para cambiar el nombre y la cantidad",
+      "title": "Cambiar el artículo",
+      "nameLabel": "Nombre",
+      "submit": "Guardar"
+    },
+    "image": {
+      "sectionLabel": "Foto de referencia",
+      "camera": "Hacer una foto",
+      "cameraHint": "Abre la cámara para fotografiar el artículo",
+      "gallery": "Elegir de la galería",
+      "galleryHint": "Abre tus fotos para elegir una",
+      "remove": "Quitar la foto",
+      "removeHint": "El artículo se queda sin foto",
+      "empty": "Este artículo no tiene foto",
+      "preview": "Foto de {{name}}",
+      "uploading": "Subiendo la foto de {{name}}",
+      "cameraDenied": "No has dado permiso para la cámara. Puedes cambiarlo en los ajustes del móvil.",
+      "galleryDenied": "No has dado permiso para las fotos. Puedes cambiarlo en los ajustes del móvil.",
+      "pickFailed": "No se pudo abrir la foto. Inténtalo otra vez."
+    },
     "quantity": {
       "decrement": "Quitar uno",
       "increment": "Añadir uno",
@@ -79,7 +109,9 @@
     "markPending": "Marcar {{name}} como pendiente",
     "delete": "Borrar {{name}}",
     "deleted": "{{name}} borrado",
-    "empty": "La lista está vacía. Añade lo primero que necesites comprar.",
+    "emptyTitle": "Aquí no hay nada todavía",
+    "empty": "Escribe arriba lo primero que haya que comprar y pulsa «Añadir».",
+    "allDone": "Ya está todo comprado",
     "loading": "Cargando la lista…",
     "loadError": "No se pudieron cargar los artículos.",
     "errors": {
