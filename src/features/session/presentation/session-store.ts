@@ -4,16 +4,17 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
 import type { Session } from '../domain/session'
+import type { SessionErrorReason } from '../domain/session-error'
 
 type SessionStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 type SessionState = {
   status: SessionStatus
   session: Session | null
-  error: string | null
+  error: SessionErrorReason | null
   start: () => void
   succeed: (session: Session) => void
-  fail: (error: string) => void
+  fail: (error: SessionErrorReason) => void
 }
 
 export const useSessionStore = create<SessionState>()(

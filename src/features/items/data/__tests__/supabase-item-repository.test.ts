@@ -34,6 +34,20 @@ function mockInsert(data: unknown, error: unknown = null) {
   return insert
 }
 
+function mockDuplicateInsert(existing: unknown) {
+  const insert = jest.fn(() => ({
+    select: () => ({
+      single: () =>
+        Promise.resolve({ data: null, error: { code: '23505', message: 'duplicate key value' } }),
+    }),
+  }))
+  const select = jest.fn(() => ({
+    eq: () => ({ single: () => Promise.resolve({ data: existing, error: null }) }),
+  }))
+  from.mockReturnValue({ insert, select })
+  return { insert, select }
+}
+
 function mockUpdate(error: unknown = null) {
   const eq = jest.fn(() => Promise.resolve({ error }))
   const update = jest.fn(() => ({ eq }))
@@ -74,7 +88,7 @@ describe('sin conexión', () => {
   it('no lee, no añade, no edita, no marca ni borra', async () => {
     await expect(supabaseItemRepository.list('c1')).rejects.toBeInstanceOf(OfflineError)
     await expect(
-      supabaseItemRepository.add({ communityId: 'c1', name: 'Leche', quantity: 1 }),
+      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Leche', quantity: 1 }),
     ).rejects.toBeInstanceOf(OfflineError)
     await expect(
       supabaseItemRepository.edit('i1', { name: 'Leche', quantity: 1 }),
@@ -150,7 +164,7 @@ describe('add', () => {
     })
 
     await expect(
-      supabaseItemRepository.add({ communityId: 'c1', name: 'Huevos', quantity: 12 }),
+      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Huevos', quantity: 12 }),
     ).resolves.toEqual({
       id: 'i1',
       name: 'Huevos',
@@ -159,15 +173,50 @@ describe('add', () => {
       imagePath: null,
       createdAt: '2026-07-20T10:05:00.000Z',
     })
-    expect(insert).toHaveBeenCalledWith({ community_id: 'c1', name: 'Huevos', quantity: 12 })
+    expect(insert).toHaveBeenCalledWith({
+      id: 'i1',
+      community_id: 'c1',
+      name: 'Huevos',
+      quantity: 12,
+    })
   })
 
   it('falla con un mensaje que dice qué pasó', async () => {
     mockInsert(null, { message: 'fila viola la política' })
 
     await expect(
-      supabaseItemRepository.add({ communityId: 'c1', name: 'Pan', quantity: 1 }),
+      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Pan', quantity: 1 }),
     ).rejects.toThrow('fila viola la política')
+  })
+
+  it('un alta repetida con el mismo id devuelve el artículo que ya estaba', async () => {
+    mockDuplicateInsert({
+      id: 'i1',
+      name: 'Pan',
+      quantity: 2,
+      is_purchased: true,
+      image_path: null,
+      created_at: '2026-08-05T09:00:00.000Z',
+    })
+
+    await expect(
+      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Pan', quantity: 2 }),
+    ).resolves.toEqual({
+      id: 'i1',
+      name: 'Pan',
+      quantity: 2,
+      isPurchased: true,
+      imagePath: null,
+      createdAt: '2026-08-05T09:00:00.000Z',
+    })
+  })
+
+  it('si el alta repetida ya no está en la lista, falla en vez de inventarse el artículo', async () => {
+    mockDuplicateInsert(null)
+
+    await expect(
+      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Pan', quantity: 2 }),
+    ).rejects.toThrow('ya se había añadido')
   })
 })
 

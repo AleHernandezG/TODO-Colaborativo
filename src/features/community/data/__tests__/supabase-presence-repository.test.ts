@@ -155,10 +155,7 @@ it('vacía la lista cuando el canal se cae', () => {
 it('la función que devuelve se da de baja antes de cerrar el canal', () => {
   const { built } = mockChannel({})
 
-  const stop = supabasePresenceRepository.watch(
-    { communityId: 'c1', username: 'ana' },
-    jest.fn(),
-  )
+  const stop = supabasePresenceRepository.watch({ communityId: 'c1', username: 'ana' }, jest.fn())
 
   expect(removeChannel).not.toHaveBeenCalled()
   stop()
@@ -173,10 +170,7 @@ it('no espera a la baja para cerrar el canal', () => {
   const { built } = mockChannel({})
   built.untrack.mockReturnValue(new Promise(() => {}))
 
-  const stop = supabasePresenceRepository.watch(
-    { communityId: 'c1', username: 'ana' },
-    jest.fn(),
-  )
+  const stop = supabasePresenceRepository.watch({ communityId: 'c1', username: 'ana' }, jest.fn())
 
   stop()
   expect(removeChannel).toHaveBeenCalledWith(built)

@@ -49,6 +49,10 @@ export function JoinCommunityScreen() {
             showSnackbar(t('community.errors.tooManyAttempts'))
             return
           }
+          if (result.status === 'expired_join_code') {
+            setJoinCodeError(t('community.errors.expiredJoinCode'))
+            return
+          }
           setJoinCodeError(t('community.errors.invalidJoinCode'))
         },
         onError: (cause) =>

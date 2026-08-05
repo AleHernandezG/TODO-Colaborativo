@@ -6,6 +6,7 @@ import type { ItemRepository } from '../domain/item-repository'
 
 const columns = 'id, name, quantity, is_purchased, image_path, created_at'
 const imagesBucket = 'item-images'
+const duplicateKey = '23505'
 
 type ItemRow = {
   id: string
@@ -44,14 +45,23 @@ export const supabaseItemRepository: ItemRepository = {
     return (data ?? []).map(toItem)
   },
 
-  async add({ communityId, name, quantity }) {
+  async add({ id, communityId, name, quantity }) {
     await assertOnline()
 
     const { data, error } = await supabase
       .from('items')
-      .insert({ community_id: communityId, name, quantity })
+      .insert({ id, community_id: communityId, name, quantity })
       .select(columns)
       .single()
+
+    if (error?.code === duplicateKey) {
+      const { data: existing } = await supabase.from('items').select(columns).eq('id', id).single()
+
+      if (existing) {
+        return toItem(existing)
+      }
+      throw new Error(`El artículo ${id} ya se había añadido y ya no está en la lista`)
+    }
 
     if (error) {
       throw new Error(`No se pudo añadir el artículo: ${error.message}`)

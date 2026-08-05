@@ -12,7 +12,11 @@
   },
   "session": {
     "starting": "Preparando la app",
-    "errorTitle": "No se pudo empezar"
+    "errorTitle": "No se pudo empezar",
+    "errors": {
+      "unknown": "No se pudo preparar la app. Vuelve a intentarlo en un momento.",
+      "anonymousDisabled": "Las sesiones anónimas están desactivadas en Supabase. Actívalas en Authentication > Sign In / Providers > User Signups."
+    }
   },
   "community": {
     "usernameLabel": "Tu nombre",
@@ -37,6 +41,7 @@
       "invalidName": "Ponle un nombre de al menos dos letras.",
       "invalidUsername": "Tu nombre necesita al menos dos letras.",
       "invalidJoinCode": "Ese código no existe. Revísalo y vuelve a intentarlo.",
+      "expiredJoinCode": "Ese código ha caducado. Pide uno nuevo a quien te lo pasó.",
       "usernameTaken": "Ese nombre ya está cogido en esta lista. Prueba con otro.",
       "tooManyAttempts": "Demasiados intentos seguidos. Espera un rato y vuelve a probar."
     }
@@ -46,6 +51,21 @@
     "joinCodeLabel": "Código para invitar",
     "joinCodeAccessible": "Código para invitar: {{code}}",
     "joinCodeHint": "Pásaselo a quien quieras que comparta la lista.",
+    "joinCodeExpires_one": "Caduca dentro de {{count}} día.",
+    "joinCodeExpires_other": "Caduca dentro de {{count}} días.",
+    "joinCodeExpiresToday": "Caduca hoy.",
+    "joinCodeExpired": "Caducado. Genera uno nuevo para poder invitar.",
+    "joinCodeLoading": "Cargando el código…",
+    "joinCodeUnavailable": "No se pudo cargar el código. Tira hacia abajo para reintentar.",
+    "rotate": {
+      "action": "Generar código nuevo",
+      "actionHint": "Cambia el código de invitación de esta lista",
+      "title": "¿Generar un código nuevo?",
+      "body": "El código de ahora deja de valer al instante. Quien ya está en la lista sigue dentro; quien tenga el viejo y no haya entrado, tendrá que pedirte el nuevo.",
+      "confirm": "Generar",
+      "done": "Código nuevo generado",
+      "failed": "No se pudo generar un código nuevo. Inténtalo otra vez."
+    },
     "copyCode": "Copiar",
     "copyCodeHint": "Copia el código al portapapeles",
     "codeCopied": "Código copiado",

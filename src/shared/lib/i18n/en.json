@@ -1,0 +1,163 @@
+{
+  "landing": {
+    "title": "One shopping list, shared",
+    "subtitle": "A single list for the whole house. It updates on everyone's phone at once.",
+    "createCommunity": "Create a list",
+    "joinCommunity": "I have a code"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "undo": "Undo",
+    "retry": "Try again"
+  },
+  "session": {
+    "starting": "Getting the app ready",
+    "errorTitle": "Couldn't get started",
+    "errors": {
+      "unknown": "Couldn't get the app ready. Try again in a moment.",
+      "anonymousDisabled": "Anonymous sign-ins are disabled in Supabase. Turn them on in Authentication > Sign In / Providers > User Signups."
+    }
+  },
+  "community": {
+    "usernameLabel": "Your name",
+    "usernamePlaceholder": "How the others see you",
+    "create": {
+      "title": "Create a list",
+      "subtitle": "We'll give you a code so you can share it with whoever you want.",
+      "nameLabel": "List name",
+      "namePlaceholder": "House shopping",
+      "submit": "Create the list",
+      "submitHint": "Creates the list and takes you to it"
+    },
+    "join": {
+      "title": "Join with a code",
+      "subtitle": "Ask whoever created the list for the code.",
+      "codeLabel": "List code",
+      "codePlaceholder": "PAN-42XK",
+      "submit": "Join the list",
+      "submitHint": "Adds you to the list and takes you to it"
+    },
+    "errors": {
+      "invalidName": "Give it a name of at least two letters.",
+      "invalidUsername": "Your name needs at least two letters.",
+      "invalidJoinCode": "That code doesn't exist. Check it and try again.",
+      "expiredJoinCode": "That code has expired. Ask whoever sent it for a new one.",
+      "usernameTaken": "That name is already taken in this list. Try another one.",
+      "tooManyAttempts": "Too many tries in a row. Wait a while and try again."
+    }
+  },
+  "list": {
+    "signedInAs": "You're in as {{username}}",
+    "joinCodeLabel": "Code to invite people",
+    "joinCodeAccessible": "Code to invite people: {{code}}",
+    "joinCodeHint": "Pass it on to anyone you want sharing the list.",
+    "joinCodeExpires_one": "Expires in {{count}} day.",
+    "joinCodeExpires_other": "Expires in {{count}} days.",
+    "joinCodeExpiresToday": "Expires today.",
+    "joinCodeExpired": "Expired. Generate a new one to invite people.",
+    "joinCodeLoading": "Loading the code…",
+    "joinCodeUnavailable": "Couldn't load the code. Pull down to try again.",
+    "rotate": {
+      "action": "Generate a new code",
+      "actionHint": "Changes this list's invite code",
+      "title": "Generate a new code?",
+      "body": "The current code stops working right away. Anyone already in the list stays in; anyone holding the old code who hasn't joined yet will have to ask you for the new one.",
+      "confirm": "Generate",
+      "done": "New code generated",
+      "failed": "Couldn't generate a new code. Try again."
+    },
+    "copyCode": "Copy",
+    "copyCodeHint": "Copies the code to the clipboard",
+    "codeCopied": "Code copied",
+    "shareCode": "Share",
+    "shareCodeHint": "Opens your phone's share menu",
+    "shareMessage": "Join my shopping list \"{{name}}\" with the code {{code}}",
+    "shareFailed": "Couldn't share the code.",
+    "leave": "Leave this list",
+    "leaveHint": "Goes back to the home screen on this phone",
+    "realtime": {
+      "connecting": "Connecting to see changes as they happen…",
+      "disconnected": "Other people's changes aren't coming through on their own. Pull down to refresh."
+    },
+    "offline": {
+      "viewingCached": "No connection. You're seeing the last saved list.",
+      "pending_one": "No connection. One change will be saved once it's back.",
+      "pending_other": "No connection. {{count}} changes will be saved once it's back.",
+      "noList": "No connection, and no list has been saved on this phone yet."
+    },
+    "viewers": {
+      "viewing_one": "{{names}} is viewing the list",
+      "viewing_other": "{{names}} are viewing the list",
+      "andMore_one": "{{names}} and one more person are viewing the list",
+      "andMore_other": "{{names}} and {{count}} more people are viewing the list"
+    }
+  },
+  "items": {
+    "add": {
+      "label": "Add to the list",
+      "placeholder": "Milk, bread, eggs…",
+      "submit": "Add",
+      "submitHint": "Adds the item to the list"
+    },
+    "edit": {
+      "open_one": "{{name}}",
+      "open_other": "{{name}}, quantity {{count}}",
+      "openHint": "Opens a window to change the name and the quantity",
+      "title": "Edit the item",
+      "nameLabel": "Name",
+      "submit": "Save"
+    },
+    "image": {
+      "sectionLabel": "Reference photo",
+      "camera": "Take a photo",
+      "cameraHint": "Opens the camera to photograph the item",
+      "gallery": "From the gallery",
+      "galleryHint": "Opens your photos so you can pick one",
+      "remove": "Remove the photo",
+      "removeHint": "The item is left without a photo",
+      "empty": "This item has no photo",
+      "preview": "Photo of {{name}}",
+      "uploading": "Uploading the photo of {{name}}",
+      "cameraDenied": "You haven't given camera permission. You can change it in your phone's settings.",
+      "galleryDenied": "You haven't given photo permission. You can change it in your phone's settings.",
+      "pickFailed": "Couldn't open the photo. Try again."
+    },
+    "quantity": {
+      "decrement": "Remove one",
+      "increment": "Add one",
+      "value": "Quantity: {{count}}"
+    },
+    "sections": {
+      "pending": "To buy",
+      "purchased": "Bought"
+    },
+    "markPurchased": "Mark {{name}} as bought",
+    "markPending": "Mark {{name}} as still to buy",
+    "delete": "Delete {{name}}",
+    "deleted": "{{name}} deleted",
+    "emptyTitle": "Nothing here yet",
+    "empty": "Type the first thing you need to buy up top and hit \"Add\".",
+    "allDone": "Everything's bought",
+    "loading": "Loading the list…",
+    "loadError": "Couldn't load the items.",
+    "errors": {
+      "addFailed": "Couldn't add the item. Try again.",
+      "updateFailed": "Couldn't update it. Try again.",
+      "deleteFailed": "Couldn't delete it. Try again.",
+      "queuedFailed": "A pending change couldn't be saved. Check the list."
+    }
+  },
+  "errors": {
+    "offline": "You have no connection. Get online and try again.",
+    "network": "Couldn't reach the server. Check your connection and try again.",
+    "syncFailed": "Couldn't save it. We'll try again once the connection is back.",
+    "invalidJoinCode": "That code doesn't exist. Check it and try again.",
+    "usernameTaken": "That name is already taken in this list. Try another one."
+  },
+  "build": {
+    "embedded": "v{{version}} · base",
+    "withUpdate": "v{{version}} · {{updateId}}",
+    "accessibleEmbedded": "Version {{version}}, no updates",
+    "accessibleWithUpdate": "Version {{version}}, update {{updateId}}"
+  }
+}

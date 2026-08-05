@@ -1,4 +1,4 @@
-import { isValidJoinCode, normalizeJoinCode } from '../join-code'
+import { isValidJoinCode, joinCodeExpiry, normalizeJoinCode } from '../join-code'
 
 describe('normalizeJoinCode', () => {
   it('pone el guion donde toca', () => {
@@ -37,5 +37,33 @@ describe('isValidJoinCode', () => {
 
   it('rechaza el código sin guion', () => {
     expect(isValidJoinCode('PAN42XK')).toBe(false)
+  })
+})
+
+describe('joinCodeExpiry', () => {
+  const now = new Date('2026-08-05T10:00:00Z')
+
+  it('cuenta los días completos que quedan', () => {
+    expect(joinCodeExpiry('2026-08-12T10:00:00Z', now)).toEqual({ status: 'valid', daysLeft: 7 })
+  })
+
+  it('redondea hacia abajo: día y medio son un día', () => {
+    expect(joinCodeExpiry('2026-08-06T22:00:00Z', now)).toEqual({ status: 'valid', daysLeft: 1 })
+  })
+
+  it('da cero días cuando caduca hoy mismo', () => {
+    expect(joinCodeExpiry('2026-08-05T23:00:00Z', now)).toEqual({ status: 'valid', daysLeft: 0 })
+  })
+
+  it('caduca justo al llegar la hora', () => {
+    expect(joinCodeExpiry('2026-08-05T10:00:00Z', now)).toEqual({ status: 'expired' })
+  })
+
+  it('trata como caducado lo que ya pasó', () => {
+    expect(joinCodeExpiry('2026-08-04T10:00:00Z', now)).toEqual({ status: 'expired' })
+  })
+
+  it('no se cree una fecha que no lo es', () => {
+    expect(joinCodeExpiry('mañana', now)).toEqual({ status: 'expired' })
   })
 })

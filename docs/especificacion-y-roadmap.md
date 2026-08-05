@@ -38,12 +38,12 @@ Una app móvil donde varias personas (una familia, un piso compartido, un equipo
 
 ### 1.2 Propuesta de valor
 
-| Problema | Solución de la app |
-|---|---|
-| Las listas de la compra se dispersan en chats, notas y papeles | Una única lista viva por comunidad |
-| Duplicados: dos personas compran lo mismo | Estado compartido y sincronizado al instante |
-| Compartir listas exige cuentas, correos, apps pesadas | Entrar con un código + un nombre, sin fricción |
-| Apps existentes con UX confusa para gente no técnica | Diseño con máxima *affordance* y accesibilidad |
+| Problema                                                       | Solución de la app                             |
+| -------------------------------------------------------------- | ---------------------------------------------- |
+| Las listas de la compra se dispersan en chats, notas y papeles | Una única lista viva por comunidad             |
+| Duplicados: dos personas compran lo mismo                      | Estado compartido y sincronizado al instante   |
+| Compartir listas exige cuentas, correos, apps pesadas          | Entrar con un código + un nombre, sin fricción |
+| Apps existentes con UX confusa para gente no técnica           | Diseño con máxima _affordance_ y accesibilidad |
 
 ### 1.3 Alcance del MVP (beta)
 
@@ -55,20 +55,20 @@ Una app móvil donde varias personas (una familia, un piso compartido, un equipo
 
 ## 2. Glosario y decisiones clave
 
-| Término | Definición en esta app |
-|---|---|
-| **Comunidad (Community)** | Grupo de usuarios que comparten UNA lista. Identificada por un `join_code`. |
-| **Miembro (Member)** | Usuario dentro de una comunidad, identificado por `username` único dentro de esa comunidad. |
-| **Artículo (Item)** | Elemento de la lista: `name`, `quantity`, `image_url?`, estado (pendiente/comprado). |
-| **Código de unión (`join_code`)** | Cadena corta legible (p. ej. `PAN-42XK`) para entrar/registrarse en la comunidad. |
-| **Sesión ligera** | Par `join_code` + `username` persistido localmente. Sustituye al login clásico en beta. |
+| Término                           | Definición en esta app                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Comunidad (Community)**         | Grupo de usuarios que comparten UNA lista. Identificada por un `join_code`.                 |
+| **Miembro (Member)**              | Usuario dentro de una comunidad, identificado por `username` único dentro de esa comunidad. |
+| **Artículo (Item)**               | Elemento de la lista: `name`, `quantity`, `image_url?`, estado (pendiente/comprado).        |
+| **Código de unión (`join_code`)** | Cadena corta legible (p. ej. `PAN-42XK`) para entrar/registrarse en la comunidad.           |
+| **Sesión ligera**                 | Par `join_code` + `username` persistido localmente. Sustituye al login clásico en beta.     |
 
 **Decisiones tomadas (y su justificación, ampliadas más abajo):**
 
 - **Multiplataforma con Expo (React Native)** → un solo código para iOS + Android + web.
 - **Backend gestionado (BaaS)** → evitamos montar servidor propio; sincronización y persistencia listas de fábrica.
 - **Recomendación primaria: Supabase**; **alternativa: Firebase** (ver §6.4 para el criterio de decisión).
-- **Estado desacoplado:** *server state* (TanStack Query) separado de *client state* (Zustand).
+- **Estado desacoplado:** _server state_ (TanStack Query) separado de _client state_ (Zustand).
 - **Arquitectura por features + capas** (dominio / datos / presentación) para permitir cambios futuros sin reescribir.
 
 ---
@@ -92,7 +92,7 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 ### RF-3 · CRUD de artículos (altas, bajas, modificaciones) por cualquier usuario
 
 - **Qué:** cualquier miembro puede Crear, Leer, Actualizar y Borrar artículos.
-- **Cómo:** capa *repository* con `createItem`, `getItems`, `updateItem`, `deleteItem`. Mutaciones con **actualización optimista** (la UI cambia al instante y confirma/revierte según el servidor).
+- **Cómo:** capa _repository_ con `createItem`, `getItems`, `updateItem`, `deleteItem`. Mutaciones con **actualización optimista** (la UI cambia al instante y confirma/revierte según el servidor).
 - **Aceptación:** las 4 operaciones funcionan, se sincronizan y son reversibles ante error de red (rollback + aviso no intrusivo).
 
 ### RF-4 · Campos del artículo: nombre, cantidad, imagen de referencia (opcional)
@@ -119,7 +119,7 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 ### RF-6 · UI bonita, accesible, con patrones desacoplados
 
 - **Qué:** interfaz estética, mantenible y usable por personas noveles.
-- **Cómo:** sistema de diseño con *design tokens*, componentes reutilizables desacoplados de la lógica, jerarquía visual clara, *affordance* explícita (botones que parecen botones), y cumplimiento de accesibilidad (ver §10).
+- **Cómo:** sistema de diseño con _design tokens_, componentes reutilizables desacoplados de la lógica, jerarquía visual clara, _affordance_ explícita (botones que parecen botones), y cumplimiento de accesibilidad (ver §10).
 - **Aceptación:** un usuario que nunca ha visto la app completa las 3 tareas núcleo (unirse, añadir artículo, marcar comprado) sin ayuda.
 
 ### RF-7 · Coordinación y sincronización global (usuarios en redes/países distintos)
@@ -130,9 +130,10 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 
 ---
 
-> **RF-8 y RF-9 están fuera del MVP.** Salieron después de escribir esta especificación, de
-> `docs/funcionalidades.txt`. Se registran aquí para que no vivan solo en un `.txt` suelto, pero
-> el alcance de la beta sigue siendo RF-1…RF-7.
+> **RF-8, RF-9 y RF-10 están fuera del MVP.** Los dos primeros salieron después de escribir esta
+> especificación, de `docs/funcionalidades.txt`; RF-10 lo pidió el usuario el 2026-08-05, ya con la
+> beta cerrada. Se registran aquí para que no vivan solo en un `.txt` suelto ni en el chat, pero el
+> alcance de la beta sigue siendo RF-1…RF-7.
 
 ### RF-8 · Exportar la lista a PDF (post-MVP)
 
@@ -161,20 +162,40 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
   suplantables no es aceptable, así que esto llega **después** del refuerzo de auth. Decidido y
   razonado en [ADR-0005](adr/ADR-0005-reparto-de-gastos.md).
 
+### RF-10 · Catálogo de productos de supermercado (post-MVP)
+
+- **Qué:** al añadir o editar un artículo, poder buscarlo por nombre dentro de un supermercado y
+  quedarse con su foto sin tener que hacerla. De paso, el catálogo trae el **precio de
+  referencia**, que en RF-9 llega prerrellenado y **lo confirma el usuario**, nunca la app.
+- **Cómo:** una tabla propia (`catalog_products`) que alimenta un script de `scripts/` fuera de la
+  app; el móvil solo lee esa tabla y nunca habla con el supermercado. Las imágenes se referencian
+  por URL, no se copian. La búsqueda es una RPC con `pg_trgm` que devuelve candidatos y una función
+  pura de `domain/` que los ordena. Precio en enteros de céntimos con moneda y fecha de
+  comprobación explícitas.
+- **Aceptación:** escribir tres letras y elegir supermercado devuelve resultados con foto en menos
+  de un segundo; elegir uno rellena la imagen del artículo sin abrir la cámara; **con el catálogo
+  vacío o sin red la app se comporta exactamente como hoy**, porque este camino es un atajo y la
+  foto propia sigue siendo el principal. El precio nunca se convierte en gasto sin que una persona
+  lo confirme, y siempre se enseña con su antigüedad.
+- **Depende de:** nada del refuerzo de auth. Es independiente de RF-9 y puede entrar antes. Lo que
+  sí tiene abierto es de dónde salen los datos, que es una decisión con implicaciones legales.
+  Diseño, esquema y alternativas en
+  [ADR-0012](adr/ADR-0012-catalogo-de-productos-de-supermercado.md).
+
 ---
 
 ## 4. Requisitos no funcionales
 
-| Categoría | Requisito |
-|---|---|
-| **Rendimiento** | Arranque en frío < 3 s; render de lista de 200 artículos fluido (listas virtualizadas). |
-| **Sincronización** | Latencia de propagación P95 < 2 s con conexión normal. |
-| **Offline** | La app abre y muestra la última lista cacheada sin red; cambios se encolan. |
-| **Accesibilidad** | WCAG 2.2 AA: contraste, targets táctiles ≥ 44×44 pt, compatibilidad con lector de pantalla. |
-| **Internacionalización** | Textos externalizados (i18n) desde el inicio; ES por defecto, preparado para EN. |
-| **Mantenibilidad** | Capas desacopladas, cobertura de tests en dominio y repositorios ≥ 70%. |
-| **Seguridad (beta)** | Reglas de acceso a nivel de fila por comunidad; secretos fuera del repo. |
-| **Observabilidad** | Registro de errores (Sentry o similar) y logs de sincronización. |
+| Categoría                | Requisito                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| **Rendimiento**          | Arranque en frío < 3 s; render de lista de 200 artículos fluido (listas virtualizadas).     |
+| **Sincronización**       | Latencia de propagación P95 < 2 s con conexión normal.                                      |
+| **Offline**              | La app abre y muestra la última lista cacheada sin red; cambios se encolan.                 |
+| **Accesibilidad**        | WCAG 2.2 AA: contraste, targets táctiles ≥ 44×44 pt, compatibilidad con lector de pantalla. |
+| **Internacionalización** | Textos externalizados (i18n) desde el inicio; ES por defecto, preparado para EN.            |
+| **Mantenibilidad**       | Capas desacopladas, cobertura de tests en dominio y repositorios ≥ 70%.                     |
+| **Seguridad (beta)**     | Reglas de acceso a nivel de fila por comunidad; secretos fuera del repo.                    |
+| **Observabilidad**       | Registro de errores (Sentry o similar) y logs de sincronización.                            |
 
 ---
 
@@ -184,7 +205,7 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 
 Separar **qué hace la app** (dominio) de **cómo obtiene los datos** (infraestructura) y de **cómo se muestra** (presentación). Así, si mañana cambias de Supabase a Firebase, o de una pantalla a otra, tocas una sola capa.
 
-### 5.2 Estilo: *Feature-first* + *Clean Architecture* ligera
+### 5.2 Estilo: _Feature-first_ + _Clean Architecture_ ligera
 
 ```
 src/
@@ -222,8 +243,8 @@ src/
 - **Repository + Puerto/Adaptador (Ports & Adapters / Hexagonal):** el dominio define una **interfaz** de repositorio; la capa de datos la implementa para Supabase. Cambiar de proveedor = crear otro adaptador.
 - **Casos de uso (Use Cases):** cada acción de negocio es una función pura testeable (`joinCommunity(code, username)`), sin saber de React ni de red.
 - **Inversión de dependencias:** la UI depende de abstracciones (hooks/casos de uso), no de Supabase directamente.
-- **Separación server/client state:** *server state* con **TanStack Query** (caché, refetch, mutaciones, optimistic updates); *client state* (tema, sesión local, UI) con **Zustand**. **Regla de oro: nunca duplicar el estado del servidor dentro de Zustand.**
-- **Componentes presentacionales vs. contenedores:** los componentes de `shared/ui` no conocen la lógica; reciben props. Los *hooks* de feature orquestan datos.
+- **Separación server/client state:** _server state_ con **TanStack Query** (caché, refetch, mutaciones, optimistic updates); _client state_ (tema, sesión local, UI) con **Zustand**. **Regla de oro: nunca duplicar el estado del servidor dentro de Zustand.**
+- **Componentes presentacionales vs. contenedores:** los componentes de `shared/ui` no conocen la lógica; reciben props. Los _hooks_ de feature orquestan datos.
 
 ### 5.4 Diagrama de flujo (alto nivel)
 
@@ -250,27 +271,27 @@ src/
 
 ### 6.1 Frontend / Móvil
 
-| Capa | Elección | Por qué | Versión de referencia (2026) |
-|---|---|---|---|
-| Framework | **Expo (React Native)** | Un código para iOS/Android/web; tooling, build y OTA incluidos; framework recomendado oficialmente para producción | **Expo SDK 57** (RN 0.86, React 19.2). SDK 56 si prefieres madurez extra |
-| Navegación | **Expo Router** | Rutas basadas en ficheros, deep links (útil para el código de invitación) | Incluido en el SDK |
-| Lenguaje | **TypeScript** | Tipado end-to-end; con Supabase puedes generar tipos del esquema | 5.x |
-| Estado servidor | **TanStack Query** | Caché, refetch, mutaciones y *optimistic updates* con poco boilerplate; soporte offline | 5.x |
-| Estado cliente | **Zustand** | 1.2 KB, sin boilerplate, ideal para sesión/tema/UI | 5.x |
-| Persistencia local | **react-native-mmkv** | Almacenamiento clave-valor ~30× más rápido que AsyncStorage | Actual |
-| Red / conectividad | **@react-native-community/netinfo** | Detectar online/offline para encolar y refrescar | Actual |
-| Animaciones | **Reanimated** | Transiciones fluidas, micro-interacciones | 4.x |
-| Imágenes | **expo-image**, **expo-image-picker**, **expo-image-manipulator** | Render eficiente + captura/selección + compresión antes de subir | Incluidas en el SDK |
-| Almacenamiento seguro | **expo-secure-store** | Guardar la sesión ligera (código + usuario) cifrada | Incluido en el SDK |
+| Capa                  | Elección                                                          | Por qué                                                                                                            | Versión de referencia (2026)                                             |
+| --------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Framework             | **Expo (React Native)**                                           | Un código para iOS/Android/web; tooling, build y OTA incluidos; framework recomendado oficialmente para producción | **Expo SDK 57** (RN 0.86, React 19.2). SDK 56 si prefieres madurez extra |
+| Navegación            | **Expo Router**                                                   | Rutas basadas en ficheros, deep links (útil para el código de invitación)                                          | Incluido en el SDK                                                       |
+| Lenguaje              | **TypeScript**                                                    | Tipado end-to-end; con Supabase puedes generar tipos del esquema                                                   | 5.x                                                                      |
+| Estado servidor       | **TanStack Query**                                                | Caché, refetch, mutaciones y _optimistic updates_ con poco boilerplate; soporte offline                            | 5.x                                                                      |
+| Estado cliente        | **Zustand**                                                       | 1.2 KB, sin boilerplate, ideal para sesión/tema/UI                                                                 | 5.x                                                                      |
+| Persistencia local    | **react-native-mmkv**                                             | Almacenamiento clave-valor ~30× más rápido que AsyncStorage                                                        | Actual                                                                   |
+| Red / conectividad    | **@react-native-community/netinfo**                               | Detectar online/offline para encolar y refrescar                                                                   | Actual                                                                   |
+| Animaciones           | **Reanimated**                                                    | Transiciones fluidas, micro-interacciones                                                                          | 4.x                                                                      |
+| Imágenes              | **expo-image**, **expo-image-picker**, **expo-image-manipulator** | Render eficiente + captura/selección + compresión antes de subir                                                   | Incluidas en el SDK                                                      |
+| Almacenamiento seguro | **expo-secure-store**                                             | Guardar la sesión ligera (código + usuario) cifrada                                                                | Incluido en el SDK                                                       |
 
 ### 6.2 UI / Sistema de diseño (elige UNA vía)
 
-| Opción | Cuándo usarla | Notas |
-|---|---|---|
-| **NativeWind** (Tailwind para RN) | Quieres velocidad y consistencia con *utility classes* | Muy productivo; tokens vía config de Tailwind |
-| **Tamagui** | Quieres tematización avanzada y rendimiento optimizado | Curva de entrada mayor, muy potente |
-| **Expo UI** (primitivas nativas SwiftUI/Jetpack Compose) | Quieres look 100% nativo | Novedad de SDK 56+; menos componentes “de fábrica” |
-| **gluestack-ui / React Native Paper** | Quieres componentes accesibles listos | Buenos por accesibilidad incluida |
+| Opción                                                   | Cuándo usarla                                          | Notas                                              |
+| -------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------- |
+| **NativeWind** (Tailwind para RN)                        | Quieres velocidad y consistencia con _utility classes_ | Muy productivo; tokens vía config de Tailwind      |
+| **Tamagui**                                              | Quieres tematización avanzada y rendimiento optimizado | Curva de entrada mayor, muy potente                |
+| **Expo UI** (primitivas nativas SwiftUI/Jetpack Compose) | Quieres look 100% nativo                               | Novedad de SDK 56+; menos componentes “de fábrica” |
+| **gluestack-ui / React Native Paper**                    | Quieres componentes accesibles listos                  | Buenos por accesibilidad incluida                  |
 
 > **Recomendación para novatos + estética + accesibilidad:** **NativeWind** para el estilado + una librería accesible (gluestack-ui o Paper) para componentes complejos (modales, snackbars). Encapsula todo en `shared/ui` para poder cambiar de librería sin tocar features.
 
@@ -282,30 +303,30 @@ src/
 - **Supabase Realtime (v2):** empuja `INSERT/UPDATE/DELETE` a los clientes suscritos vía replicación lógica de Postgres → sincronización global.
 - **Storage:** para las imágenes de referencia.
 - **Tipos TypeScript autogenerados** del esquema (`supabase gen types typescript`).
-- **Precios predecibles**, *free tier* generoso y **open source** (sin *lock-in*).
+- **Precios predecibles**, _free tier_ generoso y **open source** (sin _lock-in_).
 
 **Alternativa: Firebase (Firestore).** Elígela si el **offline-first** es tu prioridad número uno (Firestore tiene persistencia offline y resolución de conflictos más maduras) o si quieres **Firebase Cloud Messaging** para push integrado desde el día 1.
 
 #### 6.4 Criterio de decisión Supabase vs Firebase
 
-| Prioriza... | Elige |
-|---|---|
-| Datos relacionales, SQL, RLS, tipos, sin *lock-in*, coste predecible | **Supabase** |
+| Prioriza...                                                            | Elige        |
+| ---------------------------------------------------------------------- | ------------ |
+| Datos relacionales, SQL, RLS, tipos, sin _lock-in_, coste predecible   | **Supabase** |
 | Offline-first agresivo (uso intensivo sin red) y push nativo integrado | **Firebase** |
-| Empezar en 5 minutos con modelo documental JSON | Firebase |
-| Portabilidad / self-hosting futuro | Supabase |
+| Empezar en 5 minutos con modelo documental JSON                        | Firebase     |
+| Portabilidad / self-hosting futuro                                     | Supabase     |
 
 > Para una lista de la compra, la conectividad suele existir (en casa o en la tienda con datos móviles), así que **Supabase + caché offline (TanStack Query persistido + MMKV)** cubre el caso sin complejidad extra. Si detectas que el offline avanzado es crítico, considera **PowerSync** o **Legend-State** sobre Supabase para sincronización local-first.
 
 ### 6.5 Servicios de apoyo
 
-| Necesidad | Herramienta |
-|---|---|
-| Notificaciones push (fase posterior) | **Expo Notifications** (+ FCM/APNs) o **OneSignal** |
-| Errores/observabilidad | **Sentry** |
-| CI/CD y builds | **EAS Build / EAS Update** (OTA) |
-| Tests | **Jest** + **React Native Testing Library**; E2E con **Maestro** |
-| Linter/formato | **ESLint** + **Prettier** + **TypeScript strict** |
+| Necesidad                            | Herramienta                                                      |
+| ------------------------------------ | ---------------------------------------------------------------- |
+| Notificaciones push (fase posterior) | **Expo Notifications** (+ FCM/APNs) o **OneSignal**              |
+| Errores/observabilidad               | **Sentry**                                                       |
+| CI/CD y builds                       | **EAS Build / EAS Update** (OTA)                                 |
+| Tests                                | **Jest** + **React Native Testing Library**; E2E con **Maestro** |
+| Linter/formato                       | **ESLint** + **Prettier** + **TypeScript strict**                |
 
 ---
 
@@ -430,7 +451,7 @@ Reentrada
 ### 9.4 Ruta de refuerzo (post-beta)
 
 1. PIN o passphrase por miembro (reclamar/proteger un `username`).
-2. Auth real: email/OTP, *magic link* o proveedores sociales.
+2. Auth real: email/OTP, _magic link_ o proveedores sociales.
 3. Roles y permisos (admin de la comunidad, solo-lectura).
 4. Auditoría de cambios y expulsión de miembros.
 
@@ -454,13 +475,13 @@ Reentrada
 
 ### 10.3 Sistema de diseño (design tokens)
 
-| Token | Ejemplo |
-|---|---|
-| Color | `primary`, `surface`, `success`, `danger`, `muted` (con variantes claro/oscuro) |
-| Tipografía | Escala 12/14/16/20/28; pesos regular/medium/bold |
-| Espaciado | Escala 4/8/12/16/24/32 |
-| Radio | 8/12/16 |
-| Sombra/elevación | niveles 0–3 |
+| Token            | Ejemplo                                                                         |
+| ---------------- | ------------------------------------------------------------------------------- |
+| Color            | `primary`, `surface`, `success`, `danger`, `muted` (con variantes claro/oscuro) |
+| Tipografía       | Escala 12/14/16/20/28; pesos regular/medium/bold                                |
+| Espaciado        | Escala 4/8/12/16/24/32                                                          |
+| Radio            | 8/12/16                                                                         |
+| Sombra/elevación | niveles 0–3                                                                     |
 
 Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look = cambiar tokens, no componentes.
 
@@ -470,7 +491,7 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 - Áreas táctiles ≥ 44×44 pt.
 - **Etiquetas de accesibilidad** (`accessibilityLabel`, `accessibilityRole`) en todos los controles → compatibilidad con VoiceOver/TalkBack.
 - Estados no dependientes solo del color (icono + texto para «comprado»).
-- Respetar tamaño de fuente del sistema (*dynamic type*) y modo oscuro.
+- Respetar tamaño de fuente del sistema (_dynamic type_) y modo oscuro.
 - Soporte de navegación por teclado en la versión web.
 
 ### 10.5 Modo oscuro e i18n
@@ -485,45 +506,53 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 > Checklist de calidad para revisar cada área **antes de dar por buena** cada fase. Marca ✅ solo cuando se cumple.
 
 ### A. Funcionalidad
+
 - [ ] Los 7 requisitos funcionales del MVP (RF-1…RF-7) tienen criterio de aceptación verificado. RF-8 y RF-9 son post-MVP y se auditan en su fase.
 - [ ] CRUD completo probado con datos reales en 2 dispositivos.
 - [ ] Casos límite: nombre vacío, cantidad 0, imagen que falla al subir, código inexistente.
 
 ### B. Arquitectura
+
 - [ ] El dominio no importa nada de Supabase/React (grep de imports).
 - [ ] Existe interfaz `Repository` + adaptador; cambiar de proveedor no toca `features/*/domain`.
 - [ ] Server state solo en TanStack Query; client state solo en Zustand; sin duplicación.
 
 ### C. Stack
+
 - [ ] Versiones fijadas y compatibles (Expo SDK ↔ RN ↔ librerías).
 - [ ] Tipos TypeScript del esquema generados y usados.
 - [ ] Sin dependencias abandonadas (última publicación reciente).
 
 ### D. Datos y sincronización
+
 - [ ] Realtime propaga cambios entre 2 redes distintas en < 2 s.
 - [ ] Offline: la app abre sin red y encola cambios; se sincronizan al volver.
 - [ ] Optimistic UI con rollback probado (forzar error de red).
 - [ ] Índices creados; lista de 200 ítems fluida.
 
 ### E. Seguridad (beta)
+
 - [ ] RLS activo: un usuario NO puede leer artículos de otra comunidad (probado).
 - [ ] Secretos fuera del repo; `.env` en `.gitignore`.
 - [ ] Rate limit en «unirse»; `join_code` sin caracteres ambiguos.
 
 ### F. UI/UX y accesibilidad
+
 - [ ] Test con 1 usuario novato: completa las 3 tareas núcleo sin ayuda.
 - [ ] Contraste AA verificado; targets ≥ 44 pt; labels de accesibilidad presentes.
 - [ ] Modo oscuro y tamaño de fuente del sistema respetados.
 - [ ] «Deshacer» tras borrar funciona.
 
 ### G. Calidad de código
+
 - [ ] Lint + typecheck sin errores; formato consistente.
 - [ ] Tests de dominio y repositorios ≥ 70%.
 - [ ] Cada feature documentada (README corto + ADR si hubo decisión relevante).
 
 ### H. Rendimiento
+
 - [ ] Arranque en frío < 3 s en gama media.
-- [ ] Listas virtualizadas; sin *jank* al hacer scroll.
+- [ ] Listas virtualizadas; sin _jank_ al hacer scroll.
 - [ ] Imágenes comprimidas antes de subir.
 
 ---
@@ -533,12 +562,14 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 > Cada fase termina con un **entregable demostrable** y su **auditoría** (§11) pasada.
 
 ### Fase 0 · Cimientos (1–2 días)
+
 - Crear proyecto Expo + TypeScript strict + ESLint/Prettier.
 - Estructura de carpetas (§5.2), design tokens base, `shared/ui` mínimo (Button, Input, Card).
 - Proyecto Supabase, esquema (§7), RLS mínima, tipos generados.
 - **Entregable:** app corre, conecta con Supabase, muestra pantalla landing vacía.
 
 ### Fase 1 · MVP CRUD local a la nube (3–5 días)
+
 - Crear/unirse a comunidad por código (RF-2, RF-5).
 - Sesión ligera con SecureStore.
 - CRUD de artículos con nombre + cantidad (RF-3, RF-4 sin imagen aún).
@@ -546,12 +577,14 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 - **Entregable:** una persona usa la lista completa contra la nube.
 
 ### Fase 2 · Colaboración en tiempo real (2–4 días)
+
 - Suscripción Realtime + reconciliación en TanStack Query (RF-7).
 - Optimistic UI + rollback.
 - Presencia básica (quién está viendo).
 - **Entregable:** dos dispositivos en redes distintas ven cambios en vivo.
 
 ### Fase 3 · Imágenes y pulido UX (3–4 días)
+
 - Imagen de referencia: captura/galería, compresión, subida a Storage (RF-4 completo).
 - **Editar un artículo ya creado** (nombre y cantidad): es la «M» de RF-3, quedó como deuda en la Fase 1.
 - **Copiar y compartir el `join_code`** con el share sheet nativo: lo pide el criterio de aceptación de RF-2 y hoy solo se muestra el código.
@@ -561,20 +594,37 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 - **Entregable:** experiencia completa y estética; auditoría F superada.
 
 ### Fase 4 · Robustez y offline (2–3 días)
+
 - Caché persistente + cola offline (§8.3).
 - Manejo de errores global (Sentry), estados de reconexión.
 - Tests de dominio/repos + un E2E feliz con Maestro.
 - **Entregable:** beta estable, auditoría global (§11) superada.
 
 ### Fase 5 · Endurecimiento (post-beta)
-- Refuerzo de auth (§9.4), roles, notificaciones push, i18n EN, analytics.
-- Deja de ser «opcional» en cuanto se quiera la Fase 6: el punto 1 de §9.4 (PIN o passphrase por miembro) es requisito previo del reparto de gastos.
 
-### Fase 6 · Reparto de gastos (RF-9)
+- El alcance real se recortó al abrirla, el 2026-08-05, y lo eligió el usuario: id del artículo generado en el cliente, expiración y rotación del `join_code`, i18n EN y la pasada con TalkBack. Diario en `docs/phases/fase-5.md`.
+- **Lo que se quedó fuera a propósito:** PIN por miembro, Sentry, push, roles y analítica. Ninguna hace falta para una beta entre gente conocida.
+- **Ojo con el PIN:** sigue siendo requisito previo del bloque B de la Fase 6. Sacarlo de la Fase 5 no lo cancela, lo aplaza; hay que recuperarlo antes de tocar dinero.
+
+### Fase 6 · Catálogo de productos y reparto de gastos
+
+Dos bloques con dependencias distintas. El A puede empezar en cuanto cierre la Fase 5; el B no.
+
+**Bloque A · Catálogo de productos (RF-10).** Sin requisito de entrada.
+
+- Decidir la fuente de datos y el supermercado con el que se empieza; con eso el ADR pasa a Aceptado. Lo que hay publicado y qué permite cada cadena, investigado en [`guias/fuentes-de-datos-del-catalogo.md`](guias/fuentes-de-datos-del-catalogo.md).
+- Esquema (`supermarkets`, `catalog_products`, `items.catalog_product_id`) y RLS en la misma migración, revisados antes de escribir el `.sql`.
+- Script de ingesta en `scripts/`, idempotente por `(supermarket_id, external_id)`.
+- Buscador en la pantalla de artículo: RPC con `pg_trgm` + ranking como función pura de `domain/`.
+- **Entregable:** se pone imagen a un artículo escribiendo tres letras, y con el catálogo vacío la app se comporta igual que hoy. Ver [ADR-0012](adr/ADR-0012-catalogo-de-productos-de-supermercado.md).
+
+**Bloque B · Reparto de gastos (RF-9).**
+
 - Modelo de datos del gasto y del reparto, con su ADR y sus políticas RLS antes de escribir la primera migración.
 - Atribución real de quién añadió y quién compró cada artículo (cerrar la deuda de `items.created_by`).
 - Registro opcional de precio y participantes al marcar comprado; pantalla de balances con liquidación mínima.
-- **Requisito de entrada:** el PIN por miembro de la Fase 5. Sin identidad no suplantable, los balances no valen nada. Ver [ADR-0005](adr/ADR-0005-reparto-de-gastos.md).
+- Si el bloque A está hecho, el importe llega prerrellenado desde el catálogo **y lo confirma el usuario**, porque el precio de referencia caduca solo.
+- **Requisito de entrada:** el PIN por miembro que quedó fuera de la Fase 5. Sin identidad no suplantable, los balances no valen nada. Ver [ADR-0005](adr/ADR-0005-reparto-de-gastos.md).
 - **Entregable:** dos miembros ven el mismo balance y nadie puede tocar el gasto de otro.
 
 **Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 y 6 son posteriores a la beta y no entran en esa cuenta.
@@ -591,17 +641,17 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 - **Allowlists de permisos y hooks** para no ejecutar comandos peligrosos.
 - **Verifica, no confíes:** ejecuta la app, lee el diff.
 - **Higiene de secretos:** nunca pegues llaves; usa `.env`/EAS secrets.
-- **Skills como *dotfiles*:** pocas, opinionadas, versionadas; audítalas mensualmente y borra las que no uses en 30 días.
+- **Skills como _dotfiles_:** pocas, opinionadas, versionadas; audítalas mensualmente y borra las que no uses en 30 días.
 
 ### 13.2 Skills recomendadas
 
-| Skill | Para qué | Origen |
-|---|---|---|
-| **React Native / Expo Stack** | Integración Expo + Expo Router + Zustand + TanStack Query, persistencia MMKV, offline | Comunidad (busca en el directorio de skills) |
-| **Frontend Design** | Dirección visual y componentes con criterio (evitar look «plantilla») | Skill pública de Anthropic |
-| **Skill Creator** | Crear tus propias skills (p. ej. una skill «convenciones-del-proyecto») | Anthropic |
-| **Supabase / Postgres** (o crea una propia) | Esquemas, RLS, Realtime, generación de tipos | Comunidad / propia |
-| **Test/QA runner** (propia) | Estandarizar cómo se lanzan lint, typecheck y tests | Propia con Skill Creator |
+| Skill                                       | Para qué                                                                              | Origen                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------- |
+| **React Native / Expo Stack**               | Integración Expo + Expo Router + Zustand + TanStack Query, persistencia MMKV, offline | Comunidad (busca en el directorio de skills) |
+| **Frontend Design**                         | Dirección visual y componentes con criterio (evitar look «plantilla»)                 | Skill pública de Anthropic                   |
+| **Skill Creator**                           | Crear tus propias skills (p. ej. una skill «convenciones-del-proyecto»)               | Anthropic                                    |
+| **Supabase / Postgres** (o crea una propia) | Esquemas, RLS, Realtime, generación de tipos                                          | Comunidad / propia                           |
+| **Test/QA runner** (propia)                 | Estandarizar cómo se lanzan lint, typecheck y tests                                   | Propia con Skill Creator                     |
 
 > Regla práctica: **8–12 skills** cubren casi todo. Más de eso paga «impuesto de contexto». Instálalas en `~/.claude/skills/` (globales) o `.claude/skills/` (por proyecto).
 
@@ -628,17 +678,20 @@ proyecto/
 # Proyecto: Lista de la Compra Colaborativa
 
 ## Stack
+
 - Expo (React Native) + Expo Router + TypeScript (strict)
 - Estado: TanStack Query (server) + Zustand (client). NUNCA duplicar server state en Zustand.
 - Backend: Supabase (Postgres + Realtime + Storage + RLS)
 - UI: NativeWind + shared/ui (componentes desacoplados). Tokens en theme/.
 
 ## Estructura
+
 - features/<feature>/{domain,data,presentation}
 - domain NO importa React ni Supabase (verifícalo)
 - Repositorios como interfaces (puertos) + adaptador Supabase
 
 ## Reglas duras
+
 - Accesibilidad: labels + contraste AA + targets >= 44pt en cada control nuevo.
 - Optimistic UI con rollback en todas las mutaciones.
 - Nunca commitear secretos. Usa .env / EAS secrets.
@@ -646,8 +699,9 @@ proyecto/
 - Antes de editar: plan mode. Después: lint + typecheck + correr la app.
 
 ## Comandos
+
 - Dev: `npx expo start`
-- Lint: `npm run lint`  ·  Types: `npm run typecheck`  ·  Test: `npm test`
+- Lint: `npm run lint` · Types: `npm run typecheck` · Test: `npm test`
 - Tipos Supabase: `supabase gen types typescript --local > src/shared/lib/db.types.ts`
 ```
 
@@ -719,34 +773,40 @@ Empieza mostrándome el PLAN de la Fase 0. No escribas código todavía.
 
 ### 15.1 Qué documentar (y dónde)
 
-| Documento | Ubicación | Contenido |
-|---|---|---|
-| **ADR (Architecture Decision Record)** | `docs/adr/ADR-000X.md` | Decisión, contexto, alternativas, consecuencias (p. ej. «Supabase vs Firebase») |
-| **Doc por fase** | `docs/phases/fase-N.md` | Qué se implementó, cómo probarlo, deuda técnica pendiente |
-| **Contratos de repositorio** | `docs/api/` | Firmas de casos de uso y repositorios (puertos) |
-| **README de feature** | `src/features/<f>/README.md` | Propósito, entradas/salidas, ejemplos |
-| **CHANGELOG** | `CHANGELOG.md` | Cambios por versión |
+| Documento                              | Ubicación                    | Contenido                                                                       |
+| -------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------- |
+| **ADR (Architecture Decision Record)** | `docs/adr/ADR-000X.md`       | Decisión, contexto, alternativas, consecuencias (p. ej. «Supabase vs Firebase») |
+| **Doc por fase**                       | `docs/phases/fase-N.md`      | Qué se implementó, cómo probarlo, deuda técnica pendiente                       |
+| **Contratos de repositorio**           | `docs/api/`                  | Firmas de casos de uso y repositorios (puertos)                                 |
+| **README de feature**                  | `src/features/<f>/README.md` | Propósito, entradas/salidas, ejemplos                                           |
+| **CHANGELOG**                          | `CHANGELOG.md`               | Cambios por versión                                                             |
 
 ### 15.2 Plantilla de ADR
 
 ```markdown
 # ADR-0001: Elección de backend (Supabase vs Firebase)
+
 - Estado: Aceptado
 - Fecha: 2026-07-XX
 
 ## Contexto
+
 Necesitamos sincronización global en tiempo real y datos relacionales
 (comunidades, miembros, artículos).
 
 ## Decisión
+
 Usar Supabase (Postgres + Realtime + Storage + RLS).
 
 ## Alternativas consideradas
+
 - Firebase (Firestore): mejor offline-first y push nativo, modelo documental.
 
 ## Consecuencias
-+ Datos relacionales, RLS, tipos, sin lock-in, coste predecible.
-- Offline avanzado y push requieren piezas extra (TanStack persist / OneSignal).
+
+- Datos relacionales, RLS, tipos, sin lock-in, coste predecible.
+
+* Offline avanzado y push requieren piezas extra (TanStack persist / OneSignal).
 ```
 
 ### 15.3 Estrategia de tests
@@ -765,21 +825,21 @@ Usar Supabase (Postgres + Realtime + Storage + RLS).
 > de su fase; el repaso completo de la §11 está en `docs/phases/fase-4.md`.
 
 - [x] Los 7 requisitos funcionales del MVP (RF-1…RF-7) cumplidos y verificados en 2 dispositivos/redes.
-- [x] Sincronización < 2 s entre países; offline abre y encola; rollback probado. *(Dos redes sí,
+- [x] Sincronización < 2 s entre países; offline abre y encola; rollback probado. _(Dos redes sí,
       dos países no: no hay forma de probarlo aquí y no depende de la app, los clientes no hablan
-      entre sí.)*
+      entre sí.)_
 - [x] RLS impide fugas entre comunidades (test explícito). `npm run test:rls`, 19/19.
-- [x] Accesibilidad AA verificada + test con usuario novato superado. *(La pasada con TalkBack se
-      aplazó a antes de publicar; ver F.2 en `docs/phases/fase-3.md`.)*
+- [x] Accesibilidad AA verificada + test con usuario novato superado. _(La pasada con TalkBack se
+      aplazó a antes de publicar; ver F.2 en `docs/phases/fase-3.md`.)_
 - [x] Arquitectura desacoplada verificada (dominio limpio, repos como puertos).
 - [x] Lint/typecheck/tests en verde; cobertura dominio/repos ≥ 70%. 96.9% de sentencias.
-- [x] `docs/` completo: ADRs, docs por fase, READMEs de feature. *(Sin READMEs de feature, a
-      propósito: los diarios de fase y los ADR cubren eso y un cuarto sitio se desincroniza.)*
+- [x] `docs/` completo: ADRs, docs por fase, READMEs de feature. _(Sin READMEs de feature, a
+      propósito: los diarios de fase y los ADR cubren eso y un cuarto sitio se desincroniza.)_
 - [x] Secretos fuera del repo; `.env.example` presente.
-- [x] Build EAS de prueba instalable. *(Android, APK 1.2.0 con updates por aire. iOS nunca se ha
-      compilado: es plataforma secundaria y no hay Mac ni cuenta de desarrollador.)*
-- [ ] Todas las auditorías (§11) en ✅. *(Tres puntos sin medir: lista de 200 artículos, arranque
-      en frío en gama media, y revisión de dependencias abandonadas.)*
+- [x] Build EAS de prueba instalable. _(Android, APK 1.2.0 con updates por aire. iOS nunca se ha
+      compilado: es plataforma secundaria y no hay Mac ni cuenta de desarrollador.)_
+- [ ] Todas las auditorías (§11) en ✅. _(Tres puntos sin medir: lista de 200 artículos, arranque
+      en frío en gama media, y revisión de dependencias abandonadas.)_
 
 ---
 

@@ -149,7 +149,7 @@ function ItemsView({ community, username }: { community: Community; username: st
         }
         ListFooterComponent={
           <View className="mt-4 gap-2 border-t border-line pt-4 dark:border-line-dark">
-            <JoinCodeCard communityName={community.name} joinCode={community.joinCode} />
+            <JoinCodeCard communityId={community.id} communityName={community.name} />
             <Button
               label={t('list.leave')}
               onPress={() => {

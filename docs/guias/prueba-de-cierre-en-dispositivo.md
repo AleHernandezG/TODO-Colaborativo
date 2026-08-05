@@ -132,6 +132,10 @@ Sigue en modo avión, desde la lista abierta:
 Ningún fantasma en el paso del cierre: lo que se veía tras reabrir en avión es lo mismo que quedó
 al recuperar la red, que es el fallo concreto que el incremento 4 existe para evitar.
 
+> Esto se arregló después, el mismo 2026-08-05, en el incremento 1 de la Fase 5: el guion de abajo
+> ya no es «no lo hagas» sino la prueba a pasar, y está escrito en `docs/phases/fase-5.md`. Lo de
+> abajo se queda como estaba porque describe lo que se probó ese día, con el código de entonces.
+
 **No hagas esto, que ya sé que falla:** añadir un artículo sin cobertura y, sin recuperar la red,
 marcarlo como comprado. El alta llega bien al reconectar, pero la marca viaja con un id inventado
 que el servidor no conoce y se pierde sin avisar. Es deuda conocida y está anotada en

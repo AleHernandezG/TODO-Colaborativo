@@ -44,6 +44,18 @@ describe('sin conexión', () => {
     ).rejects.toBeInstanceOf(OfflineError)
     expect(rpc).not.toHaveBeenCalled()
   })
+
+  it('no llega a leer el código de invitación', async () => {
+    await expect(supabaseCommunityRepository.getJoinCode('c1')).rejects.toBeInstanceOf(OfflineError)
+    expect(from).not.toHaveBeenCalled()
+  })
+
+  it('no llega a rotar el código', async () => {
+    await expect(supabaseCommunityRepository.rotateJoinCode('c1')).rejects.toBeInstanceOf(
+      OfflineError,
+    )
+    expect(rpc).not.toHaveBeenCalled()
+  })
 })
 
 describe('create', () => {
@@ -121,5 +133,63 @@ describe('join', () => {
     await expect(
       supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana' }),
     ).rejects.toThrow('permiso denegado')
+  })
+
+  it('devuelve el estado de código caducado sin leer nada más', async () => {
+    rpc.mockResolvedValue({
+      data: [{ status: 'expired_join_code', community_id: null }],
+      error: null,
+    })
+
+    await expect(
+      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana' }),
+    ).resolves.toEqual({ status: 'expired_join_code' })
+    expect(from).not.toHaveBeenCalled()
+  })
+})
+
+describe('getJoinCode', () => {
+  it('devuelve el código con su fecha de caducidad', async () => {
+    mockCommunityRow({ join_code: 'PAN-42XK', join_code_expires_at: '2026-08-12T10:00:00Z' })
+
+    await expect(supabaseCommunityRepository.getJoinCode('c1')).resolves.toEqual({
+      code: 'PAN-42XK',
+      expiresAt: '2026-08-12T10:00:00Z',
+    })
+  })
+
+  it('falla con un mensaje que dice qué pasó', async () => {
+    mockCommunityRow(null, { message: 'permiso denegado' })
+
+    await expect(supabaseCommunityRepository.getJoinCode('c1')).rejects.toThrow('permiso denegado')
+  })
+})
+
+describe('rotateJoinCode', () => {
+  it('devuelve el código nuevo que generó la base de datos', async () => {
+    rpc.mockResolvedValue({
+      data: [{ join_code: 'TRE-88MW', expires_at: '2026-08-12T10:00:00Z' }],
+      error: null,
+    })
+
+    await expect(supabaseCommunityRepository.rotateJoinCode('c1')).resolves.toEqual({
+      code: 'TRE-88MW',
+      expiresAt: '2026-08-12T10:00:00Z',
+    })
+    expect(rpc).toHaveBeenCalledWith('rotate_join_code', { p_community_id: 'c1' })
+  })
+
+  it('falla si no eres miembro de esa lista', async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: 'not_a_member' } })
+
+    await expect(supabaseCommunityRepository.rotateJoinCode('c1')).rejects.toThrow('not_a_member')
+  })
+
+  it('falla si la rpc no devuelve ningún código', async () => {
+    rpc.mockResolvedValue({ data: [], error: null })
+
+    await expect(supabaseCommunityRepository.rotateJoinCode('c1')).rejects.toThrow(
+      'no devolvió ningún código',
+    )
   })
 })

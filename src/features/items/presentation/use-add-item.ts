@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useSnackbar } from '../../../shared/hooks/use-snackbar'
 import { OfflineError } from '../../../shared/lib/network'
+import { randomUuid } from '../../../shared/lib/uuid'
 import type { AddItemResult } from '../domain/add-item'
 import type { Item } from '../domain/item'
 import { normalizeItemName } from '../domain/item-name'
@@ -25,7 +26,7 @@ export function useAddItem(communityId: string) {
       const previous = queryClient.getQueryData<Item[]>(key)
 
       const optimistic: Item = {
-        id: `optimistic-${Date.now()}`,
+        id: input.id,
         name: normalizeItemName(input.name),
         quantity: input.quantity,
         isPurchased: false,
@@ -49,6 +50,6 @@ export function useAddItem(communityId: string) {
 
   return {
     mutate: (input: { name: string; quantity: number }) =>
-      mutation.mutate({ ...input, communityId }),
+      mutation.mutate({ ...input, id: randomUuid(), communityId }),
   }
 }

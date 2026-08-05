@@ -1,5 +1,6 @@
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
+import { SessionError } from '../domain/session-error'
 import type { SessionRepository } from '../domain/session-repository'
 
 export const supabaseSessionRepository: SessionRepository = {
@@ -20,7 +21,8 @@ export const supabaseSessionRepository: SessionRepository = {
     const { data, error } = await supabase.auth.signInAnonymously()
     if (error) {
       if (error.code === 'anonymous_provider_disabled') {
-        throw new Error(
+        throw new SessionError(
+          'anonymous_disabled',
           'Las sesiones anónimas están desactivadas en Supabase. Actívalas en Authentication > Sign In / Providers > User Signups.',
         )
       }

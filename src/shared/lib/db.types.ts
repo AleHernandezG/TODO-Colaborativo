@@ -44,18 +44,21 @@ export type Database = {
           created_at: string
           id: string
           join_code: string
+          join_code_expires_at: string
           name: string
         }
         Insert: {
           created_at?: string
           id?: string
           join_code: string
+          join_code_expires_at?: string
           name: string
         }
         Update: {
           created_at?: string
           id?: string
           join_code?: string
+          join_code_expires_at?: string
           name?: string
         }
         Relationships: []
@@ -178,6 +181,7 @@ export type Database = {
       }
       current_member_id: { Args: { p_community_id: string }; Returns: string }
       generate_join_code: { Args: never; Returns: string }
+      join_code_lifetime: { Args: never; Returns: string }
       join_community: {
         Args: { p_join_code: string; p_username: string }
         Returns: {
@@ -187,6 +191,13 @@ export type Database = {
       }
       member_community_ids: { Args: never; Returns: string[] }
       ping: { Args: never; Returns: string }
+      rotate_join_code: {
+        Args: { p_community_id: string }
+        Returns: {
+          expires_at: string
+          join_code: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

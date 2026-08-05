@@ -3,7 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Text, View } from 'react-native'
 
 import { Button } from '../../../shared/ui/Button'
+import type { SessionErrorReason } from '../domain/session-error'
 import { useSessionBootstrap } from './use-session-bootstrap'
+
+const errorKeys: Record<SessionErrorReason, string> = {
+  offline: 'errors.offline',
+  anonymous_disabled: 'session.errors.anonymousDisabled',
+  unknown: 'session.errors.unknown',
+}
 
 export function SessionGate({ children }: { children: ReactNode }) {
   const { status, error, retry } = useSessionBootstrap()
@@ -22,7 +29,9 @@ export function SessionGate({ children }: { children: ReactNode }) {
         >
           {t('session.errorTitle')}
         </Text>
-        <Text className="text-base text-muted dark:text-muted-dark">{error}</Text>
+        <Text className="text-base text-muted dark:text-muted-dark">
+          {t(errorKeys[error ?? 'unknown'])}
+        </Text>
         <Button label={t('common.retry')} onPress={retry} />
       </View>
     )

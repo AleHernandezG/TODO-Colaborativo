@@ -31,6 +31,7 @@ En la práctica:
 - **Expo (React Native)** + **Expo Router** (navegación por ficheros) + **TypeScript (strict)**.
   - **SDK fijado en 54. No lo subas.** El Expo Go del Android de pruebas es cliente **54.0.8** y solo admite **SDK 54**, y ese dispositivo no puede actualizar Expo Go desde el Play Store. Un proyecto en SDK 55+ no arranca ahí: da "Project is incompatible with this version of Expo Go" y no hay forma de sortearlo sin development build.
   - Antes de tocar la versión del SDK, **pregunta qué SDK admite el Expo Go del dispositivo real**. No lo deduzcas de lo que devuelva `create-expo-app@latest`, que siempre da la última. Se comprueba abriendo Expo Go: muestra "Client version" y "Supported SDK".
+  - **La skill `upgrading-expo` del plugin `expo` no se usa en este repo.** El plugin está habilitado por sus skills de despliegue y EAS, pero trae una que se autocarga en cuanto alguien menciona subir de versión y cuya única recomendación posible es lo contrario de la regla de arriba. Si se carga sola, ignórala y dilo. Subir el SDK es una decisión del usuario con el móvil de pruebas delante, nunca una sugerencia de una skill genérica.
 - **Estado servidor:** TanStack Query (caché, refetch, mutaciones, optimistic updates).
 - **Estado cliente:** Zustand (sesión local, tema, UI). **Nunca dupliques el estado del servidor en Zustand.**
 - **Backend (BaaS):** Supabase → Postgres + Realtime + Storage + RLS.
@@ -80,12 +81,12 @@ compartir entre dos proyectos. Razonado en
 
 `docs/` se organiza por **para qué sirve** cada documento, no por tema:
 
-| Carpeta | Contiene |
-|---|---|
-| `docs/especificacion-y-roadmap.md` | El documento maestro. Referencia. |
-| `docs/adr/` | Por qué las cosas son como son. Numerados, y **no se editan**: si cambias de opinión, escribe uno nuevo que supersede al viejo. |
-| `docs/phases/` | Diario por fase: qué se hizo, cómo probarlo, deuda asumida. |
-| `docs/guias/` | Instrucciones paso a paso para tareas concretas. |
+| Carpeta                            | Contiene                                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/especificacion-y-roadmap.md` | El documento maestro. Referencia.                                                                                               |
+| `docs/adr/`                        | Por qué las cosas son como son. Numerados, y **no se editan**: si cambias de opinión, escribe uno nuevo que supersede al viejo. |
+| `docs/phases/`                     | Diario por fase: qué se hizo, cómo probarlo, deuda asumida.                                                                     |
+| `docs/guias/`                      | Instrucciones paso a paso para tareas concretas.                                                                                |
 
 Nombres de fichero en `kebab-case` minúsculas. Excepciones: los ADR (`ADR-NNNN-...`) y los de
 la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
@@ -120,6 +121,7 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
 - Los cambios se propagan entre redes/países porque todos hablan con el mismo backend (no entre sí).
 - Offline pragmático: última lista cacheada (TanStack persist + AsyncStorage); mutaciones encoladas y reenviadas al reconectar (NetInfo). Conflictos simples → last-write-wins por `updated_at`.
 - **Una mutación que se pueda encolar declara su `mutationKey` y registra su `mutationFn` con `setMutationDefaults`**, y sus `variables` cargan con todo lo que esa función necesita (`communityId` incluido). Una función no se serializa: al rehidratar solo quedan clave, variables y estado, así que lo que viva en el closure del hook se pierde al reiniciar la app. Razonado en [ADR-0009](docs/adr/ADR-0009-cola-de-mutaciones-offline.md).
+- **El id de una fila que se pueda crear sin conexión lo genera el cliente** (`randomUuid()` de `src/shared/lib/uuid.ts`), en la llamada a `mutate` para que viaje en las `variables`, y el `insert` lo manda explícito. Un id que pone el servidor no se conoce hasta que responde, así que cualquier cambio posterior hecho en la misma sesión offline apuntaría a un id inventado y se perdería sin error. El alta pasa a ser idempotente: un `23505` significa "esto ya se guardó". Razonado en [ADR-0010](docs/adr/ADR-0010-id-del-articulo-generado-en-el-cliente.md).
 - **Todo método de `data/` que haga una petición suelta empieza por `assertOnline()`** (`src/shared/lib/network.ts`). En Android una petición sin red no se rechaza: se encola y se ejecuta al reconectar, así que sin esa comprobación el usuario ve un spinner eterno y la escritura ocurre a su espalda. El timeout del cliente de Supabase cubre el otro caso (con red pero sin servidor). Razonado en `docs/phases/fase-1.md`.
   - **Única excepción: abrir un canal de Realtime** (`subscribe()`). Un canal no es una petición suelta: reconecta solo y avisa de su estado por `onStatus`. Bloquearlo porque NetInfo diga que no hay red sería no reconectar nunca al volver. Razonado en `docs/phases/fase-2.md`.
 - **Suscribirse a Realtime es un método del repositorio, no un import de Supabase en `presentation/`.** Siempre con `filter: community_id=eq.<id>`: sin filtro llegan los borrados de otras comunidades. Razonado en `docs/phases/fase-2.md`.
@@ -167,6 +169,11 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...   # publishable key (pública, 
 - **Usa la publishable key** (`sb_publishable_...`) en el cliente. Es de bajo privilegio y segura para incrustar en la app; la seguridad real la dan las políticas RLS.
 - **NUNCA** uses ni commitees la _secret key_ (`sb_secret_...`) ni la _service key_: se saltan RLS y son solo de servidor.
 - `join_code`: aleatorio, legible, sin caracteres ambiguos (`O/0`, `I/1`). Rate limit en "unirse".
+  **Caduca a los 7 días** (`communities.join_code_expires_at`, plazo en `join_code_lifetime()`) y
+  cualquier miembro puede cambiarlo con `rotate_join_code`, que mata al anterior en el acto. Como
+  puede cambiar desde otro móvil, **el código que enseña la pantalla sale de una query
+  (`['join-code', communityId]`), nunca del store de Zustand**. Razonado en
+  [ADR-0011](docs/adr/ADR-0011-caducidad-y-rotacion-del-join-code.md).
 
 ---
 
@@ -184,11 +191,38 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...   # publishable key (pública, 
 En `.claude/skills/`. Se cargan solas cuando el trabajo entra en su territorio; este fichero
 es el resumen, ellas tienen el detalle con ejemplos de código.
 
-| Skill | Consúltala para |
-|---|---|
-| `expo-stack` | Cualquier cosa dentro de `src/`: capas, estado, mutaciones, Realtime, offline, a11y |
-| `supabase-data` | Esquema, RLS, RPCs, Realtime, `db.types.ts`, claves |
-| `qa-runner` | Cerrar un incremento o una fase |
+| Skill           | Consúltala para                                                                     |
+| --------------- | ----------------------------------------------------------------------------------- |
+| `expo-stack`    | Cualquier cosa dentro de `src/`: capas, estado, mutaciones, Realtime, offline, a11y |
+| `supabase-data` | Esquema, RLS, RPCs, Realtime, `db.types.ts`, claves                                 |
+| `qa-runner`     | Cerrar un incremento o una fase                                                     |
+
+## Plugins de Claude Code
+
+Los que este proyecto necesita están declarados en `.claude/settings.json`, que **sí se commitea**
+(el que no se commitea es `settings.local.json`). Así viajan con el repo y no cargan contexto en
+otros proyectos de la máquina.
+
+| Plugin                                   | Para qué                                                    |
+| ---------------------------------------- | ----------------------------------------------------------- |
+| `supabase@claude-plugins-official`       | Buenas prácticas de Postgres y Supabase                     |
+| `expo@claude-plugins-official`           | Despliegue, EAS Update y CI de Expo                         |
+| `context7@claude-plugins-official`       | Docs de la versión exacta de cada librería, no de la última |
+| `typescript-lsp@claude-plugins-official` | Diagnósticos de tipos mientras se edita                     |
+
+**Solo plugins del marketplace oficial de Anthropic.** Un plugin de la comunidad es código de un
+tercero ejecutándose con tus permisos, igual que un paquete de npm pero sin que nadie lo audite.
+Este repo tiene claves de Supabase en `.env` y un `settings.json` con permisos; no compensa. Por eso
+`extraKnownMarketplaces` declara solo `claude-plugins-official`: si algún día hace falta uno de
+fuera, que sea una decisión consciente y no un `install` que funciona porque el marketplace ya
+estaba puesto.
+
+Las tres skills de `.claude/skills/` mandan sobre cualquier plugin. Un plugin da contexto genérico;
+ellas conocen los ADR de este proyecto. Si se contradicen, gana la skill del repo, y la
+contradicción se anota.
+
+Elegidos el 2026-08-05 mirando el catálogo entero; qué se descartó y por qué, en
+`docs/phases/fase-5.md`.
 
 ---
 
@@ -207,40 +241,59 @@ es el resumen, ellas tienen el detalle con ejemplos de código.
 Toda entrada responde a tres preguntas: **qué** se cambió, **por qué** (qué alternativa se
 descartó y a costa de qué) y **qué implica** para quien toque eso después.
 
-| Tipo de decisión | Dónde se escribe |
-|---|---|
-| Arquitectura, seguridad, modelo de datos, elección de librería | ADR nuevo en `docs/adr/`, numerado |
+| Tipo de decisión                                                                            | Dónde se escribe                              |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Arquitectura, seguridad, modelo de datos, elección de librería                              | ADR nuevo en `docs/adr/`, numerado            |
 | Detalle de implementación de una regla que ya existe (un `with check`, un índice, un grant) | La skill del área, junto al código de ejemplo |
-| Qué se hizo en este incremento y cómo probarlo | `docs/phases/fase-N.md` |
-| Procedimiento repetible que alguien tendrá que volver a ejecutar | `docs/guias/<tarea>.md` |
-| Regla que debo seguir siempre a partir de ahora | Este fichero |
+| Qué se hizo en este incremento y cómo probarlo                                              | `docs/phases/fase-N.md`                       |
+| Procedimiento repetible que alguien tendrá que volver a ejecutar                            | `docs/guias/<tarea>.md`                       |
+| Regla que debo seguir siempre a partir de ahora                                             | Este fichero                                  |
 
 Si una decisión no encaja en ninguna, va en `docs/phases/fase-N.md` bajo "Decisiones sobre la
 marcha". Nunca se queda sin escribir.
 
-**Fase actual: ninguna abierta. El MVP (fases 0 → 4) está cerrado.** Las cinco están probadas en
-dispositivo con dos móviles y su diario está en `docs/phases/`. Las dos últimas se cerraron el
-2026-08-05 de una sentada; qué se probó y con qué resultado, en
-`docs/guias/prueba-de-cierre-en-dispositivo.md`.
+**Fase actual: 5 (endurecimiento), abierta el 2026-08-05 con luz verde del usuario.** El MVP
+(fases 0 → 4) está cerrado y probado en dispositivo con dos móviles; su diario está en
+`docs/phases/`. Las dos últimas se cerraron el 2026-08-05 de una sentada; qué se probó y con qué
+resultado, en `docs/guias/prueba-de-cierre-en-dispositivo.md`.
 
-**La Fase 5 (endurecimiento) no empieza sin luz verde expresa.** No la des por empezada porque la
-4 esté cerrada.
+El alcance de la Fase 5 lo eligió el usuario y son cuatro cosas: id del artículo generado en el
+cliente (hecho), expiración y rotación del `join_code` (hecho, migración aplicada el 2026-08-05),
+i18n en inglés (hecho) y la pasada con TalkBack, que es lo único que queda. Todo lo demás (PIN,
+Sentry, push, roles, analítica, development build) queda fuera a propósito. Detalle en
+`docs/phases/fase-5.md`.
 
-Dos cosas se arrastran y no se pueden perder de vista:
+Lo que se arrastra y no se puede perder de vista:
 
 - **La pasada con TalkBack (F.2 de la Fase 3) está aplazada, no hecha.** Se hace antes de publicar
   la beta. Guion en el bloque 4 de la guía de cierre.
-- **Deuda del id optimista:** un artículo añadido sin cobertura y tocado en esa misma sesión
-  offline pierde el segundo cambio sin avisar. Contada entera en `docs/phases/fase-4.md`; el
-  arreglo (uuid generado en el cliente) es de la Fase 5 y necesita su ADR.
+- **Los incrementos 1, 2 y 3 están verdes en local y sin probar en el móvil.** El código pasa lint,
+  typecheck y tests; falta recorrer los tres guiones manuales de `docs/phases/fase-5.md` (modo
+  avión, rotación del código con dos móviles, y cambio de idioma del sistema) después de publicar
+  un `eas update`.
+
+**La app se ve en español o en inglés según el idioma del móvil**, y vuelve a español con cualquier
+otro. Los dos JSON viven en `src/shared/lib/i18n/` y hay un test que falla si se desincronizan
+(claves, `{{placeholders}}` o plurales). No hay selector de idioma dentro de la app, a propósito.
+Un `throw new Error` sigue llevando su mensaje en español porque no se pinta nunca: si uno acaba en
+pantalla, el fallo es que llegue. Detalle en el incremento 3 de `docs/phases/fase-5.md`.
 
 La versión que corre en el móvil se ve al pie de la pantalla de lista (`v1.2.0 · base` si es el
 bundle del APK, `v1.2.0 · <id>` si es un update por aire). Compruébala ahí antes de dar por
 hecho que un cambio llegó al dispositivo.
 
-RF-8 (PDF) y RF-9 (reparto de gastos) son **post-MVP**: están registrados en §3 y §12 del
-documento maestro y no se tocan antes de tiempo. El reparto de gastos además tiene un
-requisito de entrada, ver [ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md).
+RF-8 (PDF), RF-9 (reparto de gastos) y RF-10 (catálogo de productos de supermercado) son
+**post-MVP**: están registrados en §3 y §12 del documento maestro y no se tocan antes de tiempo.
+El reparto de gastos además tiene un requisito de entrada, ver
+[ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md).
+
+El catálogo (RF-10, [ADR-0012](docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md)) es el
+bloque A de la Fase 6 y **está en Propuesto**: falta elegir la fuente de datos, que es decisión del
+usuario. Dos cosas suyas afectan a reglas de arriba aunque no se haya escrito una línea todavía:
+sus tablas son las primeras que **no se filtran por `community_id`** (son datos compartidos por
+todos, con `select` para `authenticated` y ninguna política de escritura), y el precio que trae es
+**de referencia**: se enseña con su fecha y no se convierte en un gasto sin que una persona lo
+confirme.
 
 ---
 
@@ -266,7 +319,8 @@ npx expo start
 # Desde Git Bash. En PowerShell 5.1 el '>' escribe UTF-16 y rompe ESLint: ver skill supabase-data
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
-# Aislamiento entre comunidades (RLS + Storage). Debe dar 19/19
+# Aislamiento entre comunidades (RLS + Storage + rotación del código). Debe dar 24/24
+# (23/23 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
 npm run test:rls
 
 # Realtime: eventos, filtro por comunidad, aislamiento y presencia. Debe dar 12/12

@@ -11,6 +11,8 @@ function fakeRepository(): jest.Mocked<CommunityRepository> {
         username: 'Ana',
       },
     }),
+    getJoinCode: jest.fn(),
+    rotateJoinCode: jest.fn(),
   }
 }
 

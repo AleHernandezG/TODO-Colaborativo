@@ -1,0 +1,16 @@
+{
+  "enabledPlugins": {
+    "supabase@claude-plugins-official": true,
+    "expo@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
+    }
+  }
+}

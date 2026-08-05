@@ -18,10 +18,7 @@ export function ViewersLine({ names }: { names: string[] }) {
       : t('list.viewers.viewing', { names: joined, count: shown.length })
 
   return (
-    <Text
-      accessibilityLiveRegion="polite"
-      className="text-sm text-muted dark:text-muted-dark"
-    >
+    <Text accessibilityLiveRegion="polite" className="text-sm text-muted dark:text-muted-dark">
       {text}
     </Text>
   )

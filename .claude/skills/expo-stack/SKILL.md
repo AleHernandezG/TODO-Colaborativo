@@ -364,6 +364,14 @@ lo que otras personas hayan cambiado en esos 5 s, y con Realtime eso pasa de "po
    largo: volver de segundo plano no crea ninguna suscripción.
 3. Tirar para refrescar. El único que controla el usuario, y el que le queda si fallan los dos.
 
+**El camino 2 es `useAppForeground` en el hook que necesita el dato, no el `focusManager` de
+Query.** Query trae su propio mecanismo de "refresca al recuperar el foco", pero en React Native
+hay que engancharlo a `AppState` a mano y aquí está deliberadamente sin enganchar: activarlo
+haría que la lista se refrescara dos veces al volver, una por cada mecanismo, y el de aquí es el
+que sabe coalescer y esperar a que no haya mutaciones en vuelo. Cualquier query que necesite
+enterarse al volver a primer plano (el `join_code`, por ejemplo, que puede haber rotado otro
+móvil) lo pide igual, invalidándose desde su propio hook.
+
 El aviso de estado (`RealtimeStatus`) devuelve `null` mientras haya conexión: un indicador
 verde permanente ocupa sitio y enseña a ignorar la zona donde luego sale lo importante. Y lleva
 **2 s de gracia** antes de aparecer, porque el estado arranca en `connecting` y sin ese margen
@@ -526,6 +534,25 @@ De ahí, tres cosas:
   cerrar la app; restaurarla pisaría lo que hayan hecho los demás. Se invalida y manda el servidor.
 
 `scope` compartido serializa el reenvío, así que los cambios llegan en el orden en que se hicieron.
+
+**El id de lo que se crea sin conexión lo genera el cliente**, y en la llamada a `mutate`, no en
+`onMutate`:
+
+```ts
+mutate: (input: { name: string; quantity: number }) =>
+  mutation.mutate({ ...input, id: randomUuid(), communityId }),
+```
+
+Un id nacido en `onMutate` vive en la caché y en el closure, pero no en las `variables`, que es lo
+único que va a disco: al reiniciar, la mutación rehidratada insertaría un id distinto del que la
+pantalla lleva enseñando. Y con el id del servidor no hay nada que enseñar hasta que responda, así
+que cualquier cambio posterior sobre ese artículo apuntaría a un id inventado y se perdería sin
+error (el `update` afecta a cero filas y Postgres no se queja).
+
+`randomUuid()` está en `shared/lib/uuid.ts` y sale del `uuid.v4()` de `expo-modules-core`, que ya
+va dentro del APK. Consecuencia útil: el alta pasa a ser idempotente, y el adaptador trata el
+`23505` como «esto ya se guardó» y devuelve la fila que hay.
+[ADR-0010](../../../docs/adr/ADR-0010-id-del-articulo-generado-en-el-cliente.md).
 
 **`assertOnline()` no sobra por esto.** Es más fresco (un `NetInfo.fetch()` por llamada, frente al
 último evento recibido) y cubre la ventana entre decidir que hay red y que salga la petición. Y

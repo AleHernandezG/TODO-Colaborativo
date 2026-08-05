@@ -3,7 +3,18 @@ import { useCallback, useEffect } from 'react'
 import { OfflineError } from '../../../shared/lib/network'
 import { supabaseSessionRepository } from '../data/supabase-session-repository'
 import { ensureSession } from '../domain/ensure-session'
+import { SessionError, type SessionErrorReason } from '../domain/session-error'
 import { useSessionHydrated, useSessionStore } from './session-store'
+
+function reasonOf(cause: unknown): SessionErrorReason {
+  if (cause instanceof OfflineError) {
+    return 'offline'
+  }
+  if (cause instanceof SessionError) {
+    return cause.reason
+  }
+  return 'unknown'
+}
 
 export function useSessionBootstrap() {
   const status = useSessionStore((state) => state.status)
@@ -23,7 +34,7 @@ export function useSessionBootstrap() {
         succeed(known)
         return
       }
-      fail(cause instanceof Error ? cause.message : String(cause))
+      fail(reasonOf(cause))
     }
   }, [start, succeed, fail])
 

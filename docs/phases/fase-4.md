@@ -409,6 +409,12 @@ los sospechosos habituales están en la sección «Cuando falla» de la guía.
 
 ## Deuda conocida
 
+> **Al día de hoy (2026-08-05) la primera está arreglada en el incremento 1 de la Fase 5**: el
+> cliente genera el uuid, ver [ADR-0010](../adr/ADR-0010-id-del-articulo-generado-en-el-cliente.md)
+> y `fase-5.md`. Se deja escrito lo de abajo tal cual porque es lo que se sabía al cerrar esta
+> fase, incluida la parte que resultó no ser cierta: no hacía falta build nueva, `expo-modules-core`
+> ya trae un uuid nativo dentro del APK.
+
 **Tocar un artículo creado en la misma sesión offline.** El alta optimista inventa un id
 (`optimistic-<ts>`). Si sin cobertura añades «pan» y acto seguido lo marcas como comprado, el alta
 llega bien al reconectar, pero la marca viaja con un id que el servidor no conoce: el `update` no

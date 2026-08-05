@@ -113,6 +113,19 @@ async function fetchPublicImage(path) {
   return { status: res.status }
 }
 
+async function expireJoinCode(communityId) {
+  const res = await fetch(`${url}/rest/v1/communities?id=eq.${communityId}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: secretKey,
+      Authorization: `Bearer ${secretKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ join_code_expires_at: '2020-01-01T00:00:00Z' }),
+  })
+  return res.status
+}
+
 async function cleanup(communityIds, imagePaths) {
   if (!secretKey) {
     console.log('\nSin SUPABASE_SECRET_KEY: las comunidades de prueba se quedan en la base.')
@@ -165,7 +178,11 @@ async function main() {
   const itemB = await insertItem(tokenB, { community_id: communityB, name: 'pan', quantity: 1 })
   const itemBId = itemB.body?.[0]?.id
 
-  check('Un miembro puede escribir en su propia comunidad', itemB.status === 201, `HTTP ${itemB.status}`)
+  check(
+    'Un miembro puede escribir en su propia comunidad',
+    itemB.status === 201,
+    `HTTP ${itemB.status}`,
+  )
 
   const crossRead = await select(tokenA, `items?select=id&community_id=eq.${communityB}`)
   check(
@@ -195,7 +212,11 @@ async function main() {
   )
 
   const crossInsert = await insertItem(tokenA, { community_id: communityB, name: 'intruso' })
-  check('A no puede insertar en la comunidad de B', crossInsert.status >= 400, `HTTP ${crossInsert.status}`)
+  check(
+    'A no puede insertar en la comunidad de B',
+    crossInsert.status >= 400,
+    `HTTP ${crossInsert.status}`,
+  )
 
   const crossUpdate = await patchItem(tokenA, itemBId, { is_purchased: true })
   check(
@@ -215,7 +236,11 @@ async function main() {
   const imagePathIntruso = `${communityB}/intruso.jpg`
 
   const ownUpload = await uploadImage(tokenB, imagePathB)
-  check('B puede subir una foto a la carpeta de su comunidad', ownUpload.status === 200, `HTTP ${ownUpload.status}`)
+  check(
+    'B puede subir una foto a la carpeta de su comunidad',
+    ownUpload.status === 200,
+    `HTTP ${ownUpload.status}`,
+  )
 
   const crossUpload = await uploadImage(tokenA, imagePathIntruso)
   check(
@@ -232,11 +257,7 @@ async function main() {
   )
 
   const crossSign = await signImage(tokenA, imagePathB)
-  check(
-    'A no puede firmar una foto de B',
-    crossSign.status >= 400,
-    `HTTP ${crossSign.status}`,
-  )
+  check('A no puede firmar una foto de B', crossSign.status >= 400, `HTTP ${crossSign.status}`)
 
   const ownSign = await signImage(tokenB, imagePathB)
   check('B sí puede firmar su propia foto', ownSign.status === 200, `HTTP ${ownSign.status}`)
@@ -248,14 +269,20 @@ async function main() {
     `HTTP ${publicRead.status}`,
   )
 
-  const badCode = await rpc(tokenA, 'join_community', { p_join_code: 'ZZZ-9999', p_username: 'ana' })
+  const badCode = await rpc(tokenA, 'join_community', {
+    p_join_code: 'ZZZ-9999',
+    p_username: 'ana',
+  })
   check(
     'Un join_code inexistente da invalid_join_code',
     badCode.body?.[0]?.status === 'invalid_join_code',
     badCode.body?.[0]?.status ?? `HTTP ${badCode.status}`,
   )
 
-  const takenName = await rpc(tokenA, 'join_community', { p_join_code: joinCodeB, p_username: 'bruno' })
+  const takenName = await rpc(tokenA, 'join_community', {
+    p_join_code: joinCodeB,
+    p_username: 'bruno',
+  })
   check(
     'Un username ya usado da username_taken',
     takenName.body?.[0]?.status === 'username_taken',
@@ -288,6 +315,58 @@ async function main() {
     stillWorks.body?.[0]?.status === 'ok',
     stillWorks.body?.[0]?.status ?? `HTTP ${stillWorks.status}`,
   )
+
+  const intruderRotate = await rpc(tokenA, 'rotate_join_code', { p_community_id: communityB })
+  check(
+    'A no puede rotar el código de B',
+    intruderRotate.status >= 400,
+    `HTTP ${intruderRotate.status}`,
+  )
+
+  const tokenC = await signInAnonymously()
+  const codeSurvives = await rpc(tokenC, 'join_community', {
+    p_join_code: joinCodeB,
+    p_username: 'carla',
+  })
+  check(
+    'El código de B sigue valiendo tras el intento de A',
+    codeSurvives.body?.[0]?.status === 'ok',
+    codeSurvives.body?.[0]?.status ?? `HTTP ${codeSurvives.status}`,
+  )
+
+  const rotated = await rpc(tokenC, 'rotate_join_code', { p_community_id: communityB })
+  const newCodeB = rotated.body?.[0]?.join_code
+  check(
+    'Cualquier miembro puede rotar el código de su lista',
+    rotated.status === 200 && typeof newCodeB === 'string' && newCodeB !== joinCodeB,
+    newCodeB ?? `HTTP ${rotated.status}`,
+  )
+
+  const tokenD = await signInAnonymously()
+  const oldCode = await rpc(tokenD, 'join_community', {
+    p_join_code: joinCodeB,
+    p_username: 'daniel',
+  })
+  check(
+    'El código anterior deja de valer al instante',
+    oldCode.body?.[0]?.status === 'invalid_join_code',
+    oldCode.body?.[0]?.status ?? `HTTP ${oldCode.status}`,
+  )
+
+  if (secretKey) {
+    await expireJoinCode(communityB)
+    const expiredCode = await rpc(tokenD, 'join_community', {
+      p_join_code: newCodeB,
+      p_username: 'daniel',
+    })
+    check(
+      'Un código caducado da expired_join_code',
+      expiredCode.body?.[0]?.status === 'expired_join_code',
+      expiredCode.body?.[0]?.status ?? `HTTP ${expiredCode.status}`,
+    )
+  } else {
+    console.log('Sin SUPABASE_SECRET_KEY: no se comprueba la caducidad del código.')
+  }
 
   await cleanup([communityA, communityB], [imagePathB, imagePathIntruso])
 

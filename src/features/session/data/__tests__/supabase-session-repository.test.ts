@@ -2,6 +2,7 @@ import NetInfo from '@react-native-community/netinfo'
 
 import { OfflineError } from '../../../../shared/lib/network'
 import { supabase } from '../../../../shared/lib/supabase'
+import { SessionError } from '../../domain/session-error'
 import { supabaseSessionRepository } from '../supabase-session-repository'
 
 jest.mock('../../../../shared/lib/supabase', () => ({
@@ -80,6 +81,18 @@ describe('signInAnonymously', () => {
     await expect(supabaseSessionRepository.signInAnonymously()).rejects.toThrow(
       /Authentication > Sign In \/ Providers/,
     )
+  })
+
+  it('marca el proveedor desactivado con un motivo que la pantalla puede traducir', async () => {
+    auth.signInAnonymously.mockResolvedValue({
+      data: { user: null },
+      error: { code: 'anonymous_provider_disabled', message: 'Anonymous sign-ins are disabled' },
+    } as never)
+
+    const failure = await supabaseSessionRepository.signInAnonymously().catch((error) => error)
+
+    expect(failure).toBeInstanceOf(SessionError)
+    expect(failure.reason).toBe('anonymous_disabled')
   })
 
   it('falla si Supabase responde sin usuario', async () => {

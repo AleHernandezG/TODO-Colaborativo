@@ -4,6 +4,11 @@ export type Community = {
   joinCode: string
 }
 
+export type JoinCodeInfo = {
+  code: string
+  expiresAt: string
+}
+
 export type Membership = {
   community: Community
   username: string

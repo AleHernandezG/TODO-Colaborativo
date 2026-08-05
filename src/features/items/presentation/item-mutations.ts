@@ -12,7 +12,12 @@ import type { Item } from '../domain/item'
 import { setPurchased } from '../domain/set-purchased'
 import { itemsKey } from './use-items'
 
-export type AddItemVariables = { communityId: string; name: string; quantity: number }
+export type AddItemVariables = {
+  id: string
+  communityId: string
+  name: string
+  quantity: number
+}
 
 export type EditItemVariables = {
   communityId: string

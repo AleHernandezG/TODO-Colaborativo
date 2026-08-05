@@ -9,7 +9,7 @@ export type ItemsSubscriptionHandlers = {
 
 export interface ItemRepository {
   list(communityId: string): Promise<Item[]>
-  add(input: { communityId: string; name: string; quantity: number }): Promise<Item>
+  add(input: { id: string; communityId: string; name: string; quantity: number }): Promise<Item>
   edit(
     itemId: string,
     input: { name: string; quantity: number; imagePath?: string | null },

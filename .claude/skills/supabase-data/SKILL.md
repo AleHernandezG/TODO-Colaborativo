@@ -14,10 +14,11 @@ construir el puente a mano. Esta skill existe sobre todo para eso.
 
 ```sql
 create table communities (
-  id          uuid primary key default gen_random_uuid(),
-  name        text not null,
-  join_code   text not null unique,
-  created_at  timestamptz not null default now()
+  id                    uuid primary key default gen_random_uuid(),
+  name                  text not null,
+  join_code             text not null unique,
+  join_code_expires_at  timestamptz not null default now() + join_code_lifetime(),
+  created_at            timestamptz not null default now()
 );
 
 create table members (
@@ -161,8 +162,8 @@ Ver `supabase/migrations/` para la versión completa con el rate limit.
 **Devuelve un `status`, no lanza excepciones.** No es una preferencia de estilo: una excepción
 deshace la transacción entera, incluido el `insert` en `join_attempts` que lleva la cuenta de
 intentos. Un rate limit que lanza excepciones no cuenta nada, porque cada intento fallido se
-borra a sí mismo al fallar. Estados: `ok`, `invalid_join_code`, `username_taken`,
-`too_many_attempts`.
+borra a sí mismo al fallar. Estados: `ok`, `invalid_join_code`, `expired_join_code`,
+`username_taken`, `too_many_attempts`.
 
 **`#variable_conflict use_column` no es decorativo.** El parámetro de salida se llama
 `community_id` y `members` tiene una columna con ese nombre, así que sin esa línea el `insert`
@@ -222,6 +223,37 @@ Fuera `O`, `0`, `I`, `1`. Genera en el servidor, formato tipo `PAN-42XK`, y norm
 mayúsculas al comparar (la RPC ya lo hace). Rate limit en `join_community`: sin él, el
 espacio de códigos se puede barrer a fuerza bruta y ese código es el único secreto que
 protege la lista.
+
+### Caduca solo y se puede cambiar a mano
+
+El plazo vive en una función, no repetido en los dos sitios que lo usan:
+
+```sql
+create or replace function join_code_lifetime()
+returns interval
+language sql immutable as $$ select interval '7 days' $$;
+```
+
+Lo usan el `default` de `join_code_expires_at` y `rotate_join_code(p_community_id uuid)`, que
+genera uno nuevo y **sobrescribe** al anterior sin periodo de gracia. Rotar no expulsa a nadie: la
+pertenencia está en `members` y el código solo sirve para la primera vez.
+
+Dos cosas que se hacen mal con facilidad:
+
+- **`rotate_join_code` comprueba la pertenencia a mano** (`p_community_id in (select
+  member_community_ids())` → `not_a_member`). Es `security definer`, así que se salta RLS: si no
+  comprueba, cualquiera con sesión rota el código de cualquier lista sabiendo su uuid.
+- **Un código caducado cuenta como intento fallido en `join_attempts`**, igual que uno inexistente.
+  Si no contara, acertar con una lista vencida sería una forma gratis de saber que existe y de
+  seguir barriendo sin gastar rate limit.
+
+`join_code_lifetime()` no recibe grant a nadie. Solo se evalúa desde el `default` de la columna y
+desde `rotate_join_code`, y ambos corren con privilegios del dueño; `communities` no tiene política
+de insert ni de update, así que nadie con rol `authenticated` llega a esa expresión.
+
+El plazo se puede cambiar con un `create or replace` de la función, pero **eso no toca las filas
+que ya existen**: su `join_code_expires_at` ya está escrito. Cambiar el plazo hacia atrás para
+listas vivas es un `update`, y hay que decidirlo a propósito.
 
 ## Storage
 
