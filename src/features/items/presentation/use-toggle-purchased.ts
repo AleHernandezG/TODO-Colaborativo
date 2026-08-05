@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 
 import { useSnackbar } from '../../../shared/hooks/use-snackbar'
 import { OfflineError } from '../../../shared/lib/network'
-import { supabaseItemRepository } from '../data/supabase-item-repository'
 import type { Item } from '../domain/item'
-import { setPurchased } from '../domain/set-purchased'
+import type { ItemMutationVariables } from './item-mutations'
+import { itemMutationKeys } from './item-mutations'
 import { itemsKey } from './use-items'
 
 type MutationContext = { previous: Item[] | undefined }
@@ -16,9 +16,9 @@ export function useTogglePurchased(communityId: string) {
   const { t } = useTranslation()
   const key = itemsKey(communityId)
 
-  return useMutation({
-    mutationFn: (item: Item) => setPurchased(supabaseItemRepository, item.id, !item.isPurchased),
-    onMutate: async (item): Promise<MutationContext> => {
+  const mutation = useMutation<void, Error, ItemMutationVariables, MutationContext>({
+    mutationKey: itemMutationKeys.togglePurchased,
+    onMutate: async ({ item }): Promise<MutationContext> => {
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<Item[]>(key)
 
@@ -27,7 +27,7 @@ export function useTogglePurchased(communityId: string) {
       )
       return { previous }
     },
-    onError: (error, _item, context) => {
+    onError: (error, _input, context) => {
       queryClient.setQueryData<Item[]>(key, context?.previous ?? [])
       showSnackbar(
         error instanceof OfflineError ? t('errors.offline') : t('items.errors.updateFailed'),
@@ -37,4 +37,8 @@ export function useTogglePurchased(communityId: string) {
       queryClient.invalidateQueries({ queryKey: key })
     },
   })
+
+  return {
+    mutate: (item: Item) => mutation.mutate({ communityId, item }),
+  }
 }

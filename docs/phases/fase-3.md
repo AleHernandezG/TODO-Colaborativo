@@ -1,7 +1,9 @@
 # Fase 3 · Imágenes y pulido UX
 
-- Estado: **código completo, pendiente de aplicar la migración y verificar en el APK 1.2.0**
+- Estado: **cerrada el 2026-08-05**, probada en dispositivo sobre la 1.2.0 con el update de
+  arreglos. Queda una deuda abierta: la pasada con TalkBack (F.2), aplazada por decisión.
 - Inicio: 2026-08-03
+- Cierre: 2026-08-05
 
 Entregable de la fase (§12 del documento maestro): experiencia completa y estética, auditoría F
 superada.
@@ -746,6 +748,79 @@ de la comprobación que decide si una fase se cierra.
 
 ---
 
+## Lo que encontró la prueba en dispositivo
+
+El APK 1.2.0 sacó a la luz un bug y dos problemas de tamaño. Los tres son de JS, así que se
+entregan con `eas update` sin build nuevo y sin subir de 1.2.0.
+
+### Sustituir la foto no cambiaba nada de lo que se veía
+
+Poner una foto por primera vez funcionaba. Sustituirla por otra, no: la app seguía enseñando la
+anterior. La foto **sí se subía** (se ve en la fecha de modificación del objeto en el panel de
+Storage); lo que fallaba era enseñarla, y fallaba en los dos móviles a la vez.
+
+La causa está entera en la ruta determinista de ADR-0006. Como la ruta no cambia, `image_path`
+no cambia; como `image_path` no cambia, la clave de la query de la URL firmada
+(`['item-image-url', path]`) tampoco, y con `staleTime` de 6,3 días TanStack Query devuelve la
+URL que ya tenía sin volver a firmar. Misma URL, `cachePolicy="disk"`, y `expo-image` sirve los
+bytes viejos.
+
+Lo peor no era la caché local sino que **nada en los datos decía que la foto había cambiado**.
+El segundo móvil recibía su evento de Realtime, refrescaba la lista, veía el mismo `image_path`
+y se quedaba igual. En una app cuyo objetivo es que dos personas vean lo mismo, eso es el bug
+entero, no un detalle de rendimiento.
+
+Arreglado con ruta versionada, `<community_id>/<item_id>-<epoch_ms>.jpg`. El diseño, las tres
+alternativas descartadas y por qué, en [ADR-0007](../adr/ADR-0007-ruta-versionada-de-las-fotos.md).
+No necesita migración: la columna es `text` y las políticas siguen mirando la primera carpeta,
+que sigue siendo el `community_id`.
+
+Lo que cambia en el código, además de la ruta:
+
+- `editItem` recibe `currentImagePath` y borra el objeto anterior **después** de actualizar la
+  columna, tragándose el error si falla. Al revés, un fallo a mitad dejaría la fila apuntando a
+  un objeto borrado.
+- «Quitar la foto» pasa a borrar el objeto. Antes se apoyaba en que la siguiente foto lo pisaría;
+  con rutas versionadas eso ya no pasa.
+
+Cinco tests nuevos: que sustituir borra la anterior y en ese orden, que un artículo sin foto
+previa no intenta borrar nada, que un borrado fallido no rompe la edición, que quitar la foto sí
+borra, y que editar solo el nombre no toca la foto. Más uno del adaptador: dos subidas del mismo
+artículo dan rutas distintas.
+
+**Corrección a la documentación anterior.** ADR-0006 justificaba la ruta determinista diciendo
+que «la caché por URL de `expo-image` se invalida sola: la firma es nueva aunque la ruta sea la
+misma». Es falso. Firmar es una query cacheada por ruta; si la ruta no cambia, no se firma otra
+vez nunca. El fallo de razonamiento fue dar por buena la conclusión sin mirar qué dispara una
+firma nueva.
+
+### El pie de la lista ocupaba demasiado
+
+El bloque del código de invitación más los tres botones se comían una pantalla de móvil para algo
+que se usa una vez. `Button` gana `size` (`md` por defecto, `sm` nuevo): el `sm` baja el padding
+y el texto, pero **mantiene `minHeight: minTouchTarget`**, así que el botón queda en 44 pt
+exactos en vez de ~48 y la regla de accesibilidad se sigue cumpliendo. Con eso, más el código de
+`text-2xl` a `text-xl` y el `mt-6 pt-6` (48 px de aire antes de empezar) a `mt-4 pt-4`, el pie
+adelgaza unos 60 px sin perder nada.
+
+### Los botones del diálogo de editar no cabían
+
+En un móvil de 360 dp: Paper deja el diálogo en 308, el `ScrollView` metía 24 de padding por
+lado quedando 260, la vista previa se llevaba 96 más 12 de hueco, y la columna de botones se
+quedaba con 152; descontado el `px-6` del `Button`, 104 px para un texto como «Elegir de la
+galería», que a `text-lg` necesita casi el doble. Se envolvía en tres líneas.
+
+Tres cambios, ninguno de rediseño: los botones del diálogo pasan a `size="sm"`, el padding del
+`ScrollView` y de las acciones baja a 20, y las dos etiquetas se acortan a «Hacer foto» y «De la
+galería». Los `accessibilityHint` siguen explicando qué hace cada botón, así que quien usa lector
+de pantalla no pierde información.
+
+De paso, `shared/ui/Dialog.tsx` resolvía la paleta a mano con `useColorScheme()`. Es exactamente
+lo que el incremento 4 decía haber eliminado de toda la app, y se le escapó. Ahora usa
+`usePalette()`, y la afirmación de F.3 vuelve a ser cierta.
+
+---
+
 ## Auditoría F (§11 del documento maestro)
 
 El entregable de la fase es «experiencia completa y estética, **auditoría F superada**». Los
@@ -753,7 +828,8 @@ cuatro puntos del apartado F, con la prueba de cada uno y quién la hace.
 
 ### F.1 · Test con 1 usuario novato: completa las 3 tareas núcleo sin ayuda
 
-**Pendiente. No lo puedo hacer yo y no lo voy a dar por bueno leyendo el código.**
+**Superado el 2026-08-05.** Una persona que no había visto la app completó las tres tareas sin
+ayuda y sin que nadie le señalara la pantalla.
 
 Las tres tareas núcleo, tal y como hay que plantearlas (sin decir dónde está nada):
 
@@ -762,7 +838,7 @@ Las tres tareas núcleo, tal y como hay que plantearlas (sin decir dónde está 
 3. «Ya la has comprado, márcalo.»
 
 Se pasa si las hace sin que nadie le señale la pantalla y sin preguntar «¿y ahora qué?». Los
-sitios donde espero que se atasque, por si conviene mirarlos de cerca:
+sitios donde esperaba que se atascara, **ninguno de los cuales llegó a frenarla**:
 
 - El paso de la landing a «Tengo un código»: hay dos botones y el correcto depende de si alguien
   le pasó un código, algo que la pantalla no sabe.
@@ -771,8 +847,16 @@ sitios donde espero que se atasque, por si conviene mirarlos de cerca:
 - Marcar comprado: la casilla es el control, pero el nombre al lado abre el diálogo de editar.
   Es el toque accidental más probable de la pantalla.
 
-Si falla el punto 2, la conclusión no es «el usuario no lo entiende», es que la cantidad tiene
-que estar en la barra de añadir. Anótalo y lo arreglamos antes de la Fase 4.
+El punto 2 era el que más me preocupaba, y la regla que dejé escrita era que si fallaba la
+conclusión no sería «el usuario no lo entiende» sino que la cantidad tiene que estar en la barra
+de añadir. **No falló, así que el `QuantityStepper` se queda dentro del diálogo de editar.** La
+sospecha era razonable y la prueba no la respalda; mover el control ahora sería rediseñar por una
+corazonada que ya se contrastó.
+
+Lo que no quedó registrado es la parte cualitativa: dónde dudó sin llegar a atascarse. No se
+tomaron notas durante la sesión y con la misma persona ya no se puede repetir. Se pasa el criterio
+de la auditoría, que es lo que decidía la fase, pero esa observación se perdió. Si algún día hay
+un segundo novato disponible, conviene apuntar los titubeos aunque acabe completando las tres.
 
 ### F.2 · Contraste AA verificado; targets ≥ 44 pt; labels de accesibilidad presentes
 
@@ -796,12 +880,32 @@ No hay `TouchableOpacity` ni `TouchableHighlight` en el código: todo control pu
 El hueco real que encontró esta auditoría fue el de 1.4.11 (bordes de control a 1.48:1), y está
 resuelto con `borderStrong`. Está contado arriba, en el incremento 4.
 
+**Lo automático está cumplido; la pasada con TalkBack encendido se aplaza a antes de publicar,
+por decisión del usuario del 2026-08-05.** Que un `accessibilityLabel` exista no prueba que lo que
+lee tenga sentido ni que el orden de recorrido sea el bueno, y eso solo se ve con el lector puesto
+en el móvil. Los pasos son el 8 del incremento 1, el 5 del 2, el 12 del 3 y el 9-10 del 4.
+
+La fase se cierra con esto pendiente porque lo que puede fallar aquí es de presentación, no de
+datos ni de seguridad: un label que suene raro se arregla cambiando una cadena de `es.json`, sin
+tocar código ni esquema, así que no condiciona nada de lo que venga después. Lo que sí sería un
+error es publicar sin haberlo mirado, y por eso se queda **como deuda abierta con fecha tope:
+antes de la publicación de la beta**, no como algo dado por bueno. Guion completo en
+[`docs/guias/prueba-de-cierre-en-dispositivo.md`](../guias/prueba-de-cierre-en-dispositivo.md),
+bloque 4.
+
+Los botones de foto pasaron a `size="sm"` y las etiquetas se acortaron, así que hay que
+comprobar dos cosas concretas cuando se haga: que los botones del diálogo siguen midiendo 44 pt
+(deberían, `minHeight` no se tocó) y que «Hacer foto» y «De la galería» se anuncian con su hint,
+que es donde vive ahora la explicación larga.
+
 ### F.3 · Modo oscuro y tamaño de fuente del sistema respetados
 
-**Cumplido en código, falta verlo en el móvil.** Lo que se ha hecho:
+**Cumplido, y visto en el móvil el 2026-08-05** con la fuente del sistema al máximo y en modo
+oscuro. Lo que se ha hecho:
 
 - Ningún componente resuelve la paleta a mano: todos pasan por `usePalette()`. Era el agujero
-  por el que se coló el spinner blanco sobre azul claro.
+  por el que se coló el spinner blanco sobre azul claro. (Cuando esto se escribió quedaba uno
+  sin migrar, `shared/ui/Dialog.tsx`; corregido al arreglar el diálogo, ver arriba.)
 - Ninguna altura fija en la pantalla de lista. La cabecera y el pie viven dentro del scroll de la
   `SectionList`, así que con la fuente al 200 % nada queda fuera de alcance.
 - Ningún `fontSize` numérico ni `allowFontScaling={false}` en toda la app: los tamaños salen de
@@ -848,19 +952,75 @@ la migración se aplica igual.
 |---|---|
 | `npm run lint` | 0 errores |
 | `npx tsc --noEmit` | limpio |
-| `npm test` | 141 tests, 20 suites |
+| `npm test` | 146 tests, 20 suites |
 | `npm run test:rls` | 19/19 |
 | `npm run test:realtime` | 12/12 |
 | `npx expo export --platform android` | bundle de 5.42 MB |
 
-## Qué falta para cerrar la fase
+Los 146 salen de los 141 del incremento 4 más los 5 del arreglo de la foto sustituida (4 del
+caso de uso y 1 del adaptador; el sexto reemplaza al que daba por buena la conducta vieja de
+«quitar la foto no borra el fichero»). Las comprobaciones de RLS y Realtime no se repiten porque
+nada de este arreglo toca ni políticas ni canales: la ruta cambia de forma pero sigue empezando
+por el `community_id`, que es lo único que miran las políticas.
 
-Solo la verificación en dispositivo:
+## Cómo se cerró la fase
 
-```bash
-npx eas-cli@latest build --platform android --profile preview
-```
+Como la Fase 4 se empezó antes de cerrar esta, las dos se probaron de una sentada, en el orden y
+con el detalle de
+[`docs/guias/prueba-de-cierre-en-dispositivo.md`](../guias/prueba-de-cierre-en-dispositivo.md), que
+queda como registro de la ejecución. El APK 1.2.0 ya estaba instalado y todo lo pendiente era JS,
+así que fue por aire con un solo update. El comando que había aquí antes
+(`"Fix replaced item photo and tighten footer and dialog"`) se quedó desfasado: el que se publicó
+lleva también la Fase 4, porque la 4 no metió ningún módulo nativo.
 
-La fase se cierra cuando el APK 1.2.0 esté instalado en los dos móviles, el pie de la pantalla
-de lista diga `v1.2.0 · base`, y pasen los pasos manuales de los incrementos 3 y 4 más el test
-con usuario novato de F.1.
+De los cuatro puntos que quedaban:
+
+1. **Pasado.** Sustituir la foto, quitarla y editar solo el nombre de un artículo con foto, en los
+   dos móviles. Era el bug que abrió [ADR-0007](../adr/ADR-0007-ruta-versionada-de-las-fotos.md) y
+   está confirmado en dispositivo, que es donde apareció.
+2. **Pasado**, con el pie y el diálogo ya adelgazados. Salvo el paso 8, «Quitar animaciones», que
+   no se llegó a hacer porque el ajuste no se encontró en el móvil. No bloquea: ahí no hay código
+   nuestro, Reanimated respeta `ReduceMotion.System` por defecto. Anotado con la ruta del ajuste
+   en la guía de cierre.
+3. **Pasado.** El test con usuario novato de F.1, con las tres tareas sin ayuda.
+4. **Aplazado por decisión**, ver F.2. Se hace antes de publicar la beta.
+
+Con eso la fase se da por cerrada, arrastrando esa única deuda abierta.
+
+### Guion de pruebas, en orden
+
+Los cuatro incrementos tienen sus pasos detallados arriba. Este es el orden en que hacerlos de
+una sentada, con los motivos de que el orden importe. Se conserva porque los motivos siguen
+valiendo para la próxima entrega grande; lo que se ejecutó de verdad, con sus resultados, está en
+la guía de cierre.
+
+**0. Antes de tocar nada.** Instala el APK encima del anterior en los dos móviles (mismo
+keystore, no desinstales: perderías la sesión). El pie de la lista tiene que decir
+`v1.2.0 · base`. Si dice otra cosa, para: lo que pruebes después no es este código.
+
+**1. El test con usuario novato (F.1), lo primero.** Es irreversible: en cuanto alguien ve la
+app con alguien al lado explicándola, ya no sirve como novato. Guion en F.1.
+
+**2. Los incrementos 1 y 2**, que nunca se han visto en un APK. El build 1.1.0 salió con el
+árbol sucio, así que no cuenta como probado. Editar artículo y copiar/compartir el código.
+
+**3. El incremento 3**, con los dos móviles a mano para el paso de Realtime y con el panel de
+Supabase abierto para las dos comprobaciones que no se ven en la app (el objeto borrado y la URL
+pública que debe fallar).
+
+**4. El incremento 4**, que empieza cambiando los ajustes del sistema (fuente al máximo, modo
+oscuro, quitar animaciones). Va al final porque hay que dejar el móvil como estaba después.
+
+**5. TalkBack**, agrupado al final de todo. Activarlo cambia cómo se navega la app entera y
+mezclarlo con las pruebas normales solo confunde: pasos 8 del incremento 1, 5 del 2, 12 del 3 y
+9-10 del 4. **Aplazado por decisión**, ver F.2: sigue siendo criterio de cierre, pero se hace en
+una pasada aparte cuando lo demás esté verde.
+
+#### Dos trampas al montar la prueba de F.1
+
+- **No borres los datos de la app para simular a alguien nuevo.** Eso crea un `auth_user_id`
+  anónimo distinto, así que el `on conflict (community_id, auth_user_id)` de `join_community`
+  no salta y el `unique (community_id, username)` de la fila vieja te devuelve `username_taken`.
+  Usa un nombre de usuario distinto, o el segundo móvil.
+- `npm run users -- --delete-orphans` no arregla eso: la fila de `members` que estorba tiene su
+  usuario de auth vivo, así que no es huérfana.

@@ -761,16 +761,25 @@ Usar Supabase (Postgres + Realtime + Storage + RLS).
 
 ## 16. Checklist final de entrega
 
-- [ ] Los 7 requisitos funcionales del MVP (RF-1…RF-7) cumplidos y verificados en 2 dispositivos/redes.
-- [ ] Sincronización < 2 s entre países; offline abre y encola; rollback probado.
-- [ ] RLS impide fugas entre comunidades (test explícito).
-- [ ] Accesibilidad AA verificada + test con usuario novato superado.
-- [ ] Arquitectura desacoplada verificada (dominio limpio, repos como puertos).
-- [ ] Lint/typecheck/tests en verde; cobertura dominio/repos ≥ 70%.
-- [ ] `docs/` completo: ADRs, docs por fase, READMEs de feature.
-- [ ] Secretos fuera del repo; `.env.example` presente.
-- [ ] Build EAS de prueba (iOS/Android) instalable.
-- [ ] Todas las auditorías (§11) en ✅.
+> Estado a 2026-08-05, con las fases 0 → 4 cerradas. El detalle de cada casilla está en el diario
+> de su fase; el repaso completo de la §11 está en `docs/phases/fase-4.md`.
+
+- [x] Los 7 requisitos funcionales del MVP (RF-1…RF-7) cumplidos y verificados en 2 dispositivos/redes.
+- [x] Sincronización < 2 s entre países; offline abre y encola; rollback probado. *(Dos redes sí,
+      dos países no: no hay forma de probarlo aquí y no depende de la app, los clientes no hablan
+      entre sí.)*
+- [x] RLS impide fugas entre comunidades (test explícito). `npm run test:rls`, 19/19.
+- [x] Accesibilidad AA verificada + test con usuario novato superado. *(La pasada con TalkBack se
+      aplazó a antes de publicar; ver F.2 en `docs/phases/fase-3.md`.)*
+- [x] Arquitectura desacoplada verificada (dominio limpio, repos como puertos).
+- [x] Lint/typecheck/tests en verde; cobertura dominio/repos ≥ 70%. 96.9% de sentencias.
+- [x] `docs/` completo: ADRs, docs por fase, READMEs de feature. *(Sin READMEs de feature, a
+      propósito: los diarios de fase y los ADR cubren eso y un cuarto sitio se desincroniza.)*
+- [x] Secretos fuera del repo; `.env.example` presente.
+- [x] Build EAS de prueba instalable. *(Android, APK 1.2.0 con updates por aire. iOS nunca se ha
+      compilado: es plataforma secundaria y no hay Mac ni cuenta de desarrollador.)*
+- [ ] Todas las auditorías (§11) en ✅. *(Tres puntos sin medir: lista de 200 artículos, arranque
+      en frío en gama media, y revisión de dependencias abandonadas.)*
 
 ---
 

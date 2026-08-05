@@ -222,19 +222,37 @@ describe('fotos', () => {
   it('sube la foto a la carpeta de su comunidad y devuelve la ruta', async () => {
     const bucket = mockStorage()
 
-    await expect(
+    const path = await supabaseItemRepository.uploadImage({
+      communityId: 'c1',
+      itemId: 'i1',
+      uri: 'file:///tmp/foto.jpg',
+    })
+
+    expect(path).toMatch(/^c1\/i1-\d+\.jpg$/)
+    expect(storageFrom).toHaveBeenCalledWith('item-images')
+    expect(bucket.upload).toHaveBeenCalledWith(path, expect.any(ArrayBuffer), {
+      contentType: 'image/jpeg',
+      upsert: true,
+    })
+  })
+
+  it('dos subidas del mismo artículo dan rutas distintas', async () => {
+    mockStorage()
+    const now = jest.spyOn(Date, 'now')
+    now.mockReturnValueOnce(1000).mockReturnValueOnce(2000)
+
+    const upload = () =>
       supabaseItemRepository.uploadImage({
         communityId: 'c1',
         itemId: 'i1',
         uri: 'file:///tmp/foto.jpg',
-      }),
-    ).resolves.toBe('c1/i1.jpg')
+      })
 
-    expect(storageFrom).toHaveBeenCalledWith('item-images')
-    expect(bucket.upload).toHaveBeenCalledWith('c1/i1.jpg', expect.any(ArrayBuffer), {
-      contentType: 'image/jpeg',
-      upsert: true,
-    })
+    const first = await upload()
+    const second = await upload()
+    now.mockRestore()
+
+    expect(first).not.toBe(second)
   })
 
   it('falla con un mensaje que dice qué pasó al subir', async () => {

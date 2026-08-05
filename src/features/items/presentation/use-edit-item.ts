@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next'
 
 import { useSnackbar } from '../../../shared/hooks/use-snackbar'
 import { OfflineError } from '../../../shared/lib/network'
-import { supabaseItemRepository } from '../data/supabase-item-repository'
-import type { ItemImageChange } from '../domain/edit-item'
-import { editItem } from '../domain/edit-item'
+import type { EditItemResult, ItemImageChange } from '../domain/edit-item'
 import type { Item } from '../domain/item'
 import { normalizeItemName } from '../domain/item-name'
+import type { EditItemVariables } from './item-mutations'
+import { itemMutationKeys } from './item-mutations'
 import { itemsKey } from './use-items'
 
 export type EditInput = {
@@ -15,6 +15,7 @@ export type EditInput = {
   name: string
   quantity: number
   image: ItemImageChange
+  currentImagePath: string | null
 }
 
 type MutationContext = { previous: Item[] | undefined }
@@ -25,9 +26,8 @@ export function useEditItem(communityId: string) {
   const { t } = useTranslation()
   const key = itemsKey(communityId)
 
-  return useMutation({
-    mutationFn: (input: EditInput) =>
-      editItem(supabaseItemRepository, { ...input, communityId }),
+  const mutation = useMutation<EditItemResult, Error, EditItemVariables, MutationContext>({
+    mutationKey: itemMutationKeys.edit,
     onMutate: async (input): Promise<MutationContext> => {
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<Item[]>(key)
@@ -59,4 +59,10 @@ export function useEditItem(communityId: string) {
       queryClient.invalidateQueries({ queryKey: key })
     },
   })
+
+  return {
+    mutate: (input: EditInput) => mutation.mutate({ ...input, communityId }),
+    isPending: mutation.isPending,
+    variables: mutation.variables,
+  }
 }

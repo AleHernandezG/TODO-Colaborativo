@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { ScrollView, useColorScheme, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { Dialog as PaperDialog, Portal } from 'react-native-paper'
 
-import { colors, radius } from '../../theme'
+import { radius, usePalette } from '../../theme'
 import { Button } from './Button'
 
 type DialogProps = {
@@ -26,8 +26,7 @@ export function Dialog({
   cancelLabel,
   children,
 }: DialogProps) {
-  const scheme = useColorScheme()
-  const palette = scheme === 'dark' ? colors.dark : colors.light
+  const palette = usePalette()
 
   return (
     <Portal>
@@ -40,20 +39,25 @@ export function Dialog({
 
         <PaperDialog.ScrollArea style={{ paddingHorizontal: 0, borderColor: palette.border }}>
           <ScrollView
-            contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 8 }}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 8 }}
             keyboardShouldPersistTaps="handled"
           >
             {children}
           </ScrollView>
         </PaperDialog.ScrollArea>
 
-        <PaperDialog.Actions>
-          <View className="w-full flex-row gap-3">
+        <PaperDialog.Actions style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
+          <View className="w-full flex-row gap-2">
             <View className="flex-1">
-              <Button label={cancelLabel} onPress={onDismiss} variant="secondary" />
+              <Button label={cancelLabel} onPress={onDismiss} variant="secondary" size="sm" />
             </View>
             <View className="flex-1">
-              <Button label={confirmLabel} onPress={onConfirm} disabled={confirmDisabled} />
+              <Button
+                label={confirmLabel}
+                onPress={onConfirm}
+                disabled={confirmDisabled}
+                size="sm"
+              />
             </View>
           </View>
         </PaperDialog.Actions>

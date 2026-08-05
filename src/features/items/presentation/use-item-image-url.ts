@@ -16,5 +16,6 @@ export function useItemImageUrl(path: string | null) {
     enabled: path !== null,
     staleTime: reuseWindowMs,
     gcTime: reuseWindowMs,
+    meta: { persist: true },
   })
 }

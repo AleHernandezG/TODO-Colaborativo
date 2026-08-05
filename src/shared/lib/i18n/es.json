@@ -59,6 +59,12 @@
       "connecting": "Conectando para ver los cambios al momento…",
       "disconnected": "Los cambios de los demás no llegan solos. Tira hacia abajo para actualizar."
     },
+    "offline": {
+      "viewingCached": "Sin conexión. Estás viendo la última lista guardada.",
+      "pending_one": "Sin conexión. Un cambio se guardará al recuperarla.",
+      "pending_other": "Sin conexión. {{count}} cambios se guardarán al recuperarla.",
+      "noList": "Sin conexión y todavía no hay ninguna lista guardada en este móvil."
+    },
     "viewers": {
       "viewing_one": "{{names}} está viendo la lista",
       "viewing_other": "{{names}} están viendo la lista",
@@ -83,9 +89,9 @@
     },
     "image": {
       "sectionLabel": "Foto de referencia",
-      "camera": "Hacer una foto",
+      "camera": "Hacer foto",
       "cameraHint": "Abre la cámara para fotografiar el artículo",
-      "gallery": "Elegir de la galería",
+      "gallery": "De la galería",
       "galleryHint": "Abre tus fotos para elegir una",
       "remove": "Quitar la foto",
       "removeHint": "El artículo se queda sin foto",
@@ -117,7 +123,8 @@
     "errors": {
       "addFailed": "No se pudo añadir el artículo. Inténtalo otra vez.",
       "updateFailed": "No se pudo actualizar. Inténtalo otra vez.",
-      "deleteFailed": "No se pudo borrar. Inténtalo otra vez."
+      "deleteFailed": "No se pudo borrar. Inténtalo otra vez.",
+      "queuedFailed": "Un cambio que estaba pendiente no se pudo guardar. Revisa la lista."
     }
   },
   "errors": {

@@ -14,6 +14,7 @@ type InputProps = {
   autoFocus?: boolean
   returnKeyType?: 'next' | 'done'
   onSubmitEditing?: () => void
+  testID?: string
 }
 
 export function Input({
@@ -28,6 +29,7 @@ export function Input({
   autoFocus = false,
   returnKeyType = 'done',
   onSubmitEditing,
+  testID,
 }: InputProps) {
   const palette = usePalette()
 
@@ -36,6 +38,7 @@ export function Input({
       <Text className="text-base font-medium text-content dark:text-content-dark">{label}</Text>
 
       <TextInput
+        testID={testID}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

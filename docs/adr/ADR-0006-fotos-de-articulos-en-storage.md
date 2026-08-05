@@ -1,6 +1,7 @@
 # ADR-0006: Fotos de artículos en un bucket privado con ruta determinista
 
-- Estado: Aceptado
+- Estado: Aceptado, con la ruta superseded por
+  [ADR-0007](ADR-0007-ruta-versionada-de-las-fotos.md)
 - Fecha: 2026-08-03
 
 ## Contexto

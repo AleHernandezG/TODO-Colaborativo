@@ -8,6 +8,7 @@ export function useCreateCommunity() {
   const setMembership = useActiveCommunityStore((state) => state.setMembership)
 
   return useMutation({
+    networkMode: 'always',
     mutationFn: (input: { name: string; username: string }) =>
       createCommunity(supabaseCommunityRepository, input),
     onSuccess: (result) => {

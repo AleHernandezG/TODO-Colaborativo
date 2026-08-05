@@ -10,6 +10,7 @@ export type EditItemInput = {
   name: string
   quantity: number
   image: ItemImageChange
+  currentImagePath: string | null
 }
 
 export type EditItemResult =
@@ -33,7 +34,15 @@ export async function editItem(
   const imagePath = await nextImagePath(repository, input)
   await repository.edit(input.itemId, { name, quantity: input.quantity, imagePath })
 
+  if (imagePath !== undefined && input.currentImagePath && input.currentImagePath !== imagePath) {
+    await discardStaleImage(repository, input.currentImagePath)
+  }
+
   return { status: 'ok', name }
+}
+
+function discardStaleImage(repository: ItemRepository, path: string): Promise<void> {
+  return repository.removeImage(path).catch(() => undefined)
 }
 
 function nextImagePath(

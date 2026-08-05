@@ -20,6 +20,7 @@ type EditItemDialogProps = {
     name: string
     quantity: number
     image: ItemImageChange
+    currentImagePath: string | null
   }) => void
 }
 
@@ -56,7 +57,7 @@ export function EditItemDialog({ item, onDismiss, onSave }: EditItemDialogProps)
     if (!item || !canSave) {
       return
     }
-    onSave({ itemId: item.id, name, quantity, image })
+    onSave({ itemId: item.id, name, quantity, image, currentImagePath: item.imagePath })
     onDismiss()
   }
 
@@ -104,12 +105,14 @@ export function EditItemDialog({ item, onDismiss, onSave }: EditItemDialogProps)
                 label={t('items.image.camera')}
                 onPress={() => void pick('camera')}
                 variant="secondary"
+                size="sm"
                 accessibilityHint={t('items.image.cameraHint')}
               />
               <Button
                 label={t('items.image.gallery')}
                 onPress={() => void pick('gallery')}
                 variant="secondary"
+                size="sm"
                 accessibilityHint={t('items.image.galleryHint')}
               />
             </View>
@@ -120,6 +123,7 @@ export function EditItemDialog({ item, onDismiss, onSave }: EditItemDialogProps)
               label={t('items.image.remove')}
               onPress={() => setImage({ kind: 'clear' })}
               variant="secondary"
+              size="sm"
               accessibilityHint={t('items.image.removeHint')}
             />
           ) : null}

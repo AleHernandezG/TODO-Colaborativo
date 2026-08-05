@@ -27,26 +27,27 @@ export function JoinCodeCard({ communityName, joinCode }: JoinCodeCardProps) {
   }
 
   return (
-    <View className="gap-3">
-      <View className="gap-1">
-        <Text className="text-sm text-muted dark:text-muted-dark">{t('list.joinCodeLabel')}</Text>
+    <View className="gap-2">
+      <View className="gap-0.5">
+        <Text className="text-xs text-muted dark:text-muted-dark">{t('list.joinCodeLabel')}</Text>
         <Text
           accessibilityLabel={t('list.joinCodeAccessible', {
             code: joinCode.split('').join(' '),
           })}
-          className="text-2xl font-bold tracking-widest text-content dark:text-content-dark"
+          className="text-xl font-bold tracking-widest text-content dark:text-content-dark"
         >
           {joinCode}
         </Text>
-        <Text className="text-sm text-muted dark:text-muted-dark">{t('list.joinCodeHint')}</Text>
+        <Text className="text-xs text-muted dark:text-muted-dark">{t('list.joinCodeHint')}</Text>
       </View>
 
-      <View className="flex-row gap-3">
+      <View className="flex-row gap-2">
         <View className="flex-1">
           <Button
             label={t('list.copyCode')}
             onPress={copy}
             variant="secondary"
+            size="sm"
             accessibilityHint={t('list.copyCodeHint')}
           />
         </View>
@@ -55,6 +56,7 @@ export function JoinCodeCard({ communityName, joinCode }: JoinCodeCardProps) {
             label={t('list.shareCode')}
             onPress={share}
             variant="secondary"
+            size="sm"
             accessibilityHint={t('list.shareCodeHint')}
           />
         </View>

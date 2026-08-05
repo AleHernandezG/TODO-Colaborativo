@@ -4,6 +4,8 @@ import type { SessionRepository } from '../domain/session-repository'
 
 export const supabaseSessionRepository: SessionRepository = {
   async getCurrent() {
+    await assertOnline()
+
     const { data, error } = await supabase.auth.getSession()
     if (error) {
       throw new Error(`No se pudo leer la sesión guardada: ${error.message}`)

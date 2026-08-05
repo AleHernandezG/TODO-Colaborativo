@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next'
 
 import { useSnackbar } from '../../../shared/hooks/use-snackbar'
 import { OfflineError } from '../../../shared/lib/network'
-import { supabaseItemRepository } from '../data/supabase-item-repository'
-import { addItem } from '../domain/add-item'
+import type { AddItemResult } from '../domain/add-item'
 import type { Item } from '../domain/item'
 import { normalizeItemName } from '../domain/item-name'
+import type { AddItemVariables } from './item-mutations'
+import { itemMutationKeys } from './item-mutations'
 import { itemsKey } from './use-items'
 
 type MutationContext = { previous: Item[] | undefined }
@@ -17,9 +18,8 @@ export function useAddItem(communityId: string) {
   const { t } = useTranslation()
   const key = itemsKey(communityId)
 
-  return useMutation({
-    mutationFn: (input: { name: string; quantity: number }) =>
-      addItem(supabaseItemRepository, { communityId, name: input.name, quantity: input.quantity }),
+  const mutation = useMutation<AddItemResult, Error, AddItemVariables, MutationContext>({
+    mutationKey: itemMutationKeys.add,
     onMutate: async (input): Promise<MutationContext> => {
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<Item[]>(key)
@@ -46,4 +46,9 @@ export function useAddItem(communityId: string) {
       queryClient.invalidateQueries({ queryKey: key })
     },
   })
+
+  return {
+    mutate: (input: { name: string; quantity: number }) =>
+      mutation.mutate({ ...input, communityId }),
+  }
 }

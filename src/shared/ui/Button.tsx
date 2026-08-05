@@ -6,6 +6,7 @@ type ButtonProps = {
   label: string
   onPress: () => void
   variant?: 'primary' | 'secondary'
+  size?: 'md' | 'sm'
   disabled?: boolean
   loading?: boolean
   accessibilityHint?: string
@@ -21,10 +22,21 @@ const label = {
   secondary: 'text-content dark:text-content-dark',
 }
 
+const padding = {
+  md: 'px-6 py-3',
+  sm: 'px-4 py-2',
+}
+
+const labelSize = {
+  md: 'text-lg',
+  sm: 'text-base',
+}
+
 export function Button({
   label: text,
   onPress,
   variant = 'primary',
+  size = 'md',
   disabled = false,
   loading = false,
   accessibilityHint,
@@ -41,14 +53,14 @@ export function Button({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: blocked, busy: loading }}
       style={{ minHeight: minTouchTarget }}
-      className={`w-full items-center justify-center rounded-md px-6 py-3 ${container[variant]} ${
-        blocked ? 'opacity-50' : 'active:opacity-80'
-      }`}
+      className={`w-full items-center justify-center rounded-md ${padding[size]} ${
+        container[variant]
+      } ${blocked ? 'opacity-50' : 'active:opacity-80'}`}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? palette.onPrimary : palette.text} />
       ) : (
-        <Text className={`text-lg font-semibold ${label[variant]}`}>{text}</Text>
+        <Text className={`${labelSize[size]} font-semibold ${label[variant]}`}>{text}</Text>
       )}
     </Pressable>
   )

@@ -1,0 +1,63 @@
+appId: com.alejandrohernandez.listacompra
+name: Camino feliz
+tags:
+  - core
+---
+- launchApp:
+    clearState: true
+
+- assertVisible: 'La lista de la compra, compartida'
+- tapOn: 'Crear una lista'
+
+- assertVisible: 'Crear la lista'
+- tapOn:
+    id: 'create-community-name'
+- inputText: 'E2E Maestro'
+- tapOn:
+    id: 'create-community-username'
+- inputText: 'Robot'
+- hideKeyboard
+- tapOn: 'Crear la lista'
+
+- extendedWaitUntil:
+    visible: 'Estás dentro como Robot'
+    timeout: 20000
+- assertVisible: 'Aquí no hay nada todavía'
+
+- tapOn:
+    id: 'add-item-name'
+- inputText: 'Pan'
+- hideKeyboard
+- tapOn: 'Añadir uno'
+- tapOn: 'Añadir'
+
+- assertVisible: 'Por comprar'
+- assertVisible: '×2'
+
+- tapOn: 'Marcar Pan como comprado'
+- assertVisible: 'Comprados'
+- assertVisible: 'Ya está todo comprado'
+
+- tapOn: 'Marcar Pan como pendiente'
+- assertVisible: 'Por comprar'
+
+- tapOn: 'Borrar Pan'
+- assertVisible: 'Pan borrado'
+- assertVisible: 'Aquí no hay nada todavía'
+- tapOn: 'Deshacer'
+- assertVisible: 'Por comprar'
+
+- tapOn: 'Borrar Pan'
+- extendedWaitUntil:
+    notVisible: 'Deshacer'
+    timeout: 15000
+
+- swipe:
+    start: '50%, 35%'
+    end: '50%, 75%'
+- extendedWaitUntil:
+    visible: 'Aquí no hay nada todavía'
+    timeout: 20000
+
+- tapOn: 'Salir de esta lista'
+- assertVisible: 'La lista de la compra, compartida'

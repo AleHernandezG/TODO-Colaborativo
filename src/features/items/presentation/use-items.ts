@@ -18,5 +18,6 @@ export function useItems(communityId: string) {
     queryKey: itemsKey(communityId),
     queryFn: () => listItems(supabaseItemRepository, communityId),
     select: useCallback((items: Item[]) => visibleItems(items, deletingIds), [deletingIds]),
+    meta: { persist: true },
   })
 }

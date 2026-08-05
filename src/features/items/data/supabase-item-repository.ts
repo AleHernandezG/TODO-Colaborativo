@@ -102,7 +102,7 @@ export const supabaseItemRepository: ItemRepository = {
     await assertOnline()
 
     const body = await fetch(uri).then((response) => response.arrayBuffer())
-    const path = `${communityId}/${itemId}.jpg`
+    const path = `${communityId}/${itemId}-${Date.now()}.jpg`
 
     const { error } = await supabase.storage
       .from(imagesBucket)

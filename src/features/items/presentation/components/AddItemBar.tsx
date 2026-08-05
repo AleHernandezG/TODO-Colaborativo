@@ -30,6 +30,7 @@ export function AddItemBar({
   return (
     <View className="gap-3">
       <Input
+        testID="add-item-name"
         label={t('items.add.label')}
         placeholder={t('items.add.placeholder')}
         value={name}

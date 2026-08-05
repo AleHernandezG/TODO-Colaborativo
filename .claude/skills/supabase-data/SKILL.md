@@ -246,7 +246,12 @@ Los límites van aquí y no en el cliente. El cliente ya comprime, pero una app 
 ### La primera carpeta del nombre es el `community_id`
 
 Esa es la convención que hace posible escribir políticas sobre `storage.objects` sin consultar
-las tablas de la app. Ruta: `<community_id>/<item_id>.jpg`.
+las tablas de la app. Ruta: `<community_id>/<item_id>-<epoch_ms>.jpg`.
+
+Lo único que la política mira es la **primera** carpeta, así que el resto del nombre es libre y
+puede cambiar sin tocar SQL. El timestamp está ahí para que sustituir una foto cambie el valor
+de la columna: sin él, ninguna caché se entera de que los bytes son otros. La historia completa,
+en [ADR-0007](../../../docs/adr/ADR-0007-ruta-versionada-de-las-fotos.md).
 
 ```sql
 create policy item_images_select on storage.objects for select to authenticated

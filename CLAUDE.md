@@ -36,7 +36,7 @@ En la práctica:
 - **Backend (BaaS):** Supabase → Postgres + Realtime + Storage + RLS.
 - **UI:** NativeWind (Tailwind para RN) + componentes propios en `src/shared/ui`. Tokens de diseño en `src/theme`.
   - **React Native Paper solo para `Snackbar`, `Dialog` y `Portal`.** Nada más. El aspecto de la app es nuestro; Paper aporta las superposiciones accesibles, que son las que cuesta hacer bien a mano. Un import de `react-native-paper` fuera de `src/shared/ui` es un error de revisión. Razonado en [ADR-0004](docs/adr/ADR-0004-libreria-de-ui.md).
-- **Persistencia local:** react-native-mmkv. **Conectividad:** @react-native-community/netinfo.
+- **Persistencia local:** `@react-native-async-storage/async-storage`, para la caché de Query y para los stores persistidos de Zustand. **No react-native-mmkv**: es un módulo nativo de terceros y no arranca en Expo Go, que es como se prueba este proyecto. Razonado en [ADR-0008](docs/adr/ADR-0008-persistencia-local-de-la-cache.md). Como es asíncrono, **nada que dependa de un valor persistido puede decidir en el primer render**: hay que esperar a la hidratación. **Conectividad:** @react-native-community/netinfo.
 - **Imágenes:** expo-image, expo-image-picker, expo-image-manipulator (comprimir antes de subir).
 - **Sesión:** `@react-native-async-storage/async-storage` como almacén de la sesión de Supabase. **No expo-secure-store**: tiene un límite de ~2048 bytes por valor y la sesión de Supabase (access + refresh token) lo supera, así que falla de forma intermitente y difícil de diagnosticar. Ver `docs/phases/fase-0.md`.
 - **i18n** desde el inicio (ES por defecto, preparado para EN). Nada de textos hardcodeados.
@@ -118,7 +118,8 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
 
 - Fuente de verdad = Supabase. Cada cliente **se suscribe a Realtime** de su `community_id`; los eventos reconcilian la caché de TanStack Query.
 - Los cambios se propagan entre redes/países porque todos hablan con el mismo backend (no entre sí).
-- Offline pragmático: última lista cacheada (TanStack persist + MMKV); mutaciones encoladas y reenviadas al reconectar (NetInfo). Conflictos simples → last-write-wins por `updated_at`.
+- Offline pragmático: última lista cacheada (TanStack persist + AsyncStorage); mutaciones encoladas y reenviadas al reconectar (NetInfo). Conflictos simples → last-write-wins por `updated_at`.
+- **Una mutación que se pueda encolar declara su `mutationKey` y registra su `mutationFn` con `setMutationDefaults`**, y sus `variables` cargan con todo lo que esa función necesita (`communityId` incluido). Una función no se serializa: al rehidratar solo quedan clave, variables y estado, así que lo que viva en el closure del hook se pierde al reiniciar la app. Razonado en [ADR-0009](docs/adr/ADR-0009-cola-de-mutaciones-offline.md).
 - **Todo método de `data/` que haga una petición suelta empieza por `assertOnline()`** (`src/shared/lib/network.ts`). En Android una petición sin red no se rechaza: se encola y se ejecuta al reconectar, así que sin esa comprobación el usuario ve un spinner eterno y la escritura ocurre a su espalda. El timeout del cliente de Supabase cubre el otro caso (con red pero sin servidor). Razonado en `docs/phases/fase-1.md`.
   - **Única excepción: abrir un canal de Realtime** (`subscribe()`). Un canal no es una petición suelta: reconecta solo y avisa de su estado por `onStatus`. Bloquearlo porque NetInfo diga que no hay red sería no reconectar nunca al volver. Razonado en `docs/phases/fase-2.md`.
 - **Suscribirse a Realtime es un método del repositorio, no un import de Supabase en `presentation/`.** Siempre con `filter: community_id=eq.<id>`: sin filtro llegan los borrados de otras comunidades. Razonado en `docs/phases/fase-2.md`.
@@ -217,12 +218,24 @@ descartó y a costa de qué) y **qué implica** para quien toque eso después.
 Si una decisión no encaja en ninguna, va en `docs/phases/fase-N.md` bajo "Decisiones sobre la
 marcha". Nunca se queda sin escribir.
 
-**Fase actual: FASE 3 (imágenes y pulido UX).** Las fases 0, 1 y 2 están cerradas y probadas en
-el APK con dos dispositivos; su diario está en `docs/phases/`. Cuando termines la 3 y pase su
-auditoría (sección 11 del `.md`, apartado F), pídeme luz verde para la Fase 4.
+**Fase actual: ninguna abierta. El MVP (fases 0 → 4) está cerrado.** Las cinco están probadas en
+dispositivo con dos móviles y su diario está en `docs/phases/`. Las dos últimas se cerraron el
+2026-08-05 de una sentada; qué se probó y con qué resultado, en
+`docs/guias/prueba-de-cierre-en-dispositivo.md`.
 
-La versión que corre en el móvil se ve al pie de la pantalla de lista (`v1.0.0 · base` si es el
-bundle del APK, `v1.0.0 · <id>` si es un update por aire). Compruébala ahí antes de dar por
+**La Fase 5 (endurecimiento) no empieza sin luz verde expresa.** No la des por empezada porque la
+4 esté cerrada.
+
+Dos cosas se arrastran y no se pueden perder de vista:
+
+- **La pasada con TalkBack (F.2 de la Fase 3) está aplazada, no hecha.** Se hace antes de publicar
+  la beta. Guion en el bloque 4 de la guía de cierre.
+- **Deuda del id optimista:** un artículo añadido sin cobertura y tocado en esa misma sesión
+  offline pierde el segundo cambio sin avisar. Contada entera en `docs/phases/fase-4.md`; el
+  arreglo (uuid generado en el cliente) es de la Fase 5 y necesita su ADR.
+
+La versión que corre en el móvil se ve al pie de la pantalla de lista (`v1.2.0 · base` si es el
+bundle del APK, `v1.2.0 · <id>` si es un update por aire). Compruébala ahí antes de dar por
 hecho que un cambio llegó al dispositivo.
 
 RF-8 (PDF) y RF-9 (reparto de gastos) son **post-MVP**: están registrados en §3 y §12 del
@@ -242,6 +255,7 @@ npx expo start --tunnel        # si el móvil y el PC no están en la misma Wi-F
 npm run lint
 npm run typecheck
 npm test
+npm run test:coverage          # dominio y data; el umbral del 70% está en jest.config.js
 
 # Tras añadir un fichero de ruta en src/app, arranca el server una vez antes del typecheck:
 # .expo/types/router.d.ts lo genera el dev server, no `expo export`, y hasta entonces tsc
@@ -261,6 +275,11 @@ npm run test:realtime
 # Usuarios de auth: cuántos hay y cuáles son huérfanos (anónimos sin fila en members)
 npm run users
 npm run users -- --delete-orphans   # limpieza; ver aviso en el propio script
+
+# E2E. Necesita el CLI de Maestro (no es dependencia de npm), adb y el APK instalado.
+# Con Expo Go no funciona: los flujos declaran el appId de la app. Cada ejecución deja una
+# lista real en Supabase. Todo el detalle en docs/guias/e2e-con-maestro.md
+npm run test:e2e
 ```
 
 ---

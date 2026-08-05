@@ -1,3 +1,6 @@
+import NetInfo from '@react-native-community/netinfo'
+
+import { OfflineError } from '../../../../shared/lib/network'
 import { supabase } from '../../../../shared/lib/supabase'
 import { supabaseSessionRepository } from '../supabase-session-repository'
 
@@ -11,9 +14,23 @@ jest.mock('../../../../shared/lib/supabase', () => ({
 }))
 
 const auth = supabase.auth as jest.Mocked<typeof supabase.auth>
+const netInfoFetch = NetInfo.fetch as jest.Mock
 
 beforeEach(() => {
   jest.clearAllMocks()
+  netInfoFetch.mockResolvedValue({ isConnected: true })
+})
+
+describe('sin conexión', () => {
+  beforeEach(() => {
+    netInfoFetch.mockResolvedValue({ isConnected: false })
+  })
+
+  it('no espera a que Supabase intente renovar el token', async () => {
+    await expect(supabaseSessionRepository.getCurrent()).rejects.toBeInstanceOf(OfflineError)
+    await expect(supabaseSessionRepository.signInAnonymously()).rejects.toBeInstanceOf(OfflineError)
+    expect(auth.getSession).not.toHaveBeenCalled()
+  })
 })
 
 describe('getCurrent', () => {

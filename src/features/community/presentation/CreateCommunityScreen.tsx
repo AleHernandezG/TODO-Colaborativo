@@ -70,6 +70,7 @@ export function CreateCommunityScreen() {
             </View>
 
             <Input
+              testID="create-community-name"
               label={t('community.create.nameLabel')}
               placeholder={t('community.create.namePlaceholder')}
               value={name}
@@ -82,6 +83,7 @@ export function CreateCommunityScreen() {
             />
 
             <Input
+              testID="create-community-username"
               label={t('community.usernameLabel')}
               placeholder={t('community.usernamePlaceholder')}
               value={username}

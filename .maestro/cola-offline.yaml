@@ -1,0 +1,55 @@
+appId: com.alejandrohernandez.listacompra
+name: Cola offline
+tags:
+  - offline
+---
+- launchApp:
+    clearState: true
+
+- assertVisible: 'La lista de la compra, compartida'
+- tapOn: 'Crear una lista'
+- tapOn:
+    id: 'create-community-name'
+- inputText: 'E2E Offline'
+- tapOn:
+    id: 'create-community-username'
+- inputText: 'Robot'
+- hideKeyboard
+- tapOn: 'Crear la lista'
+- extendedWaitUntil:
+    visible: 'Estás dentro como Robot'
+    timeout: 20000
+
+- setAirplaneMode: enabled
+- extendedWaitUntil:
+    visible: 'Sin conexión. Estás viendo la última lista guardada.'
+    timeout: 15000
+
+- tapOn:
+    id: 'add-item-name'
+- inputText: 'Leche'
+- hideKeyboard
+- tapOn: 'Añadir'
+- assertVisible: 'Leche'
+- extendedWaitUntil:
+    visible: 'Sin conexión. Un cambio se guardará al recuperarla.'
+    timeout: 15000
+
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: 'Leche'
+    timeout: 20000
+- assertVisible: 'Sin conexión. Un cambio se guardará al recuperarla.'
+
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible: 'Sin conexión. Un cambio se guardará al recuperarla.'
+    timeout: 40000
+
+- swipe:
+    start: '50%, 35%'
+    end: '50%, 75%'
+- extendedWaitUntil:
+    visible: 'Leche'
+    timeout: 20000

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, RefreshControl, SectionList, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { useSyncStatus } from '../../../shared/hooks/use-sync-status'
 import { OfflineError } from '../../../shared/lib/network'
 import { BuildTag } from '../../../shared/ui/BuildTag'
 import { Button } from '../../../shared/ui/Button'
@@ -16,6 +17,7 @@ import type { Item } from '../domain/item'
 import { AddItemBar } from './components/AddItemBar'
 import { EditItemDialog } from './components/EditItemDialog'
 import { ItemRow } from './components/ItemRow'
+import { OfflineBanner } from './components/OfflineBanner'
 import { RealtimeStatus } from './components/RealtimeStatus'
 import { useAddItem } from './use-add-item'
 import { useDeleteItem } from './use-delete-item'
@@ -40,7 +42,16 @@ function ItemsView({ community, username }: { community: Community; username: st
   const { t } = useTranslation()
   const router = useRouter()
   const leave = useActiveCommunityStore((state) => state.leave)
-  const { data: items, isLoading, isError, error, isFetching, refetch } = useItems(community.id)
+  const {
+    data: items,
+    isLoading,
+    isError,
+    isPaused,
+    error,
+    isFetching,
+    refetch,
+  } = useItems(community.id)
+  const { online, pendingChanges } = useSyncStatus()
   const addItem = useAddItem(community.id)
   const togglePurchased = useTogglePurchased(community.id)
   const editItem = useEditItem(community.id)
@@ -114,7 +125,11 @@ function ItemsView({ community, username }: { community: Community; username: st
               <ViewersLine names={viewers} />
             </View>
 
-            <RealtimeStatus status={realtimeStatus} />
+            {online ? (
+              <RealtimeStatus status={realtimeStatus} />
+            ) : (
+              <OfflineBanner pendingChanges={pendingChanges} />
+            )}
 
             <AddItemBar onAdd={(input) => addItem.mutate(input)} />
 
@@ -124,6 +139,8 @@ function ItemsView({ community, username }: { community: Community; username: st
         ListEmptyComponent={
           isLoading ? (
             <LoadingList />
+          ) : isPaused ? (
+            <NoCachedList />
           ) : isError ? (
             <ListError message={loadErrorMessage} onRetry={() => void refetch()} />
           ) : (
@@ -131,7 +148,7 @@ function ItemsView({ community, username }: { community: Community; username: st
           )
         }
         ListFooterComponent={
-          <View className="mt-6 gap-3 border-t border-line pt-6 dark:border-line-dark">
+          <View className="mt-4 gap-2 border-t border-line pt-4 dark:border-line-dark">
             <JoinCodeCard communityName={community.name} joinCode={community.joinCode} />
             <Button
               label={t('list.leave')}
@@ -140,6 +157,7 @@ function ItemsView({ community, username }: { community: Community; username: st
                 router.replace('/')
               }}
               variant="secondary"
+              size="sm"
               accessibilityHint={t('list.leaveHint')}
             />
             <BuildTag />
@@ -200,6 +218,18 @@ function EmptyList() {
       </Text>
       <Text className="text-center text-base text-muted dark:text-muted-dark">
         {t('items.empty')}
+      </Text>
+    </View>
+  )
+}
+
+function NoCachedList() {
+  const { t } = useTranslation()
+  return (
+    <View accessible className="flex-1 items-center justify-center gap-2 py-10">
+      <Text className="text-5xl">☁</Text>
+      <Text className="text-center text-base text-muted dark:text-muted-dark">
+        {t('list.offline.noList')}
       </Text>
     </View>
   )

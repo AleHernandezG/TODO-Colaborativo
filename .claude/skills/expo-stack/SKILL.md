@@ -1,6 +1,6 @@
 ---
 name: expo-stack
-description: Convenciones del stack móvil de este proyecto — Expo Router, TanStack Query, Zustand, MMKV, NetInfo y la arquitectura domain/data/presentation. Úsala SIEMPRE que vayas a crear o editar cualquier cosa dentro de src/ — pantallas, rutas, hooks, casos de uso, repositorios, stores o componentes de UI — y también cuando tengas que decidir dónde vive un estado, cómo escribir una mutación, cómo se propaga un cambio en tiempo real o cómo se comporta la app sin red. Aplica aunque el usuario solo diga "añade una pantalla", "haz un hook" o "guarda esto".
+description: Convenciones del stack móvil de este proyecto — Expo Router, TanStack Query, Zustand, AsyncStorage, NetInfo y la arquitectura domain/data/presentation. Úsala SIEMPRE que vayas a crear o editar cualquier cosa dentro de src/ — pantallas, rutas, hooks, casos de uso, repositorios, stores o componentes de UI — y también cuando tengas que decidir dónde vive un estado, cómo escribir una mutación, cómo se propaga un cambio en tiempo real o cómo se comporta la app sin red. Aplica aunque el usuario solo diga "añade una pantalla", "haz un hook" o "guarda esto".
 ---
 
 # Stack móvil: Expo + Query + Zustand
@@ -155,8 +155,13 @@ el que evita que un refetch en vuelo pise la escritura.
 
 **El mensaje del `onError` distingue offline de lo demás**, igual que las pantallas de
 `community`: `OfflineError` → `errors.offline`, cualquier otra cosa → el error propio de la
-acción. No uses `errors.syncFailed` todavía: promete un reintento automático ("lo intentamos
-otra vez al recuperar la conexión") que no existe hasta la cola offline de la Fase 4.
+acción. Con la cola offline puesta, ese `OfflineError` es ya el caso raro: la mutación se pausa
+antes de intentarlo, y solo llega ahí si la red se cayó entre la decisión y la petición.
+
+`errors.syncFailed` sigue sin usarse aunque la cola exista, y no es un olvido: cuando un cambio
+se encola no falla nada que anunciar (para eso está el banner de la cabecera), y cuando algo
+falla de verdad es porque no se encoló. Prometer un reintento que no va a ocurrir es peor que
+callarse.
 
 **Cuándo no hay optimista.** Si el servidor genera el dato que la pantalla necesita, no hay
 nada que pintar por adelantado: `create_community` devuelve un `join_code` que solo existe
@@ -181,9 +186,12 @@ un diálogo de confirmación (fricción en la acción común para protegerse del
 borra de la lista al instante y se ofrece "Deshacer" en el snackbar durante ~5s.
 
 **El `delete` real se difiere: no se dispara hasta que se cierra la ventana de deshacer.** Por
-eso esto no es una `useMutation` normal, sino un `useCallback` que marca el artículo como "en
+eso el hook no devuelve una mutación, sino un `useCallback` que marca el artículo como "en
 borrado", programa el `delete` con un `setTimeout` y enseña el snackbar. Si el usuario deshace,
 cancelas el timer y quitas la marca; el servidor nunca se enteró.
+
+Lo que se programa **sí es una mutación con clave**, para que sin cobertura se encole en vez de
+fallar (ver "Sin cobertura no se falla: se encola"):
 
 ```ts
 export function useDeleteItem(communityId: string) {
@@ -191,9 +199,25 @@ export function useDeleteItem(communityId: string) {
   const showSnackbar = useSnackbar()
   const { t } = useTranslation()
 
+  const mutation = useMutation<void, Error, ItemMutationVariables>({
+    mutationKey: itemMutationKeys.remove,
+    onSuccess: (_result, { item }) => {
+      const key = itemKeys.list(communityId)
+      queryClient.setQueryData<Item[]>(key, (cur = []) => cur.filter((i) => i.id !== item.id))
+      queryClient.invalidateQueries({ queryKey: key })
+    },
+    onError: (error) => {
+      showSnackbar(error instanceof OfflineError ? t('errors.offline') : t('items.errors.deleteFailed'))
+    },
+    onSettled: (_result, _error, { item }) => {
+      useDeletingItemsStore.getState().clearDeleting(item.id)
+    },
+  })
+
+  const remove = mutation.mutate
+
   return useCallback(
     (item: Item) => {
-      const key = itemKeys.list(communityId)
       const { markDeleting, clearDeleting } = useDeletingItemsStore.getState()
 
       markDeleting(item.id)
@@ -201,15 +225,7 @@ export function useDeleteItem(communityId: string) {
       let undone = false
       const timer = setTimeout(() => {
         if (undone) return
-        deleteItem(itemRepository, item.id)
-          .then(() => {
-            queryClient.setQueryData<Item[]>(key, (cur = []) => cur.filter((i) => i.id !== item.id))
-            void queryClient.invalidateQueries({ queryKey: key })
-          })
-          .catch((error: unknown) => {
-            showSnackbar(error instanceof OfflineError ? t('errors.offline') : t('items.errors.deleteFailed'))
-          })
-          .finally(() => clearDeleting(item.id))
+        remove({ communityId, item })
       }, 5000)
 
       showSnackbar(t('items.deleted', { name: item.name }), {
@@ -221,10 +237,18 @@ export function useDeleteItem(communityId: string) {
         },
       })
     },
-    [queryClient, showSnackbar, t, communityId],
+    [remove, showSnackbar, t, communityId],
   )
 }
 ```
+
+`clearDeleting` va en `onSettled`, y una mutación en pausa no ha terminado: sin red el artículo
+se queda oculto mientras espera su turno en la cola, que es lo que el usuario espera de algo que
+acaba de borrar.
+
+Borrar dos artículos seguidos funciona aunque el hook tenga un solo observador: cada `mutate`
+construye una `Mutation` propia en la caché, con sus variables y sus callbacks. Lo que se pierde
+al llamar otra vez es el seguimiento (`isPending`, `variables`), que aquí no se usa.
 
 Por qué diferir en vez de borrar ya y que "Deshacer" re-inserte: re-insertar crea una fila
 nueva con otro `id` y otra fecha, así que "deshacer" no devolvería el artículo original.
@@ -379,6 +403,34 @@ nombres como mucho y el resto por número, plurales por i18n (`_one`/`_other`) y
 Si el canal se cae, la lista se vacía: enseñar a alguien de quien hace rato que no se sabe nada
 es peor que no enseñar nada.
 
+## Una URL cacheada no se entera de que el objeto cambió
+
+Vale para cualquier recurso que se pinte desde una URL: fotos de Storage, avatares, ficheros.
+Si el **contenido** puede cambiar sin que cambie el **identificador**, hay una caché en el camino
+que va a servir lo viejo, y probablemente más de una.
+
+Pasó de verdad con las fotos de artículos. La ruta era `<community_id>/<item_id>.jpg`, fija, y
+sustituir la foto era un `upsert` sobre ella. Los bytes cambiaban en Supabase y en la app no se
+veía nada, en ningún dispositivo:
+
+- La query que firma la URL tiene por clave la ruta. Ruta igual, clave igual, `staleTime` alto:
+  TanStack Query devuelve la URL cacheada y no vuelve a firmar.
+- `expo-image` con `cachePolicy="disk"` cachea por URL. Misma URL, mismos bytes del disco.
+- El otro móvil recibe su evento de Realtime, refetchea, y la fila que llega es idéntica a la
+  que ya tenía. No hay nada que le diga que mire otra vez.
+
+La tentación es invalidar la query a mano en el `onSuccess` de la mutación. Arregla el móvil que
+hace el cambio y **no arregla ninguno de los demás**, que es donde de verdad duele en una app
+compartida.
+
+La regla, entonces: **haz que el cambio sea observable en los datos que ya se sincronizan.** Aquí
+fue meter un timestamp en el nombre del fichero, con lo que la columna cambia, la clave de la
+query cambia, la URL cambia y las dos cachés se invalidan solas por el camino que ya existía
+([ADR-0007](../../../docs/adr/ADR-0007-ruta-versionada-de-las-fotos.md)).
+
+Antes de elegir una ruta o una clave de caché, pregúntate si dos versiones distintas del recurso
+pueden acabar con el mismo identificador. Si la respuesta es sí, el identificador está mal.
+
 ## Offline
 
 ### Una petición sin red no falla: se queda colgada
@@ -418,16 +470,77 @@ red, `errors.network` cuando lo que falla es el otro lado.
 cada llamada: si la petición llegó y se perdió la respuesta, reintentar crea dos. Antes de
 reintentar una mutación automáticamente, pregúntate si el servidor puede haberla ejecutado ya.
 
-### Lo demás
+### La caché se guarda en el móvil
 
-- La caché de Query se persiste en MMKV, así la app abre mostrando la última lista sin red.
-- Las mutaciones fallidas por falta de conexión se encolan y se reenvían al recuperar red
-  (NetInfo). Distingue "sin conexión" de "el servidor dijo que no": lo primero se reintenta,
-  lo segundo se muestra al usuario.
+En AsyncStorage, no en MMKV (ver [ADR-0008](../../../docs/adr/ADR-0008-persistencia-local-de-la-cache.md)).
+`PersistQueryClientProvider` en el layout raíz, y `shared/lib/query-persister.ts` decide qué entra.
+
+Una query se guarda si lo pide:
+
+```ts
+useQuery({ queryKey: itemsKey(communityId), queryFn: ..., meta: { persist: true } })
+```
+
+Marca en la query y no lista blanca en `shared/`, porque `shared/` no importa de `features/`.
+El defecto es no guardar: una query nueva no acaba en el disco de nadie por olvido.
+
+Dos trampas que no dan ningún error:
+
+- **`gcTime` tiene que llegar a lo que dure la caché.** Con los 5 minutos de fábrica, una query
+  sin observadores se borra de memoria y lo que no está en memoria no se vuelca a disco. Se
+  persistiría una caché vacía.
+- **La hidratación es asíncrona.** Lo mismo que con los stores de Zustand: `useIsRestoring()` si
+  necesitas saber si ya se restauró.
+
+El `buster` combina versión e `updateId` del build. Una caché guardada por código anterior puede
+tener otra forma, y rehidratarla da fallos de tipos en ejecución que no se parecen a su causa.
+
+### Sin cobertura no se falla: se encola
+
+`onlineManager` enganchado a NetInfo en `shared/lib/query-client.ts`. Con eso, una mutación con
+`networkMode: 'online'` (el de fábrica) **no se ejecuta ni falla: se pausa**, y Query la reanuda
+sola al volver la red. Ver [ADR-0009](../../../docs/adr/ADR-0009-cola-de-mutaciones-offline.md).
+
+Para que la cola sobreviva a que Android cierre la app hay una regla que condiciona cómo se
+escribe la mutación: **una función no se serializa.** Al rehidratar solo quedan `mutationKey`,
+`variables` y `state`, así que el `mutationFn` se registra por clave antes de restaurar:
+
+```ts
+client.setMutationDefaults(itemMutationKeys.add, {
+  scope: { id: 'items' },
+  mutationFn: (input: AddItemVariables) => addItem(itemRepository, input),
+  onSuccess: (_result, input) => client.invalidateQueries({ queryKey: itemsKey(input.communityId) }),
+})
+```
+
+De ahí, tres cosas:
+
+- **Las `variables` cargan con todo lo que la función necesita**, `communityId` incluido. Lo que
+  viva en el closure del hook desaparece al reiniciar. Para que eso no ensucie la pantalla, el
+  hook devuelve un `mutate` envuelto que lo añade.
+- **El hook no declara `mutationFn`**, lo hereda de su clave, y aporta solo lo que tiene sentido
+  con pantalla delante: escritura optimista, rollback y snackbar. Query mezcla defaults y opciones
+  del hook y gana el hook, así que los callbacks del default son los de la mutación reanudada sin
+  hook montado: invalidan y avisan desde el store (`useSnackbarStore.getState()`, `i18n.t`).
+- **Nada de rollback al reanudar.** El `context` rehidratado trae una foto de la lista de antes de
+  cerrar la app; restaurarla pisaría lo que hayan hecho los demás. Se invalida y manda el servidor.
+
+`scope` compartido serializa el reenvío, así que los cambios llegan en el orden en que se hicieron.
+
+**`assertOnline()` no sobra por esto.** Es más fresco (un `NetInfo.fetch()` por llamada, frente al
+último evento recibido) y cubre la ventana entre decidir que hay red y que salga la petición. Y
+protege también lo que no pasa por una mutación de Query.
+
+**Encolar no siempre es lo correcto.** `create_community` y `join_community` llevan
+`networkMode: 'always'`: generan un valor que decide el servidor y no son idempotentes, así que
+encolarlas sería esperar para siempre o crear dos comunidades.
+
+**Pausada no es vacía.** Con la query en pausa, `isLoading` y `isError` son `false`, así que una
+lista sin datos cae en el estado vacío y le dice al usuario que su lista compartida está vacía
+cuando lo que pasa es que no se ha podido leer. Mira `isPaused` **antes** que `isError`.
+
 - Conflictos: last-write-wins por `updated_at`. Es suficiente aquí. Que dos personas marquen
   el mismo artículo como comprado a la vez no es un problema que necesite CRDTs.
-
-MMKV es síncrono, así que no hace falta esperar a la hidratación con una pantalla de carga.
 
 ## Expo Router
 
@@ -498,6 +611,26 @@ Cada control interactivo nuevo, sin excepción:
 
 Una pantalla, una acción principal grande y evidente. Los valores por defecto sensatos
 (cantidad = 1) ahorran más interacciones que cualquier atajo.
+
+### Los E2E apuntan a la etiqueta de accesibilidad, no a un `testID`
+
+Los flujos de `.maestro/` seleccionan los controles por su texto visible o por su
+`accessibilityLabel`, que en Android son lo mismo para Maestro. Es a propósito: si un selector
+deja de encontrar algo, casi siempre es que ese control también dejó de ser usable con TalkBack.
+Un `testID` en cada botón convertiría el E2E en algo que pasa en verde mientras la app es
+inaccesible.
+
+La excepción son los campos de texto, y por un motivo concreto. `Input` pinta la etiqueta como un
+`<Text>` encima **y** se la pone al `TextInput` como `accessibilityLabel`, así que hay dos
+elementos con la misma cadena y el primero es la etiqueta, que no enfoca nada. Ahí sí va `testID`,
+sobre el `TextInput`:
+
+```tsx
+<Input testID="add-item-name" label={t('items.add.label')} … />
+```
+
+Regla: **`testID` solo donde el texto es ambiguo**, nunca «por si acaso». Y si añades un campo que
+un flujo vaya a escribir, ponle el suyo en el mismo cambio.
 
 ## i18n
 

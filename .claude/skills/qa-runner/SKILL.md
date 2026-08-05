@@ -38,7 +38,12 @@ cancela exactamente esa protección.
 
 ## 3. Cobertura
 
-Dominio y repositorios ≥ 70%. La UI no se persigue.
+```bash
+npm run test:coverage
+```
+
+Dominio y repositorios ≥ 70%, y el umbral está puesto en `jest.config.js`, así que por debajo el
+comando falla solo. La UI no se persigue.
 
 No es un número arbitrario: los casos de uso son funciones puras, se testean rápido y son
 donde vive la lógica que puede estar mal de forma silenciosa. Los tests de UI de una app RN
@@ -66,6 +71,15 @@ emulador y el móvil). Un cambio de Realtime probado en un solo cliente no está
 Comprueba también, si el cambio añadió UI: modo claro y oscuro, y con el tamaño de fuente
 del sistema subido. Un layout que revienta con fuente grande es un fallo de accesibilidad,
 no un detalle estético.
+
+La parte del guion que se repite igual en cada fase (crear lista, añadir, marcar, borrar con
+deshacer) está automatizada en `.maestro/`. Necesita el CLI de Maestro, `adb` y el APK instalado,
+así que no sustituye a la prueba a mano de lo que cambió; sirve para confirmar que lo de siempre
+sigue en pie sin volver a recorrerlo a dedo. Cómo se ejecuta y qué basura deja en Supabase:
+`docs/guias/e2e-con-maestro.md`.
+
+Si tocaste un texto de `es.json` o la etiqueta de un control, mira si algún flujo de `.maestro/`
+lo tenía escrito: los selectores son copias literales de esos textos.
 
 ## 5. Documentar
 
