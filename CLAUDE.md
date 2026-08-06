@@ -267,10 +267,12 @@ Lo que se arrastra y no se puede perder de vista:
 
 - **La pasada con TalkBack (F.2 de la Fase 3) está aplazada, no hecha.** Se hace antes de publicar
   la beta. Guion en el bloque 4 de la guía de cierre.
-- **Los incrementos 1, 2 y 3 están verdes en local y sin probar en el móvil.** El código pasa lint,
-  typecheck y tests; falta recorrer los tres guiones manuales de `docs/phases/fase-5.md` (modo
-  avión, rotación del código con dos móviles, y cambio de idioma del sistema) después de publicar
-  un `eas update`.
+- **El inglés no se ha visto nunca en un móvil.** Los incrementos 1 y 2 se probaron en dispositivo
+  el 2026-08-06 y pasaron enteros; el guion del 3 (cambiar el idioma del sistema) no se recorrió por
+  decisión del usuario, porque para esta beta lo que importa es el castellano. Si la detección de
+  idioma fallara se cae en español, así que el riesgo está acotado, pero nadie ha comprobado cómo se
+  ve un texto en inglés ni qué devuelve `getLocales()` en ese Android. Detalle y guion en
+  `docs/phases/fase-5.md`.
 
 **La app se ve en español o en inglés según el idioma del móvil**, y vuelve a español con cualquier
 otro. Los dos JSON viven en `src/shared/lib/i18n/` y hay un test que falla si se desincronizan

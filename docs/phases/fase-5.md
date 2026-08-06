@@ -1,10 +1,13 @@
 # Fase 5 · Endurecimiento antes de publicar
 
-- Estado: **abierta**. Incrementos 1, 2 y 3 escritos y verdes en local (la migración del 2 ya está
-  aplicada en el proyecto remoto); los tres siguen pendientes de probar en dispositivo. Queda el
-  incremento 4 (TalkBack), que es prueba manual entera
+- Estado: **abierta**. Incrementos 1 y 2 probados en dispositivo el 2026-08-06, sin un solo fallo.
+  El 3 está verde en local y se queda sin recorrer en el móvil por decisión del usuario, ver su
+  apartado. Queda el incremento 4 (TalkBack), que es prueba manual entera
 - Inicio: 2026-08-05
 - Luz verde del usuario: 2026-08-05, con el MVP (fases 0 → 4) ya cerrado
+- El update sobre el que se probó: `v1.2.0 · 019fd8a6`, grupo
+  `0cd1a39c-77ca-4b5a-a157-9d8482c4f22b` de la rama `preview`, runtime 1.2.0, del commit `cb169c4`,
+  publicado el 2026-08-06 a las 21:57
 
 Esta fase no está en el roadmap original. Existe porque el cierre de las fases 3 y 4 dejó cosas
 apuntadas «para antes de publicar», y publicar sin recorrerlas sería tirar el trabajo de haberlas
@@ -16,10 +19,12 @@ Se eligió el paquete **mínimo para publicar**. Cuatro incrementos:
 
 1. [x] **Id del artículo generado en el cliente.** Cierra la deuda de la Fase 4: un artículo
        añadido sin cobertura y tocado en esa misma sesión perdía el segundo cambio sin avisar.
+       Probado en dispositivo el 2026-08-06.
 2. [x] **Expiración y rotación del `join_code`.** El código es el único secreto que protege una
-       lista y hasta ahora no caducaba nunca.
+       lista y hasta ahora no caducaba nunca. Probado en dispositivo el 2026-08-06.
 3. [x] **i18n en inglés.** La estructura está desde la Fase 0; faltaba el `en.json` y la detección
-       del idioma del sistema.
+       del idioma del sistema. Escrito y verde en local; su guion en el móvil no se recorre, ver el
+       apartado del incremento.
 4. [ ] **La pasada con TalkBack.** Es el criterio F.2 de la Fase 3, aplazado por decisión el
        2026-08-05. Guion en el bloque 4 de `docs/guias/prueba-de-cierre-en-dispositivo.md`.
 
@@ -99,6 +104,13 @@ Si en el paso 9 aparece «pan» sin marcar y con cantidad 1, el id no está viaj
 Prueba corta de que no se rompió lo de siempre: con red, añadir un artículo tiene que seguir
 apareciendo al instante y quedarse (si parpadea o se duplica al llegar el evento de Realtime, el id
 optimista y el de la fila no coinciden).
+
+### Resultado en dispositivo
+
+**2026-08-06, los nueve pasos en verde sobre el update `019fd8a6`.** «Pan» llegó al segundo móvil
+marcado como comprado y con cantidad 3, que es exactamente el caso que antes se perdía sin dar
+error. Con esto queda cerrada la deuda que la Fase 4 dejó abierta: el alta y los cambios posteriores
+hechos en la misma sesión sin cobertura apuntan al mismo id, y ese id es el que acaba en la fila.
 
 ### Calidad
 
@@ -253,6 +265,17 @@ Necesita los dos móviles. A = el que crea, B = el que se une.
    vuelve a la app: al cabo de un momento B enseña el código nuevo (esto es `useAppForeground`; sin
    él habría que tirar hacia abajo).
 
+### Resultado en dispositivo
+
+**2026-08-06, los nueve pasos en verde sobre el update `019fd8a6`.** Los dos pasos que de verdad
+decidían: el 8 (rotar en modo avión avisa y no deja nada encolado, que era el motivo de que esta
+mutación no sea optimista) y el 9 (B se entera del código nuevo al volver del segundo plano, sin
+tirar hacia abajo, que es lo que justifica haber resuelto el refresco en `useAppForeground` en vez
+de con un `focusManager` global).
+
+El estado «caducado» sigue sin verse en pantalla, y seguirá: pide esperar una semana o tocar la fila
+a mano. Lo cubre `npm run test:rls`.
+
 ### Decisiones sobre la marcha
 
 **Leer el código es un `select`, no una RPC.** `communities_select` ya deja a un miembro leer su
@@ -397,6 +420,35 @@ Con un solo móvil, sin necesidad del segundo.
 
 El paso 9 es el que más se olvida y el que decide si alguien de fuera puede usar la app.
 
+### Ese guion no se recorrió, y es una decisión
+
+**2026-08-06: el usuario decide no probar el inglés en el móvil.** Para esta beta lo que tiene que
+estar impecable es el castellano, que es el idioma de todo el mundo que la va a usar. El inglés
+viaja igualmente porque ya está escrito y no cuesta nada llevarlo, pero **nadie lo ha visto en una
+pantalla real**, y eso hay que saberlo antes de enseñarle la app a alguien de fuera.
+
+Qué queda cubierto sin el móvil: `translations.test.ts` garantiza que no falta ninguna clave, que
+los `{{placeholders}}` coinciden y que ningún plural está a medias, y `resolve-language.test.ts`
+que un `en-GB` o un `EN` caen en inglés y un `pt` cae en español.
+
+Qué no cubre ningún test, y por tanto es lo que habría que mirar el día que el inglés importe:
+
+- **Cómo se ve.** Un texto en inglés más largo que el español puede partir una línea o desbordar un
+  botón. Eso solo se ve mirando.
+- **Qué devuelve `getLocales()` en ese Android concreto.** `resolveLanguage` se prueba en Node con
+  un array de códigos que le pasamos nosotros; nadie ha comprobado con qué lo llama el módulo nativo
+  en el dispositivo real.
+
+El riesgo de publicar así está acotado, y por eso la decisión es razonable: si la detección fallara,
+`resolveLanguage` cae en español, que es justo el comportamiento que había antes de este incremento.
+El peor caso no es una app rota, es alguien con el móvil en inglés viendo la app en español. Lo que
+sí cambió para todo el mundo, incluido quien la use en castellano, es la pantalla de error de
+arranque de sesión, que ahora pinta una clave de i18n en vez del `message` de la excepción; tampoco
+se ha visto en el móvil, pero solo aparece si el arranque de sesión falla.
+
+Queda como deuda conocida en el cierre de la fase. Si algún día entra alguien que no habla español,
+el guion de arriba está escrito y son diez minutos.
+
 ### Calidad
 
 | Comprobación                         | Resultado                           |
@@ -439,6 +491,13 @@ leen en momentos distintos.
 
 Pendiente. Cierra F.2 de la Fase 3. El guion está escrito en el bloque 4 de
 `docs/guias/prueba-de-cierre-en-dispositivo.md`; lo que salga de ahí se anota aquí y se marca allí.
+
+El 2026-08-06 ese guion pasó de siete comprobaciones a diez. Las tres nuevas son del incremento 2 de
+esta fase: el botón de generar código con su hint, que el foco entre en el diálogo de confirmación
+al abrirse, y que la caducidad se lea en voz alta en vez de depender del tachado. El guion original
+se escribió la mañana del 2026-08-05 y la rotación del código se implementó esa tarde, así que la
+lista se quedó corta sin que nadie la tocara. Vale la pena recordarlo la próxima vez que un
+incremento añada controles: si TalkBack está aplazado, su guion no se actualiza solo.
 
 ---
 

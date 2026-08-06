@@ -150,9 +150,17 @@ regresión nueva.
 hará al final, antes de publicar.** Deja de bloquear el cierre de la Fase 3; sigue siendo criterio
 de F.2 y está anotado como deuda abierta en [`fase-3.md`](../phases/fase-3.md).
 
+Antes de nada, dos gestos, porque son los que atascan la primera vez: con TalkBack puesto **un
+toque simple ya no pulsa**, hay que dar dos toques, y para desplazar la pantalla se arrastra con
+**dos dedos**. Deslizar con un dedo a derecha e izquierda mueve el foco. Se sale por el mismo sitio
+de Ajustes, o manteniendo las dos teclas de volumen si tienes el atajo puesto.
+
 Lo que hay que recorrer cuando toque:
 
 - [ ] Al enfocar una fila: lee el nombre y la cantidad, y ofrece la casilla como control separado
+      («Marcar Leche como comprado, casilla, no marcada»). **Con cantidad 1 lee solo «Leche,
+      botón», sin decir «cantidad 1»**: es a propósito, la clave `items.edit.open_one` no la lleva.
+      No lo apuntes como fallo
 - [ ] En una fila **con foto**: lee «Leche, cantidad 3, botón» y pasa directo al botón de borrar,
       sin pararse en la miniatura
 - [ ] Los botones «Copiar» y «Compartir» se anuncian con su nombre y su pista
@@ -160,8 +168,22 @@ Lo que hay que recorrer cuando toque:
 - [ ] En el diálogo de editar: «Hacer foto» y «De la galería» se anuncian con su hint, que es donde
       vive ahora la explicación larga
 - [ ] Los botones del diálogo siguen midiendo 44 pt (pasaron a `size="sm"`, que baja el padding
-      pero mantiene el `minHeight`)
+      pero mantiene el `minHeight`). Este no se oye, se ve: el recuadro de foco de TalkBack dibuja
+      el tamaño real del control
 - [ ] Marca el último artículo pendiente: anuncia «Ya está todo comprado» solo, sin buscarlo
+
+Y lo que trajo el incremento 2 de la Fase 5, que no existía cuando se escribió la lista de arriba:
+
+- [ ] El botón de generar código nuevo se anuncia con su nombre y la pista «Cambia el código de
+      invitación de esta lista»
+- [ ] Al abrirse el diálogo de confirmación, **el foco entra en el diálogo** y lee su texto. Si se
+      queda detrás, en la pantalla de la lista, es el fallo clásico de un modal
+- [ ] La línea de caducidad se lee dentro de la tarjeta («Caduca dentro de 6 días»), y con el código
+      caducado el estado se oye, no depende solo del tachado
+
+Estos tres se añadieron el 2026-08-06, al ver que el guion original es del 2026-08-05 por la mañana
+y la rotación del código se escribió esa misma tarde. El del diálogo es el que más papeletas tiene
+de dar problema: es el único control nuevo cuya accesibilidad no se validó con el resto.
 
 Lo automático de F.2 (contraste, áreas táctiles, presencia de labels) sí está cumplido y lo
 comprueban los tests. Lo que falta es lo único que un test no ve: que lo que se lee en voz alta
