@@ -134,6 +134,50 @@ camino. Elegir la 1 es decidir que consumir un dataset MIT publicado por un terc
 tercero. Es defendible y es lo que hace todo el mundo con los datasets públicos, pero es una
 decisión, no un detalle.
 
+## Los números, medidos el 2026-08-07
+
+Ejecutado `npm run catalog:benchmark` contra los **20 nombres distintos** que hay en la tabla
+`items` del proyecto real. Procedimiento completo en
+[`medicion-de-fuentes-del-catalogo.md`](./medicion-de-fuentes-del-catalogo.md).
+
+| Fuente                           | Estricto | Flexible | Con imagen | Con precio |
+| -------------------------------- | -------- | -------- | ---------- | ---------- |
+| Mercadona (dataset Hugging Face) | 55%      | 60%      | **100%**   | **100%**   |
+| Open Food Facts + Open Prices    | 30%      | 35%      | 71%        | **0%**     |
+
+Gana la 1 y no está cerca. Tres cosas que los porcentajes no dicen:
+
+**El 0% de precio de Open Prices es el resultado importante.** Sus 286.432 precios de España son
+reales, pero ninguno cayó sobre los productos que esta lista pide. Un precio existe cuando alguien
+ha fotografiado un ticket con ese producto, y eso se concentra en lo que la gente de OFF compra, no
+en lo que compra esta casa. La opción 4 vuelve a ser lo que era: respaldo de imagen, no fuente de
+precio.
+
+**Casi la mitad de los fallos no son culpa de la fuente.** De los 8 que Mercadona no encontró, tres
+no los encontraría ningún catálogo del mundo: `aguacate si son buenos` es una nota, no un producto;
+`azucr` es una errata de azúcar; `copas de vino ikea` no es del supermercado. Otros dos
+(`ambientador mercadona`, `detergente lavadora mercadona`) sí existen en Mercadona, pero con otro
+nombre. **El techo real está bastante por encima del 60%, y lo que lo sube es la búsqueda, no
+cambiar de fuente.** Era la hipótesis de la recomendación y se confirma.
+
+**La muestra son 20 nombres.** Es lo que hay en la base, y varios son de pruebas. Sirve para decidir
+entre dos fuentes que se llevan 25 puntos, no para afinar nada. Cuando la beta lleve unas semanas
+con listas de verdad, esto se vuelve a correr y el número valdrá más.
+
+### Dos cosas que aparecieron por el camino
+
+**El endpoint clásico de búsqueda de Open Food Facts está caído a efectos prácticos.**
+`cgi/search.pl` contestó **503 en 11 de 20 consultas**, y eso espaciándolas 6 segundos, muy por
+debajo de su límite. Repetido a mano después: 3 de 4 fallaron. El que sí responde es el nuevo,
+`https://search.openfoodfacts.org/search`, que devolvió 200 en todas. El script usa ese, con 2
+segundos entre consultas y tres reintentos con espera creciente ante un 5xx. Si un día se escribe
+la ingesta contra OFF, va por ahí.
+
+**Su filtro de país no es el parámetro que parece.** `countries_tags=spain` como parámetro de query
+se ignora en silencio: devuelve exactamente lo mismo que sin filtro (1.527 resultados para «leche»).
+Lo que funciona es meterlo en la consulta, `q=leche AND countries_tags:"en:spain"`, que baja a 238.
+Un filtro que no filtra y no avisa es peor que uno que da error, así que queda escrito.
+
 ## Lo que no se va a hacer
 
 Escribir un scraper apuntado a `tienda.mercadona.es/api` a sabiendas de que su `robots.txt` lo
@@ -185,19 +229,23 @@ Lo que sigue sin saberse, y es lo que decide si sirve: **cuántos productos dist
 esos precios y qué antigüedad tienen. 286.432 precios pueden ser 40.000 productos o 3.000 productos
 comprados muchas veces. Es una consulta más a su API y se hace cuando se elija esta vía.
 
-### Lo único que sigue abierto
+### El CDN de imágenes: cerrado el 2026-08-07
 
-Si el CDN de imágenes de Mercadona sirve peticiones que no vengan de su web. No se ha comprobado
-porque para tener una URL de imagen hay que sacarla del dataset o de su API, y no merece la pena
-tocar nada de Mercadona hasta que la fuente esté decidida. Se resuelve en un comando el día que
-haya una URL delante:
+Era lo único que quedaba abierto. **Sirve peticiones externas sin poner pegas.** Con una URL del
+dataset delante:
 
-```bash
-curl -sI "<url-de-imagen-del-dataset>" | head -1
+```
+status:200  tipo:image/jpeg  bytes:7471
 ```
 
-Si contesta 403, la opción 4 (imágenes de Open Food Facts) deja de ser respaldo y pasa a ser el
-camino principal para la foto.
+Contesta igual con nuestro User-Agent que sin ninguno, y no pide `Referer`. Las URLs son de
+`prod-mercadona.imgix.net`, un imgix con los parámetros de recorte en la query
+(`?fit=crop&h=300&w=300`), así que el tamaño se pide, no se descarga entero.
+
+Que conteste 200 no cambia la discusión de `robots.txt` de más arriba: eso iba de `tienda.mercadona.es/api`,
+que es otro dominio y otra cosa. Aquí solo estamos enlazando una imagen desde su CDN, que es lo que
+[ADR-0012](../adr/ADR-0012-catalogo-de-productos-de-supermercado.md) ya dice que se hace y sin
+guardar copia.
 
 ## Qué cuesta esto, comprobado el 2026-08-07
 

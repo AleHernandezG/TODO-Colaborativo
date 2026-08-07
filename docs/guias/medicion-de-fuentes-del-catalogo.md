@@ -58,6 +58,17 @@ npm run catalog:benchmark -- --limit 20    # acota la muestra (por defecto 40)
 npm run catalog:benchmark -- --source hf   # una sola fuente: hf | off
 ```
 
+> **Los flags hay que pasarlos desde Git Bash, no desde PowerShell 5.1.** PowerShell se come el
+> `--` y npm no reenvía nada, así que el script se ejecuta con los valores por defecto **sin dar
+> ningún error**: pides `--source hf` y se te van cuatro minutos consultando Open Food Facts. Se
+> comprobó el 2026-08-07 con un flag inventado, que desde PowerShell no protestó y desde Git Bash
+> sí. Es la misma familia de trampa que el `>` que escribe UTF-16 y que ya está documentada en
+> `CLAUDE.md`. Si tienes que quedarte en PowerShell, llama a node directo:
+>
+> ```powershell
+> node --env-file=.env scripts/catalog-source-benchmark.mjs --source hf
+> ```
+
 Variables de entorno, las que ya existen en `.env`:
 
 | Variable                   | Para qué                                              |
@@ -102,17 +113,23 @@ products/                     un fichero por producto
 No hay parquet ni CSV. El visor de Hugging Face ni siquiera consigue previsualizarlo porque falla al
 inferir tipos. La ingesta es recorrer `products/` y aplanar, no leer una tabla.
 
-**Los nombres exactos de los campos del JSON de producto están sin verificar.** Vienen de la API de
-Mercadona y el `api.md` del repo los documenta, pero no los he mirado uno a uno. Lo primero al
-implementar es volcar las claves del primer producto:
+**Los campos del JSON de producto, verificados el 2026-08-07** contra el clon:
 
-```bash
-node -e "const p = require('./products/<un-id>.json'); console.log(Object.keys(p))"
-```
+| Dato   | Clave                                                                         |
+| ------ | ----------------------------------------------------------------------------- |
+| Nombre | `display_name`                                                                |
+| Marca  | `brand`                                                                       |
+| Envase | `packaging`                                                                   |
+| Barras | `ean`                                                                         |
+| Imagen | `thumbnail`, y `photos[0].regular` para la grande                             |
+| Precio | `price_instructions.unit_price`, con `bulk_price` y `reference_price` al lado |
 
-Lo que hay que localizar ahí: nombre visible, marca si existe, formato o envase, URL de imagen y
-precio. Si el precio viene como cadena con coma decimal, se pasa a **céntimos enteros**, que es la
-regla de `CLAUDE.md` y de ADR-0012.
+El precio viene como cadena con punto decimal (`"5.50"`), así que se pasa a **céntimos enteros**,
+que es la regla de `CLAUDE.md` y de ADR-0012. El registro trae bastante más (`nutrition_information`,
+`origin`, `categories`, `badges`), nada de ello necesario para RF-10.
+
+El script imprime igualmente las claves del primer producto al arrancar. Es barato y avisa el día
+que el dataset cambie de forma, que es cuando importa.
 
 El índice se construye en memoria: un array de
 `{ name, normalizedName, brand, imageUrl, priceCents }`. Con 5.000 filas no hace falta nada más
@@ -123,17 +140,24 @@ elaborado.
 Búsqueda de producto contra OFF, filtrando por España:
 
 ```text
-GET https://world.openfoodfacts.org/cgi/search.pl
-    ?search_terms=<consulta>
-    &countries_tags=spain
-    &json=1
+GET https://search.openfoodfacts.org/search
+    ?q=<consulta> AND countries_tags:"en:spain"
     &page_size=20
     &fields=code,product_name,brands,quantity,image_url
 ```
 
-**Su límite es de 10 consultas por minuto para búsquedas.** Es lo que manda en el tiempo total: 40
-artículos son unos 4 minutos. El script espera 6 segundos entre consultas y va imprimiendo por dónde
-va, para que se note que está trabajando y no colgado.
+> Este documento decía primero `https://world.openfoodfacts.org/cgi/search.pl` con
+> `countries_tags=spain` como parámetro. Al ejecutarlo el 2026-08-07 resultó que ese endpoint
+> devuelve 503 casi siempre y que ese parámetro se ignora. Los dos cambios están explicados en
+> [`fuentes-de-datos-del-catalogo.md`](./fuentes-de-datos-del-catalogo.md), «Dos cosas que
+> aparecieron por el camino».
+
+Dos segundos entre consultas, y ante un 5xx tres reintentos con espera creciente. Una consulta que
+agota los reintentos **no se descuenta de la muestra en silencio**: se apunta aparte y el informe
+dice cuántas fallaron. Un porcentaje calculado sobre un denominador que ha encogido sin avisar es
+justo el tipo de número que no queremos.
+
+La respuesta viene en `hits`, no en `products` como el endpoint viejo, y `brands` es un array.
 
 El `User-Agent` tiene que identificar quién es y cómo contactar, que es lo que pide OFF y lo que
 exige ADR-0012. Decidido el 2026-08-07, va literal en el script:
@@ -228,11 +252,27 @@ operación y deja además constancia de la fecha de la copia.
 **El script no escribe en Supabase.** Solo lee `items`. Nada de crear tablas ni de ingerir: eso es
 la Fase 6 y va después de la decisión.
 
+**Nada de lo que baja acaba en el repo.** El clon del dataset y el JSON de resultados van al
+scratchpad. Además de que son 27 MB que no pintan nada en git, los datos de Open Food Facts son ODbL
+y commitear un volcado derivado sería distribuirlos, que es justo lo que activa su cláusula de
+compartir-igual. Medir no la activa; dejarse el fichero en un `git add -A`, sí. Lo que se copia al
+repo son los **números** de la medición, no los datos.
+
+## Ejecutado el 2026-08-07
+
+Los resultados están en
+[`fuentes-de-datos-del-catalogo.md`](./fuentes-de-datos-del-catalogo.md), «Los números». En corto:
+Mercadona 55/60% con imagen y precio en todo lo que encuentra, Open Food Facts 30/35% y **0% de
+precio**. Gana la 1 y no está cerca.
+
+Tardó minuto y medio. La estimación de «4 minutos» de este documento salía del límite del endpoint
+viejo de OFF; con el nuevo el cuello de botella desaparece.
+
 ## Riesgos
 
-- **El límite de OFF manda en el tiempo.** 10 consultas por minuto, 4 minutos para 40 artículos. Se
-  mitiga con `--limit` y con progreso en pantalla. No se sortea acelerando: ir más rápido es
-  exactamente lo que ADR-0012 dice que no se hace.
+- ~~**El límite de OFF manda en el tiempo.**~~ Dejó de ser el riesgo al cambiar de endpoint: con 2
+  segundos entre consultas, 20 artículos son menos de dos minutos. Lo que sí queda es no acelerar
+  por acelerar, que es lo que ADR-0012 dice que no se hace.
 - **27 MB de clon.** Al scratchpad, fuera del repo. Si acaba dentro por error, `git status` lo canta
   antes del commit.
 - **La cifra vale lo que valga el criterio de coincidencia.** Por eso los dos conteos y por eso se
@@ -240,8 +280,10 @@ la Fase 6 y va después de la decisión.
   líneas.
 - **El dataset se regenera los lunes.** Dos mediciones de semanas distintas no son comparables sin
   decir contra qué clon se hicieron. El script imprime la fecha del clon en la cabecera.
-- **Los campos del JSON de producto están sin verificar.** Es lo primero que hay que mirar al
-  implementar, y está resuelto con el volcado de claves de arriba.
+- ~~**Los campos del JSON de producto están sin verificar.**~~ Verificados el 2026-08-07, tabla más
+  arriba. El volcado de claves sigue en el script para el día que el dataset cambie de forma.
+- **En PowerShell los flags no llegan.** Explicado arriba, con la salida. Silencioso, que es lo
+  malo.
 
 ## Qué se hace con el resultado
 
@@ -269,16 +311,15 @@ Lo que eso implica y hay que tener listo el día que se escriba:
   nadie se ha enterado es justo el escenario que ADR-0012 apunta en sus consecuencias, y es peor que
   no tener catálogo: la app estaría enseñando precios viejos con cara de nuevos.
 
-## Lo que sigue abierto
+## El CDN de imágenes, cerrado
 
-Si el CDN de imágenes de Mercadona sirve peticiones que no vengan de su web. No se ha comprobado
-porque para tener una URL hay que sacarla del dataset, y no compensa tocar nada de Mercadona antes
-de que la fuente esté decidida. Con el clon delante se resuelve en un comando:
+Era lo único que quedaba abierto y se hizo en la misma sesión que la medición, como decía este
+documento. Con una URL del clon delante:
 
 ```bash
-curl -sI "<url-de-imagen-del-dataset>" | head -1
+curl -sI "https://prod-mercadona.imgix.net/images/<hash>.jpg?fit=crop&h=300&w=300"
 ```
 
-Un 403 significa que la fuente A deja de resolver la foto y que Open Food Facts pasa de respaldo a
-camino principal para las imágenes, casando por código de barras. Eso cambiaría la decisión, así que
-**esta comprobación se hace en la misma sesión que la medición**, no después.
+**200, `image/jpeg`, 7.471 bytes.** Sirve peticiones externas sin `Referer` y con cualquier
+User-Agent. No hace falta el plan B de sacar las fotos de Open Food Facts casando por código de
+barras. Detalle en [`fuentes-de-datos-del-catalogo.md`](./fuentes-de-datos-del-catalogo.md).

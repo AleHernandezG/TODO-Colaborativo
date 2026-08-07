@@ -14,7 +14,8 @@
     "test:e2e": "maestro test .maestro",
     "test:rls": "node --env-file=.env scripts/rls-isolation-test.mjs",
     "test:realtime": "node --env-file=.env scripts/realtime-check.mjs",
-    "users": "node --env-file=.env scripts/auth-users.mjs"
+    "users": "node --env-file=.env scripts/auth-users.mjs",
+    "catalog:benchmark": "node --env-file=.env scripts/catalog-source-benchmark.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

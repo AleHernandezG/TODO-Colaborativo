@@ -297,6 +297,14 @@ todos, con `select` para `authenticated` y ninguna política de escritura), y el
 **de referencia**: se enseña con su fecha y no se convierte en un gasto sin que una persona lo
 confirme.
 
+Y una tercera que condiciona la UI antes de que exista: **si el catálogo acaba trayendo datos de
+Open Food Facts, la pantalla que los enseñe lleva atribución visible.** Su base de datos es ODbL 1.0
+y sus fotos CC-BY-SA, así que citar la fuente no es cortesía, es la condición de uso. La cláusula de
+compartir-igual de ODbL solo se activaría si distribuyéramos la base derivada: publicar la app que
+consulta nuestra copia no la activa, ofrecer `catalog_products` como export o API sí, y ese día deja
+de ser una decisión técnica. Comprobado en sus términos el 2026-08-07; el detalle y qué cuesta cada
+fuente, en `docs/guias/fuentes-de-datos-del-catalogo.md`.
+
 ---
 
 ## Comandos
@@ -327,6 +335,11 @@ npm run test:rls
 
 # Realtime: eventos, filtro por comunidad, aislamiento y presencia. Debe dar 12/12
 npm run test:realtime
+
+# Fuentes del catálogo (RF-10): cuántos artículos reales encuentra cada una.
+# Los flags SOLO llegan desde Git Bash; PowerShell 5.1 se come el '--' sin avisar.
+npm run catalog:benchmark
+npm run catalog:benchmark -- --source hf --limit 20
 
 # Usuarios de auth: cuántos hay y cuáles son huérfanos (anónimos sin fila en members)
 npm run users
