@@ -349,3 +349,21 @@ npm run test:e2e
 - No añadir controles sin label de accesibilidad, contraste AA y target ≥ 44 pt.
 - No editar código sin enseñarme antes el plan.
 - No tomar una decisión "sobre la marcha" y dejarla solo dicha en el chat.
+- **No commitear ni hacer push. Nunca.** Ver abajo.
+
+## Quién publica en el repo
+
+**Los `git commit` y los `git push` los hago yo, Alejandro. Claude no.** Prepara los cambios en el
+árbol de trabajo, dime qué hay que commitear y con qué mensaje, y paro yo. Si me va bien lanzarlo sin
+salir de la sesión, uso `! git commit -m "..."` desde el prompt.
+
+No es una norma de honor: la impone el harness. `.claude/settings.json` (que se commitea, así que
+viaja con el repo) tiene un hook `PreToolUse` que corre `scripts/block-git-write-commands.mjs` y
+deniega cualquier `git commit` o `git push`, incluidos los escondidos en un `cd foo && git commit` o
+tras un `-C`. Detrás hay un `permissions.deny` de refuerzo y un `attribution` vacío para que no
+vuelvan a colarse trailers de coautoría.
+
+Todo lo demás de git sigue disponible: `status`, `log`, `diff`, `stash`, ramas. Solo se cierra la
+puerta a publicar. Razonado en `docs/phases/fase-5.md`, apartado "Auditoría del historial y quién
+puede commitear", junto con la auditoría de secretos que salió limpia y las dos trampas de Windows
+que aparecieron al reescribir el historial.

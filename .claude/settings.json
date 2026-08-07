@@ -1,4 +1,30 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "permissions": {
+    "deny": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "PowerShell(git commit:*)",
+      "PowerShell(git push:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/block-git-write-commands.mjs\"",
+            "statusMessage": "Comprobando que no sea un commit o un push"
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "supabase@claude-plugins-official": true,
     "expo@claude-plugins-official": true,

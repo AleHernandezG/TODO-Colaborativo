@@ -594,3 +594,119 @@ decidir de nuevo con el caso concreto delante:
 Ojo a la trampa de este apartado: cuando llegue el momento de publicar, la tentación será instalar
 el que toque «solo para esto». Si pasa, que sea rehaciendo la decisión de arriba y escribiéndola,
 no saltándosela por prisa.
+
+---
+
+## Utillaje · Auditoría del historial y quién puede commitear
+
+Hecho el 2026-08-06 a petición del usuario, en dos frentes: quitar del historial lo que no fuera
+suyo, y comprobar que no se hubiera filtrado ninguna clave.
+
+### La auditoría de secretos salió limpia, y esto es lo que se miró
+
+Ni una fuga. Merece la pena dejar escrito **qué** se comprobó, porque la próxima vez que alguien se
+pregunte «¿esto está limpio?» el trabajo ya está hecho y solo hay que repetir los mismos comandos:
+
+- **Ficheros peligrosos en todo el historial** (`git log --diff-filter=A --name-only` filtrado por
+  `.env`, `secret`, `credential`, `.key`, `.pem`, `.p12`, `.jks`, `.keystore`, `google-services`,
+  `service-account`): solo aparece `.env.example`. El `.env` real nunca se versionó.
+- **`.env.example` en cada commit donde existió**: siempre con los nombres y el valor vacío. No hubo
+  un commit inicial descuidado que luego se corrigiera.
+- **Los valores reales de tu `.env`, buscados literalmente en todos los blobs** del repo. La anon key
+  da 0 apariciones. La URL del proyecto da 21, todas en documentación (`CLAUDE.md`, `docs/`).
+- **Patrones de credencial sobre el historial entero**: JWT (`eyJhbGciOi`), `BEGIN ... PRIVATE KEY`,
+  `sb_secret_`, `sb_publishable_` con valor, `service_role`, `AKIA`, `sk-`, `ghp_`, `xox[baprs]-`,
+  `AIza`. Las únicas coincidencias son la propia documentación **nombrando** el patrón para prohibirlo
+  (este fichero, `CLAUDE.md`, la skill `supabase-data`) y un comentario de `supabase/config.toml`.
+- **El workflow `keep-supabase-awake.yml`**: lee de `secrets.SUPABASE_URL` y `secrets.SUPABASE_ANON_KEY`,
+  no lleva valores en claro.
+- **Artefactos**: no hay `.log`, dumps ni `dist/` versionados.
+
+La URL del proyecto (`mnjhkqpeeivitpfejoxq.supabase.co`) sí está en el repo y **se queda ahí a
+propósito**: va incrustada en cada cliente que se instale, no es un secreto, y lo que protege los
+datos es la RLS. Si alguna vez deja de ser cierto, el problema es la RLS, no la URL.
+
+### El historial no tenía commits de Claude, tenía dos trailers
+
+Los 12 commits son de `Alejandro Hernandez <alejes@usal.es>`, autor y committer. Lo único ajeno eran
+dos `Co-Authored-By: Claude Opus 4.8` en los mensajes de `aeae5e9` («Add items feature…») y `c126216`
+(«Close phase 1…»).
+
+Se quitaron con `git filter-branch --msg-filter`, y eso obligó a reescribir los 8 commits desde
+`aeae5e9` hasta `HEAD` (los 4 primeros son anteriores al primer trailer y conservan su SHA). Con
+force-push a `origin/main`, decisión del usuario con la advertencia delante.
+
+Lo que se verificó antes de tocar el remoto, y que es el motivo de que fuera seguro: **el árbol de
+`HEAD` es el mismo objeto antes y después** (`a84bf4b`), y `git diff backup/pre-trailer-cleanup main`
+sale vacío. Cambian los SHA, no cambia un solo byte de contenido, ni el autor, ni las fechas de autor
+y commit. Antes de empezar quedó una rama `backup/pre-trailer-cleanup` en `42c8b1a`.
+
+### La trampa que casi cuesta trabajo sin commitear
+
+El árbol no estaba limpio y `filter-branch` se niega a trabajar así. El stash de rigor se comió una
+sorpresa: **`git status` mentía por índice desactualizado**. Reportaba dos ficheros modificados
+cuando eran tres; `docs/README.md` tenía cambios que no salían hasta hacer `git update-index --refresh`.
+
+De ahí dos cosas que conviene saber la próxima vez que se reescriba historial en este repo:
+
+- **Antes de un stash que precede a una operación destructiva, `git update-index --refresh`.** En
+  Windows, con la conversión CRLF de por medio, el índice se queda obsoleto y `git status` da una
+  foto incompleta. Un stash sobre esa foto deja cambios fuera.
+- **Copia de los ficheros sin commitear fuera del repo, no solo el stash.** El `git stash pop` de
+  después falló a medias (conflicto en `docs/README.md`, y el untracked ya existía), dejando
+  `fuentes-de-datos-del-catalogo.md` revertido a HEAD con sus cambios solo dentro del stash. Se
+  recuperó con `git checkout stash@{0} -- <fichero>`, que es lo correcto cuando la copia del árbol es
+  idéntica a HEAD y por tanto no se pisa nada.
+
+### La regla: los commits y los push son del usuario
+
+A partir de ahora Claude no commitea ni empuja en este repo. No es una preferencia escrita en un
+documento que se pueda olvidar: lo impone el harness, en `.claude/settings.json`, que se commitea y
+por tanto viaja con el repo.
+
+Tres capas, de más a menos importante:
+
+1. **Hook `PreToolUse`** sobre `Bash|PowerShell` que ejecuta `scripts/block-git-write-commands.mjs`.
+   Lee el comando del stdin JSON y devuelve `permissionDecision: "deny"` si encuentra un `git commit`
+   o un `git push`. Es la capa que de verdad cierra la puerta.
+2. **`permissions.deny`** con las cuatro reglas equivalentes. Declarativo y legible, pero por sí solo
+   se le escapa un `cd foo && git commit`, así que es refuerzo, no defensa.
+3. **`attribution.commit` y `attribution.pr` a cadena vacía**, para que no vuelva a aparecer un
+   trailer como los dos que se acaban de limpiar si algún día se levanta la regla.
+
+El script está en Node y no en una línea de shell porque **este entorno no tiene `jq`**, que es lo
+que usa el ejemplo de manual. Node sí está, obviamente. Además así se puede probar de verdad:
+
+```bash
+echo '{"tool_name":"Bash","tool_input":{"command":"git push origin main"}}' \
+  | node scripts/block-git-write-commands.mjs
+```
+
+Se comprobó contra 14 casos. Bloquea `git commit`, `git push`, `git push --force-with-lease`,
+`cd foo && git commit`, `git -C <ruta> commit`, `git -c user.name=x commit`, `npm test; git push` y
+espaciados raros. Deja pasar `git status`, `git log`, `git diff`, `npm run lint`, un `echo` que
+menciona la palabra, y **`git stash push`**, que no es un push y era el falso positivo evidente. El
+parser salta las variables de entorno del principio y las opciones globales de `git` con valor
+(`-C`, `-c`, `--git-dir`…) hasta dar con el subcomando real.
+
+Verificado en vivo: un `git push --dry-run origin main` lanzado por Claude devuelve el mensaje de
+bloqueo en lugar de ejecutarse.
+
+Cuando haga falta commitear, el flujo es que Claude deje los cambios en el árbol y diga qué commitear;
+tú lo lanzas, y si te viene bien desde el propio prompt con `! git commit -m "..."`, que ejecuta en la
+sesión y deja la salida en la conversación.
+
+### Decisiones sobre la marcha
+
+- **La URL de Supabase se queda en el repo.** Es pública por diseño. Sacarla daría una sensación de
+  seguridad falsa y complicaría la documentación a cambio de nada.
+- **El force-push se hizo, pero solo tras probar que el árbol no cambiaba.** La condición que puso el
+  usuario fue no afectar a lo último publicado; se interpretó como el contenido, que es idéntico, y
+  no como el SHA, que en cualquier reescritura cambia por fuerza. Queda dicho por si alguien compara
+  hashes con una captura vieja y se extraña.
+- **La rama `backup/pre-trailer-cleanup` es local y no se empuja.** Es una red de seguridad para esta
+  operación, no historia que merezca vivir en el remoto. Bórrala cuando estés conforme:
+  `git branch -D backup/pre-trailer-cleanup`. Lo mismo con `refs/original/` que deja `filter-branch`.
+- **El bloqueo cubre `commit` y `push`, no todo lo que escribe historial.** Un `git reset --hard` o un
+  `git rebase` siguen pasando. Se dejó así a propósito: la petición era sobre quién publica, y esos
+  otros comandos ya están cubiertos por el permiso normal de la herramienta, que te pregunta.

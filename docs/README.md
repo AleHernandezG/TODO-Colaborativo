@@ -66,3 +66,6 @@ descritos en §12 del documento maestro.
 - [Fuentes de datos del catálogo](./guias/fuentes-de-datos-del-catalogo.md) — qué hay publicado
   para sacar imagen y precio de los supermercados españoles, y qué permite cada uno. Insumo de la
   decisión que tiene abierta el [ADR-0012](./adr/ADR-0012-catalogo-de-productos-de-supermercado.md).
+- [Medición de fuentes del catálogo](./guias/medicion-de-fuentes-del-catalogo.md) — el plan
+  completo del script que cuenta cuántos artículos reales encuentra cada fuente. Es lo que cierra
+  esa decisión.

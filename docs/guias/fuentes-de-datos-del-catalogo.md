@@ -16,9 +16,11 @@ es que además haya llegado a cubrir marca blanca. Da nombre, marca, formato, fo
 libre y código de barras.
 
 Lo que OFF no da bien es el **precio**. Open Prices, del mismo proyecto, es de aportación
-voluntaria: alguien fotografía un ticket y lo sube. En España la cobertura es escasa y ningún
-precio está ligado de forma fiable a una cadena concreta. Para lo que pide RF-10, OFF resuelve la
-imagen y no resuelve el precio.
+voluntaria: alguien fotografía un ticket y lo sube.
+
+> Aquí este documento decía que en España la cobertura es escasa y que ningún precio está ligado de
+> forma fiable a una cadena. Al consultar su API el 2026-08-06 resultó que no, en los dos puntos.
+> Ver «Comprobado el 2026-08-06», más abajo.
 
 ## Lo que hay publicado
 
@@ -27,14 +29,14 @@ a ser un script de Node en `scripts/`, como el resto de herramientas del repo. L
 de estos repos son los endpoints y la forma de las respuestas, que es justo la parte que cuesta
 averiguar.
 
-| Proyecto                                                                                                   | Cadenas                    | Qué aporta                                                                                    |
-| ---------------------------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------- |
-| [datania/mercadona-catalog](https://github.com/datania/mercadona-catalog)                                  | Mercadona                  | MIT. Baja el catálogo JSON y **lo publica como dataset en Hugging Face**. Documenta la API en `api.md` |
-| [DavidRCh56/Scraper_Mercadona_Dia_Carrefour](https://github.com/DavidRCh56/Scraper_Mercadona_Dia_Carrefour) | Mercadona, Carrefour, Dia  | Las tres cadenas por sus APIs públicas, salida a CSV                                          |
-| [joseluam97/Supermarket-Price-Scraper](https://github.com/joseluam97/Supermarket-Price-Scraper)            | Mercadona, Carrefour, Dia  | Mismo alcance, salida a Excel                                                                 |
-| [vgvr0/supermarket-mercadona-scraper](https://github.com/vgvr0/supermarket-mercadona-scraper)              | Mercadona                  | Recorre todas las categorías y subcategorías                                                  |
-| [nicolaspascual/mercadona-scrapper](https://github.com/nicolaspascual/mercadona-scrapper)                   | Mercadona                  | Selenium sobre la web, no la API                                                              |
-| [alfonmga/mercadona-cli](https://github.com/alfonmga/mercadona-cli)                                        | Mercadona                  | CLI no oficial                                                                                |
+| Proyecto                                                                                                    | Cadenas                   | Qué aporta                                                                                             |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------ |
+| [datania/mercadona-catalog](https://github.com/datania/mercadona-catalog)                                   | Mercadona                 | MIT. Baja el catálogo JSON y **lo publica como dataset en Hugging Face**. Documenta la API en `api.md` |
+| [DavidRCh56/Scraper_Mercadona_Dia_Carrefour](https://github.com/DavidRCh56/Scraper_Mercadona_Dia_Carrefour) | Mercadona, Carrefour, Dia | Las tres cadenas por sus APIs públicas, salida a CSV                                                   |
+| [joseluam97/Supermarket-Price-Scraper](https://github.com/joseluam97/Supermarket-Price-Scraper)             | Mercadona, Carrefour, Dia | Mismo alcance, salida a Excel                                                                          |
+| [vgvr0/supermarket-mercadona-scraper](https://github.com/vgvr0/supermarket-mercadona-scraper)               | Mercadona                 | Recorre todas las categorías y subcategorías                                                           |
+| [nicolaspascual/mercadona-scrapper](https://github.com/nicolaspascual/mercadona-scrapper)                   | Mercadona                 | Selenium sobre la web, no la API                                                                       |
+| [alfonmga/mercadona-cli](https://github.com/alfonmga/mercadona-cli)                                         | Mercadona                 | CLI no oficial                                                                                         |
 
 Fuera de GitHub: hay un [dataset de Mercadona en Kaggle](https://www.kaggle.com/datasets/computingvictor/mercadoan-inventory),
 actores de pago en [Apify](https://apify.com/aitorsm/mercadona-product-scraper/api), y
@@ -118,6 +120,20 @@ la respuesta es «la mitad», el trabajo siguiente es mejorar la búsqueda, no a
 
 Con esa medición encima de la mesa se decide si compensa la 2 o la 3.
 
+La recomendación aguanta después de lo comprobado el 2026-08-06, con un matiz: la opción 4 sube de
+categoría. Con 286.432 precios en España, Open Food Facts más Open Prices deja de ser solo el
+respaldo de la foto y se convierte en una fuente completa y sin la pega de procedencia que tiene la
+
+1. Sigue sin ser la primera recomendación porque no está medida: hay que saber cuántos productos
+   distintos hay detrás de esos precios antes de apostar por ella.
+
+Y la pega de procedencia de la 1, dicha claramente porque no estaba: **el dataset de Hugging Face
+se genera consumiendo `tienda.mercadona.es/api`**, que es la ruta que su `robots.txt` desautoriza.
+Nosotros no tocaríamos Mercadona en ningún momento, y eso es real, pero el dato llegó ahí por ese
+camino. Elegir la 1 es decidir que consumir un dataset MIT publicado por un tercero es asunto del
+tercero. Es defendible y es lo que hace todo el mundo con los datasets públicos, pero es una
+decisión, no un detalle.
+
 ## Lo que no se va a hacer
 
 Escribir un scraper apuntado a `tienda.mercadona.es/api` a sabiendas de que su `robots.txt` lo
@@ -128,11 +144,99 @@ hace falta discutirlo.
 Si aun así se decide ir por ahí, es una decisión del proyecto y va escrita en su ADR con el riesgo
 asumido, no metida de tapadillo en un script.
 
-## Pendiente de comprobar antes de escribir código
+## Comprobado el 2026-08-06
 
-- Cuántos productos trae el dataset de Hugging Face, con qué campos y cada cuánto se actualiza.
-  La documentación no fija periodicidad, solo dice que hay GitHub Actions.
-- Si las URL de imagen del dataset apuntan al CDN de Mercadona y si ese CDN sirve a peticiones que
-  no vengan de su web. Si bloquea, la opción 4 deja de ser respaldo y pasa a ser la principal.
-- Qué licencia lleva el dataset publicado, que no tiene por qué ser la MIT del código que lo genera.
-- Cobertura real de Open Prices en España, con una consulta a su API en vez de por lo que se lee.
+Las cuatro dudas de la investigación inicial, resueltas consultando las fuentes en vez de leyendo
+sobre ellas. Dos respuestas contradicen lo que este mismo documento decía el día anterior.
+
+### El dataset de Hugging Face
+
+Vive en [`datania/mercadona-catalog`](https://huggingface.co/datasets/datania/mercadona-catalog).
+Declara **licencia MIT en el propio dataset**, no solo en el código que lo genera, que era la duda.
+Pesa 27,1 MB, ronda las 1.400 descargas al mes y **se regenera los lunes** con una GitHub Action.
+Incluye precio, descripción e imágenes.
+
+Lo que no esperábamos: **son JSON en crudo, no hay parquet ni CSV**. En la raíz hay
+`categories.json` (32,7 kB) y `product_ids.json` (56,3 kB), y el grueso está en dos carpetas,
+`categories/` y `products/`, con un fichero por elemento. Por el tamaño de `product_ids.json` salen
+del orden de 4.500 a 5.000 productos, que cuadra con el «un supermercado pasa de 4.000» de
+[ADR-0012](../adr/ADR-0012-catalogo-de-productos-de-supermercado.md).
+
+Para la ingesta esto importa: no es leer una tabla, es recorrer un árbol de ficheros y aplanarlo.
+El visor de datasets de Hugging Face ni siquiera consigue previsualizarlo, falla al inferir tipos.
+Sigue siendo trabajo de una tarde, pero no es «bajar un CSV».
+
+### Open Prices en España: la cobertura no es escasa
+
+Aquí me equivoqué. El documento decía «en España la cobertura es escasa», escrito por lo leído.
+Consultando su API el 2026-08-06:
+
+```
+GET https://prices.openfoodfacts.org/api/v1/prices?location_osm_country=Spain&size=1
+→ "total": 286432
+```
+
+**286.432 precios en España.** Y cada precio trae `location_osm_id` con su objeto `location`, así
+que sí está ligado a una tienda concreta de OpenStreetMap, que normalmente lleva marca. La otra
+afirmación del documento, que ningún precio está ligado de forma fiable a una cadena, también hay
+que ponerla en cuarentena.
+
+Lo que sigue sin saberse, y es lo que decide si sirve: **cuántos productos distintos** hay detrás de
+esos precios y qué antigüedad tienen. 286.432 precios pueden ser 40.000 productos o 3.000 productos
+comprados muchas veces. Es una consulta más a su API y se hace cuando se elija esta vía.
+
+### Lo único que sigue abierto
+
+Si el CDN de imágenes de Mercadona sirve peticiones que no vengan de su web. No se ha comprobado
+porque para tener una URL de imagen hay que sacarla del dataset o de su API, y no merece la pena
+tocar nada de Mercadona hasta que la fuente esté decidida. Se resuelve en un comando el día que
+haya una URL delante:
+
+```bash
+curl -sI "<url-de-imagen-del-dataset>" | head -1
+```
+
+Si contesta 403, la opción 4 (imágenes de Open Food Facts) deja de ser respaldo y pasa a ser el
+camino principal para la foto.
+
+## Qué cuesta esto, comprobado el 2026-08-07
+
+Nada, en dinero. Ninguna de las piezas tiene plan de pago ni pide tarjeta ni clave de API:
+
+| Pieza                   | Coste                                                       |
+| ----------------------- | ----------------------------------------------------------- |
+| Open Food Facts         | Gratis, sin cuenta. La búsqueda contesta 200 sin credencial |
+| Open Prices             | Gratis, sin cuenta, para leer                               |
+| Dataset de Hugging Face | Gratis, descarga pública                                    |
+| GitHub Actions          | Gratis: minutos ilimitados en repos públicos, y este lo es  |
+| Supabase                | El plan Free que ya usa el proyecto                         |
+
+Cuenta solo hace falta para **escribir** en Open Food Facts o en Open Prices, que es aportar
+productos o subir precios. Nada de eso está en el alcance.
+
+### Lo que sí tiene condiciones, y no es el precio
+
+La base de datos de Open Food Facts es **ODbL 1.0**, y el contenido individual de cada registro va
+bajo Database Contents License; las fotos son CC-BY-SA. Confirmado el 2026-08-07 en sus términos de
+uso. Gratis no es lo mismo que sin ataduras, y ODbL trae dos:
+
+- **Atribución.** Si la app enseña datos de OFF, tiene que decir de dónde salen. Es una línea en la
+  ficha de producto, no un problema, pero hay que acordarse de ponerla.
+- **Compartir igual.** Una base de datos derivada de la suya se publica bajo ODbL si se distribuye.
+  Lo que distribuimos es una app que consulta nuestra copia, no la copia; ahí ODbL no obliga a
+  publicar nada. Si algún día se ofreciera la tabla del catálogo como export o API, sí.
+
+El dataset de Mercadona es MIT, que no pide nada de esto. Su problema no es la licencia sino la
+procedencia, contada arriba: se genera consumiendo la ruta que su `robots.txt` no permite.
+
+**Esto no cambia la recomendación, pero sí entra en el ADR.** Elegir Open Food Facts es aceptar
+poner atribución; elegir Mercadona es aceptar la procedencia. Las dos decisiones tienen un coste y
+ninguno es económico.
+
+## Una fuente más, evaluada y descartada
+
+[`Data-Market/productos-de-supermercados`](https://github.com/Data-Market/productos-de-supermercados)
+apareció buscando lo anterior y encaja de entrada: varios supermercados españoles, actualizado cada
+12 horas, del orden de 50.000 registros diarios. Se descarta por dos motivos, y el primero basta:
+**no trae imágenes ni códigos de barras**, que es justo la mitad de RF-10. Y el CSV de GitHub es
+solo una muestra con los supermercados anonimizados como hashes; el dataset entero se vende.
