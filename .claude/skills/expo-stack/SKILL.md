@@ -18,12 +18,12 @@ en países distintos. Dos consecuencias que explican casi todas las reglas de ab
 La regla de arquitectura más fácil de romper sin darse cuenta. Antes de añadir un import,
 mira en qué capa estás:
 
-| Capa | Puede importar | Nunca importa |
-|---|---|---|
-| `domain/` | tipos propios, utilidades puras | React, Supabase, Query, Zustand, Expo, AsyncStorage |
-| `data/` | Supabase, tipos de `domain/` | React, Query, componentes |
-| `presentation/` | React, Query, Zustand, `shared/ui`, casos de uso | `@supabase/*` directamente |
-| `shared/ui/` | React, RN, NativeWind, `theme/` | Query, Supabase, stores de feature |
+| Capa            | Puede importar                                   | Nunca importa                                       |
+| --------------- | ------------------------------------------------ | --------------------------------------------------- |
+| `domain/`       | tipos propios, utilidades puras                  | React, Supabase, Query, Zustand, Expo, AsyncStorage |
+| `data/`         | Supabase, tipos de `domain/`                     | React, Query, componentes                           |
+| `presentation/` | React, Query, Zustand, `shared/ui`, casos de uso | `@supabase/*` directamente                          |
+| `shared/ui/`    | React, RN, NativeWind, `theme/`                  | Query, Supabase, stores de feature                  |
 
 `domain/` limpio no es purismo: es lo que permite testear `joinCommunity()` en milisegundos
 sin arrancar React ni mockear red. Si necesitas Supabase dentro de `domain/`, es señal de que
@@ -36,6 +36,31 @@ grep -rE "from '(react|@supabase|@tanstack|zustand|expo)" src/features/*/domain/
 ```
 
 Cero resultados o hay algo mal colocado.
+
+### Un script de `scripts/` sí puede leer `domain/`, y así
+
+Los scripts son `.mjs` de Node y `domain/` es TypeScript, así que la tentación es copiar la
+función y seguir. No se copia: se importa con el borrado de tipos de Node.
+
+```js
+import { normalizeCatalogName } from '../src/features/catalog/domain/normalized-name.ts'
+```
+
+```json
+"catalog:ingest": "node --env-file=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/catalog-ingest.mjs"
+```
+
+La extensión `.ts` va explícita en el import, que es lo que Node exige. Los dos
+`--disable-warning` son ruido, no funcionalidad: el segundo aparece porque este `package.json`
+no es `"type": "module"` y no puede serlo, hay `jest.config.js` y `babel.config.js` en CommonJS.
+
+**Condición para que esto se sostenga: el fichero compartido no importa nada.** Una función pura
+de entrada a salida. En cuanto encadene imports, el borrado de tipos tiene que resolver módulos
+y deja de ser el subconjunto estable de la característica.
+
+Por qué importa que sea de verdad el mismo fichero: la normalización decide a la vez lo que se
+guarda en `normalized_name` y lo que se busca desde el móvil. Dos copias que divergen no dan un
+error, dan un usuario escribiendo «azúcar» y no encontrando nada.
 
 ## Puerto y adaptador
 
@@ -133,7 +158,9 @@ export function useTogglePurchased(communityId: string) {
     },
     onError: (error, _item, context) => {
       if (context?.previous) queryClient.setQueryData(key, context.previous)
-      showSnackbar(error instanceof OfflineError ? t('errors.offline') : t('items.errors.addFailed'))
+      showSnackbar(
+        error instanceof OfflineError ? t('errors.offline') : t('items.errors.addFailed'),
+      )
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: key }),
   })
@@ -207,7 +234,9 @@ export function useDeleteItem(communityId: string) {
       queryClient.invalidateQueries({ queryKey: key })
     },
     onError: (error) => {
-      showSnackbar(error instanceof OfflineError ? t('errors.offline') : t('items.errors.deleteFailed'))
+      showSnackbar(
+        error instanceof OfflineError ? t('errors.offline') : t('items.errors.deleteFailed'),
+      )
     },
     onSettled: (_result, _error, { item }) => {
       useDeletingItemsStore.getState().clearDeleting(item.id)
@@ -289,10 +318,13 @@ export type ItemsChannelStatus = 'connecting' | 'connected' | 'disconnected'
 
 export interface ItemRepository {
   // ...
-  subscribe(communityId: string, handlers: {
-    onChange: () => void
-    onStatus: (status: ItemsChannelStatus) => void
-  }): () => void
+  subscribe(
+    communityId: string,
+    handlers: {
+      onChange: () => void
+      onStatus: (status: ItemsChannelStatus) => void
+    },
+  ): () => void
 }
 ```
 
@@ -517,7 +549,8 @@ escribe la mutación: **una función no se serializa.** Al rehidratar solo queda
 client.setMutationDefaults(itemMutationKeys.add, {
   scope: { id: 'items' },
   mutationFn: (input: AddItemVariables) => addItem(itemRepository, input),
-  onSuccess: (_result, input) => client.invalidateQueries({ queryKey: itemsKey(input.communityId) }),
+  onSuccess: (_result, input) =>
+    client.invalidateQueries({ queryKey: itemsKey(input.communityId) }),
 })
 ```
 

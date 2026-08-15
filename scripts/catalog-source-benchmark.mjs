@@ -3,6 +3,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
+import { normalizeCatalogName } from '../src/features/catalog/domain/normalized-name.ts'
+
 const userAgent =
   'ListaCompraColaborativa/1.2.0 (+https://github.com/AleHernandezG/TODO-Colaborativo; aletrabajosspam@gmail.com)'
 
@@ -85,16 +87,6 @@ function parseArgs(argv) {
   return args
 }
 
-function normalize(text) {
-  return String(text ?? '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -134,7 +126,7 @@ async function readItemNames(limit) {
 
   const counts = new Map()
   for (const row of await res.json()) {
-    const name = normalize(row.name)
+    const name = normalizeCatalogName(row.name ?? '')
     if (name) counts.set(name, (counts.get(name) ?? 0) + 1)
   }
 
@@ -192,7 +184,7 @@ function loadDatasetProducts() {
     const priceCents = datasetPrice(raw)
     products.push({
       name,
-      normalizedName: normalize(name),
+      normalizedName: normalizeCatalogName(name),
       brand: pick(raw, brandKeys),
       packageSize: pick(raw, packageKeys),
       barcode: pick(raw, barcodeKeys),
@@ -294,7 +286,7 @@ async function searchOpenFoodFacts(query) {
     .filter((product) => product.product_name)
     .map((product) => ({
       name: product.product_name,
-      normalizedName: normalize(product.product_name),
+      normalizedName: normalizeCatalogName(product.product_name),
       brand: Array.isArray(product.brands) ? product.brands.join(', ') : (product.brands ?? null),
       packageSize: product.quantity ?? null,
       barcode: product.code ?? null,

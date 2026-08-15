@@ -1,0 +1,78 @@
+name: Catalog ingest
+
+on:
+  schedule:
+    - cron: '40 5 * * 2'
+  workflow_dispatch:
+
+concurrency:
+  group: catalog-ingest
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the repo (the script needs src/features/catalog/domain)
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22 (type stripping needs 22.6 or newer)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Ingest the Mercadona catalog
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: npm run catalog:ingest
+
+      - name: Check what actually landed in the table
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          auth=(-H "apikey: $SUPABASE_SECRET_KEY" -H "Authorization: Bearer $SUPABASE_SECRET_KEY")
+          rows=$(curl -sS -D - -o /dev/null "${auth[@]}" \
+            -H 'Prefer: count=exact' -H 'Range: 0-0' \
+            "$EXPO_PUBLIC_SUPABASE_URL/rest/v1/catalog_products?select=id" \
+            | tr -d '\r' | awk -F/ 'tolower($0) ~ /^content-range:/ { print $2 }')
+          checked=$(curl -sS "${auth[@]}" \
+            "$EXPO_PUBLIC_SUPABASE_URL/rest/v1/catalog_products?select=price_checked_at&order=price_checked_at.desc&limit=1" \
+            | sed -n 's/.*"price_checked_at":"\([^"]*\)".*/\1/p')
+
+          {
+            echo "| Qué | Valor |"
+            echo "| --- | --- |"
+            echo "| Productos en el catálogo | $rows |"
+            echo "| Precio más reciente | ${checked:-ninguno} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -z "$rows" ] || [ "$rows" -lt 1000 ]; then
+            echo "El catálogo se ha quedado en $rows filas. Se esperan miles." >&2
+            exit 1
+          fi
+
+      - name: Open an issue so a silent failure cannot last weeks
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: La ingesta del catálogo ha fallado
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          existing=$(gh issue list --state open --limit 100 --json number,title \
+            --jq '[.[] | select(.title == $ENV.TITLE)][0].number // empty')
+          body=$(printf '%s\n\n%s\n' \
+            "La ejecución del $(date -u '+%Y-%m-%d %H:%M UTC') no terminó: $RUN_URL" \
+            'Mientras siga rota la app funciona igual, pero enseña precios cada vez más viejos.')
+
+          if [ -z "$existing" ]; then
+            gh issue create --title "$TITLE" --body "$body"
+          else
+            gh issue comment "$existing" --body "$body"
+          fi

@@ -39,6 +39,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      catalog_products: {
+        Row: {
+          barcode: string | null
+          brand: string | null
+          currency: string
+          external_id: string
+          id: string
+          image_url: string | null
+          name: string
+          normalized_name: string
+          package_size: string | null
+          price_cents: number | null
+          price_checked_at: string | null
+          supermarket_id: string
+          updated_at: string
+        }
+        Insert: {
+          barcode?: string | null
+          brand?: string | null
+          currency?: string
+          external_id: string
+          id?: string
+          image_url?: string | null
+          name: string
+          normalized_name: string
+          package_size?: string | null
+          price_cents?: number | null
+          price_checked_at?: string | null
+          supermarket_id: string
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string | null
+          brand?: string | null
+          currency?: string
+          external_id?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          normalized_name?: string
+          package_size?: string | null
+          price_cents?: number | null
+          price_checked_at?: string | null
+          supermarket_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_products_supermarket_id_fkey"
+            columns: ["supermarket_id"]
+            isOneToOne: false
+            referencedRelation: "supermarkets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communities: {
         Row: {
           created_at: string
@@ -65,6 +121,7 @@ export type Database = {
       }
       items: {
         Row: {
+          catalog_product_id: string | null
           community_id: string
           created_at: string
           created_by: string | null
@@ -76,6 +133,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          catalog_product_id?: string | null
           community_id: string
           created_at?: string
           created_by?: string | null
@@ -87,6 +145,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          catalog_product_id?: string | null
           community_id?: string
           created_at?: string
           created_by?: string | null
@@ -98,6 +157,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "items_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "items_community_id_fkey"
             columns: ["community_id"]
@@ -166,6 +232,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supermarkets: {
+        Row: {
+          country: string
+          id: string
+          name: string
+        }
+        Insert: {
+          country: string
+          id: string
+          name: string
+        }
+        Update: {
+          country?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
     }
     Views: {

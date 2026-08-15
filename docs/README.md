@@ -28,7 +28,8 @@ El criterio y sus motivos están en
 | [0009](./adr/ADR-0009-cola-de-mutaciones-offline.md)             | Cola de mutaciones con `setMutationDefaults`             | Aceptado                          |
 | [0010](./adr/ADR-0010-id-del-articulo-generado-en-el-cliente.md) | El id del artículo lo pone el cliente                    | Aceptado                          |
 | [0011](./adr/ADR-0011-caducidad-y-rotacion-del-join-code.md)     | El `join_code` caduca y se puede rotar                   | Aceptado y **verificado** (24/24) |
-| [0012](./adr/ADR-0012-catalogo-de-productos-de-supermercado.md)  | Catálogo de productos para imagen y precio de referencia | **Propuesto**                     |
+| [0012](./adr/ADR-0012-catalogo-de-productos-de-supermercado.md)  | Catálogo de productos para imagen y precio de referencia | Aceptado                          |
+| [0013](./adr/ADR-0013-fuente-del-catalogo-mercadona.md)          | El catálogo sale del dataset público de Mercadona        | Aceptado                          |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin
@@ -50,12 +51,18 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 2 · Colaboración en tiempo real](./phases/fase-2.md) — cerrada
 - [Fase 3 · Imágenes y pulido UX](./phases/fase-3.md) — cerrada
 - [Fase 4 · Robustez y offline](./phases/fase-4.md) — cerrada
-- [Fase 5 · Endurecimiento antes de publicar](./phases/fase-5.md) — **abierta**
+- [Fase 5 · Endurecimiento antes de publicar](./phases/fase-5.md) — **abierta**, le queda TalkBack
+- [Fase 6 · Catálogo de productos y reparto de gastos](./phases/fase-6.md) — **abierta**, solo el
+  bloque A
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
-[la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md). La 6 no ha empezado: su alcance
-son dos bloques independientes, el catálogo de productos (RF-10) y el reparto de gastos (RF-9),
-descritos en §12 del documento maestro.
+[la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).
+
+Que la 5 y la 6 estén abiertas a la vez es a propósito y tiene límite: a la 5 solo le queda la
+pasada con TalkBack, que es prueba manual en el móvil, y el primer trabajo de la 6 es SQL. Nada de
+la 6 se publica antes de cerrar aquello. De sus dos bloques solo empieza el catálogo (RF-10); el
+reparto de gastos (RF-9) sigue parado por el requisito de entrada de
+[ADR-0005](./adr/ADR-0005-reparto-de-gastos.md).
 
 ## Guías
 
@@ -64,8 +71,8 @@ descritos en §12 del documento maestro.
 - [E2E con Maestro](./guias/e2e-con-maestro.md)
 - [Prueba de cierre en dispositivo](./guias/prueba-de-cierre-en-dispositivo.md)
 - [Fuentes de datos del catálogo](./guias/fuentes-de-datos-del-catalogo.md) — qué hay publicado
-  para sacar imagen y precio de los supermercados españoles, y qué permite cada uno. Insumo de la
-  decisión que tiene abierta el [ADR-0012](./adr/ADR-0012-catalogo-de-productos-de-supermercado.md).
-- [Medición de fuentes del catálogo](./guias/medicion-de-fuentes-del-catalogo.md) — el plan
-  completo del script que cuenta cuántos artículos reales encuentra cada fuente. Es lo que cierra
-  esa decisión.
+  para sacar imagen y precio de los supermercados españoles, qué permite cada uno y qué números dio
+  cada uno el 2026-08-07.
+- [Medición de fuentes del catálogo](./guias/medicion-de-fuentes-del-catalogo.md) — cómo funciona el
+  script que cuenta cuántos artículos reales encuentra cada fuente, y cómo volver a ejecutarlo. Es
+  lo que decidió el [ADR-0013](./adr/ADR-0013-fuente-del-catalogo-mercadona.md).

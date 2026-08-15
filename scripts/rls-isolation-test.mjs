@@ -113,6 +113,20 @@ async function fetchPublicImage(path) {
   return { status: res.status }
 }
 
+async function selectWithoutSession(path) {
+  const res = await fetch(`${url}/rest/v1/${path}`, { headers: { apikey: anonKey } })
+  return { status: res.status, body: await res.json().catch(() => null) }
+}
+
+async function insertCatalogProduct(token, product) {
+  const res = await fetch(`${url}/rest/v1/catalog_products`, {
+    method: 'POST',
+    headers: authHeaders(token, { Prefer: 'return=representation' }),
+    body: JSON.stringify(product),
+  })
+  return { status: res.status, body: await res.json().catch(() => null) }
+}
+
 async function expireJoinCode(communityId) {
   const res = await fetch(`${url}/rest/v1/communities?id=eq.${communityId}`, {
     method: 'PATCH',
@@ -267,6 +281,37 @@ async function main() {
     'El bucket no sirve la foto por URL pública',
     publicRead.status >= 400,
     `HTTP ${publicRead.status}`,
+  )
+
+  const supermarketsRead = await select(tokenA, 'supermarkets?select=id')
+  const catalogRead = await select(tokenA, 'catalog_products?select=id&limit=1')
+  check(
+    'Un miembro lee el catálogo, que no pertenece a ninguna comunidad',
+    Array.isArray(supermarketsRead.body) &&
+      supermarketsRead.body.some((s) => s.id === 'mercadona') &&
+      catalogRead.status === 200,
+    `supermarkets ${supermarketsRead.body?.length ?? '?'} filas, ` +
+      `catalog_products HTTP ${catalogRead.status}`,
+  )
+
+  const catalogWithoutSession = await selectWithoutSession('supermarkets?select=id')
+  check(
+    'Sin sesión no se lee el catálogo',
+    catalogWithoutSession.status >= 400 ||
+      (Array.isArray(catalogWithoutSession.body) && catalogWithoutSession.body.length === 0),
+    `HTTP ${catalogWithoutSession.status}, ${catalogWithoutSession.body?.length ?? '?'} filas`,
+  )
+
+  const catalogWrite = await insertCatalogProduct(tokenA, {
+    supermarket_id: 'mercadona',
+    external_id: `rls-test-${stamp}`,
+    name: 'producto intruso',
+    normalized_name: 'producto intruso',
+  })
+  check(
+    'Nadie con sesión de usuario escribe en el catálogo',
+    catalogWrite.status >= 400,
+    `HTTP ${catalogWrite.status}`,
   )
 
   const badCode = await rpc(tokenA, 'join_community', {

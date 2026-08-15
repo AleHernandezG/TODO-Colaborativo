@@ -290,10 +290,17 @@ El reparto de gastos además tiene un requisito de entrada, ver
 [ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md).
 
 El catálogo (RF-10, [ADR-0012](docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md)) es el
-bloque A de la Fase 6 y **está en Propuesto**: falta elegir la fuente de datos, que es decisión del
-usuario. Dos cosas suyas afectan a reglas de arriba aunque no se haya escrito una línea todavía:
-sus tablas son las primeras que **no se filtran por `community_id`** (son datos compartidos por
-todos, con `select` para `authenticated` y ninguna política de escritura), y el precio que trae es
+bloque A de la Fase 6 y **está en Aceptado desde el 2026-08-07**: la fuente la eligió el usuario con
+la medición delante y es el dataset público de Mercadona en Hugging Face, un solo supermercado, con
+GitHub Action semanal. Razonado en
+[ADR-0013](docs/adr/ADR-0013-fuente-del-catalogo-mercadona.md). **El esquema está aplicado en remoto
+desde el 2026-08-14** y **la tabla tiene 4.957 productos de Mercadona desde el 2026-08-15**, metidos
+por `npm run catalog:ingest`. La Action que los refresca (`catalog-ingest.yml`, martes) está escrita
+pero **no corre hasta que el secret `SUPABASE_SECRET_KEY` esté en el repo**, y eso lo pone Alejandro.
+De ahí en adelante, búsqueda y pantalla, no hay nada escrito. Dos cosas suyas afectan a reglas de
+arriba desde ya: `supermarkets` y `catalog_products` son las primeras tablas que **no se filtran por
+`community_id`** (son datos compartidos por todos, con `select` para `authenticated` y ninguna
+política de escritura, así que escribe solo la ingesta con la secret key), y el precio que trae es
 **de referencia**: se enseña con su fecha y no se convierte en un gasto sin que una persona lo
 confirme.
 
@@ -329,8 +336,9 @@ npx expo start
 # Desde Git Bash. En PowerShell 5.1 el '>' escribe UTF-16 y rompe ESLint: ver skill supabase-data
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
-# Aislamiento entre comunidades (RLS + Storage + rotación del código). Debe dar 24/24
-# (23/23 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
+# Aislamiento entre comunidades (RLS + Storage + rotación del código) y lectura del catálogo,
+# que es la única tabla compartida. Debe dar 27/27
+# (26/26 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
 npm run test:rls
 
 # Realtime: eventos, filtro por comunidad, aislamiento y presencia. Debe dar 12/12
@@ -340,6 +348,11 @@ npm run test:realtime
 # Los flags SOLO llegan desde Git Bash; PowerShell 5.1 se come el '--' sin avisar.
 npm run catalog:benchmark
 npm run catalog:benchmark -- --source hf --limit 20
+
+# Ingesta del catálogo. Clona el dataset y hace upsert por lotes con la secret key.
+# Idempotente: correrlo dos veces deja las mismas filas. --dry-run no escribe ni necesita clave.
+npm run catalog:ingest -- --dry-run
+npm run catalog:ingest
 
 # Usuarios de auth: cuántos hay y cuáles son huérfanos (anónimos sin fila en members)
 npm run users

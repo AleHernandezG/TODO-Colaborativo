@@ -1,6 +1,7 @@
 # ADR-0012: Catálogo de productos de supermercado para imagen y precio de referencia
 
-- Estado: **Propuesto**. Falta una decisión que es del usuario (ver «Qué falta por decidir»).
+- Estado: **Aceptado** desde el 2026-08-07. Las tres preguntas de «Qué falta por decidir» las cierra
+  [ADR-0013](ADR-0013-fuente-del-catalogo-mercadona.md); el diseño de este documento no cambia.
 - Fecha: 2026-08-05
 - Da soporte a RF-4 (imagen del artículo) y prepara RF-9 / Fase 6, sin sustituir a
   [ADR-0005](ADR-0005-reparto-de-gastos.md).
@@ -254,6 +255,10 @@ cierto. Lo que se congela es lo pagado, no lo listado.
   próxima política tiene que saberlo.
 
 ## Qué falta por decidir
+
+> Resuelto el 2026-08-07 en [ADR-0013](ADR-0013-fuente-del-catalogo-mercadona.md), con una medición
+> delante: el dataset público de Mercadona, un solo supermercado, y GitHub Action semanal. Lo que
+> sigue es la pregunta tal como estaba redactada.
 
 Para pasar a Aceptado:
 

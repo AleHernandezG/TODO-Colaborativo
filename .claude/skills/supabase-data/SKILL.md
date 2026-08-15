@@ -32,15 +32,16 @@ create table members (
 );
 
 create table items (
-  id            uuid primary key default gen_random_uuid(),
-  community_id  uuid not null references communities(id) on delete cascade,
-  name          text not null check (char_length(name) between 1 and 120),
-  quantity      int not null default 1 check (quantity >= 1),
-  image_path    text,
-  is_purchased  boolean not null default false,
-  created_by    uuid references members(id) on delete set null,
-  created_at    timestamptz not null default now(),
-  updated_at    timestamptz not null default now()
+  id                 uuid primary key default gen_random_uuid(),
+  community_id       uuid not null references communities(id) on delete cascade,
+  name               text not null check (char_length(name) between 1 and 120),
+  quantity           int not null default 1 check (quantity >= 1),
+  image_path         text,
+  is_purchased       boolean not null default false,
+  created_by         uuid references members(id) on delete set null,
+  catalog_product_id uuid references catalog_products(id) on delete set null,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
 );
 
 create index on items (community_id, is_purchased);
@@ -129,6 +130,37 @@ a otra comunidad con un `update community_id`. El `with check` cierra esa puerta
 
 No hay política de insert en `communities` ni en `members`. Es deliberado: esas dos escrituras
 solo ocurren dentro de las RPC de abajo.
+
+### Las tablas del catálogo son la excepción: no llevan `community_id`
+
+`supermarkets` y `catalog_products` (migración `20260807120000_catalog_schema.sql`) son las únicas
+tablas del proyecto que **no pertenecen a nadie**. Son el mismo contenido para todo el mundo, así
+que filtrarlas por comunidad sería copiar 4.000 filas por lista. Su política no se parece a ninguna
+de las de arriba:
+
+```sql
+create policy catalog_products_select on catalog_products for select to authenticated using (true);
+```
+
+Tres cosas que hay que leer juntas o se entiende mal:
+
+- **`to authenticated` es lo único que separa esto de una tabla pública.** Con `using (true)` y sin
+  `to`, la lee `anon`, o sea cualquiera con la publishable key y sin sesión. El test de aislamiento
+  tiene una comprobación dedicada solo a eso.
+- **Ninguna política de insert, update ni delete.** Escribe únicamente el script de ingesta con la
+  secret key, que se salta RLS por definición. Es el mismo criterio que `communities` y `members`:
+  si algún día hace falta escribir desde la app, la respuesta es una RPC.
+- **No entran en `supabase_realtime`.** Se reingieren una vez por semana; no hay nada que empujar a
+  los móviles.
+
+Y la consecuencia para quien escriba la siguiente política: **«toda tabla se filtra por
+`community_id`» ya no es universal en este proyecto.** Copiar la política de `items` a una tabla de
+catálogo la deja ilegible para todos; copiar la del catálogo a una tabla de comunidad la deja
+legible para todos. Mira primero de quién son los datos.
+
+El detalle del esquema y por qué cada columna, en
+[ADR-0012](../../../docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md); de dónde salen los
+datos, en [ADR-0013](../../../docs/adr/ADR-0013-fuente-del-catalogo-mercadona.md).
 
 ## Crear y unirse: por qué son RPC
 
@@ -241,7 +273,7 @@ pertenencia está en `members` y el código solo sirve para la primera vez.
 Dos cosas que se hacen mal con facilidad:
 
 - **`rotate_join_code` comprueba la pertenencia a mano** (`p_community_id in (select
-  member_community_ids())` → `not_a_member`). Es `security definer`, así que se salta RLS: si no
+member_community_ids())` → `not_a_member`). Es `security definer`, así que se salta RLS: si no
   comprueba, cualquiera con sesión rota el código de cualquier lista sabiendo su uuid.
 - **Un código caducado cuenta como intento fallido en `join_attempts`**, igual que uno inexistente.
   Si no contara, acertar con una lista vencida sería una forma gratis de saber que existe y de
@@ -443,6 +475,10 @@ El script abre **dos sesiones anónimas reales** y ataca la API REST igual que l
 cruzada de artículos, de comunidad y de miembros, insert en comunidad ajena, update de un
 artículo ajeno, e intento de robarlo moviéndole el `community_id`. Todo debe dar cero filas o
 error.
+
+Tres de las 27 comprobaciones van al revés y son las del catálogo: ahí lo que se afirma es que un
+miembro **sí** lee una tabla que no es de su comunidad, que sin sesión no la lee nadie, y que con
+sesión de usuario no se puede escribir en ella.
 
 Se hace así, y no simulando un usuario con `set local request.jwt.claims` en el editor SQL,
 porque esa vía prueba las políticas pero se salta PostgREST. Puede dar verde mientras la app
