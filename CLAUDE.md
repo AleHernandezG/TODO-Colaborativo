@@ -297,8 +297,15 @@ GitHub Action semanal. Razonado en
 desde el 2026-08-14** y **la tabla tiene 4.957 productos de Mercadona desde el 2026-08-15**, metidos
 por `npm run catalog:ingest`. La Action que los refresca (`catalog-ingest.yml`, martes) está escrita
 pero **no corre hasta que el secret `SUPABASE_SECRET_KEY` esté en el repo**, y eso lo pone Alejandro.
-De ahí en adelante, búsqueda y pantalla, no hay nada escrito. Dos cosas suyas afectan a reglas de
-arriba desde ya: `supermarkets` y `catalog_products` son las primeras tablas que **no se filtran por
+La búsqueda funciona de punta a punta desde el 2026-08-16: el ranking en
+`src/features/catalog/domain/rank-catalog-results.ts` con sus tests, la RPC `search_catalog` con su
+corrección aplicada, y el puerto y el adaptador en `src/features/catalog/`. Falta la pantalla, que va
+en dos incrementos (A.5.2 la lista de sugerencias, A.5.3 la foto y el precio). Dos trampas de esa
+búsqueda están contadas en el diario de la fase y conviene leerlas antes de tocarla: **el
+`word_similarity` de Postgres satura a 1** (sirve para filtrar, nunca para ordenar) y **`gen types`
+no sabe inferir la nulabilidad de un `returns table`**, así que jura que `brand`, `image_url`,
+`package_size`, `price_cents` y `price_checked_at` no son nulos y los cinco lo son. Dos cosas suyas
+afectan a reglas de arriba desde ya: `supermarkets` y `catalog_products` son las primeras tablas que **no se filtran por
 `community_id`** (son datos compartidos por todos, con `select` para `authenticated` y ninguna
 política de escritura, así que escribe solo la ingesta con la secret key), y el precio que trae es
 **de referencia**: se enseña con su fecha y no se convierte en un gasto sin que una persona lo
@@ -336,9 +343,9 @@ npx expo start
 # Desde Git Bash. En PowerShell 5.1 el '>' escribe UTF-16 y rompe ESLint: ver skill supabase-data
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
-# Aislamiento entre comunidades (RLS + Storage + rotación del código) y lectura del catálogo,
-# que es la única tabla compartida. Debe dar 27/27
-# (26/26 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
+# Aislamiento entre comunidades (RLS + Storage + rotación del código), y lectura y búsqueda del
+# catálogo, que es la única tabla compartida. Debe dar 29/29
+# (28/28 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
 npm run test:rls
 
 # Realtime: eventos, filtro por comunidad, aislamiento y presencia. Debe dar 12/12

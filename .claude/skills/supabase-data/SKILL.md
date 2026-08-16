@@ -202,6 +202,11 @@ borra a sí mismo al fallar. Estados: `ok`, `invalid_join_code`, `expired_join_c
 y el `on conflict` fallan con `column reference "community_id" is ambiguous` (SQLSTATE 42702).
 Si añades parámetros de salida que coincidan con nombres de columna, acuérdate.
 
+En una función `language sql` no existe ese pragma, así que el choque se evita a mano: **alias en
+la tabla y todas las columnas cualificadas**, nunca `select *`. `search_catalog` devuelve `id`,
+`name` y `similarity`, tres nombres que también son columnas, y por eso su `select` final va
+columna a columna con el prefijo del alias.
+
 El `on conflict` hace que reentrar desde el mismo dispositivo sea idempotente en vez de
 reventar por la clave única. El bloque `exception` traduce el choque contra
 `unique (community_id, username)` a `username_taken`: son dos errores distintos para el
@@ -242,6 +247,68 @@ GitHub Action que evita la pausa del proyecto Free pueda generar actividad en Po
 sesión. No leemos una tabla desde el ping porque toda lectura pasa por `member_community_ids()`,
 que `anon` no ejecuta, así que da `permission denied`. Si ves ese `grant ... to anon`, no es un
 descuido; no lo revoques.
+
+### `search_catalog` es la única `security invoker`
+
+Las demás son `definer` porque tienen que esquivar la recursión de las políticas de comunidad.
+`catalog_products` tiene `select to authenticated using (true)` y no hay nada que esquivar, así
+que `invoker` basta y concede menos. El `revoke`/`grant` se repite igual: sin él, `anon` podría
+buscar en el catálogo con solo la clave pública.
+
+## Una función NO puede fijar un parámetro de extensión en su cláusula `set`
+
+Esto cuesta media hora si no lo sabes. Una cláusula `set` con un parámetro normal va bien:
+
+```sql
+create function f() ... set search_path = public, extensions as $$ ... $$;
+```
+
+Con un parámetro que define una extensión, no:
+
+```sql
+set pg_trgm.word_similarity_threshold = 0.5
+-- ERROR: permission denied to set parameter "pg_trgm.word_similarity_threshold" (SQLSTATE 42501)
+```
+
+El parámetro lo registra la librería de la extensión al cargarse, y en la sesión que aplica la
+migración todavía no está cargada. Postgres ve un nombre con prefijo que no conoce y solo deja
+fijarlo a un superusuario, que el rol `postgres` de Supabase no es.
+
+Se puede forzar la carga llamando antes a una función de la extensión, pero **no lo hagas**:
+PostgREST abre conexiones nuevas y la comprobación se repite al ejecutar. Y el fallo es
+silencioso — el parámetro vuelve a su valor de fábrica y la consulta empieza a devolver otra
+cosa sin dar ningún error.
+
+La salida es escribir el valor en el SQL. En `search_catalog` eso significó cambiar el operador
+`<%`, que consulta el umbral y usa el índice gin, por `word_similarity(…) >= 0.5`, que recorre la
+tabla. Con 4.957 filas de nombres cortos sale gratis frente a la latencia de red. Si algún día no
+saliera, la salida buena es un índice GiST con el operador de distancia `<->>`, que ordena sin
+depender de ningún parámetro de sesión. Razonado en `docs/phases/fase-6.md`, incremento A.4.
+
+## `word_similarity` satura: sirve para filtrar, no para ordenar
+
+`word_similarity(q, texto)` busca la ventana de `texto` que más se parece a `q` y devuelve ese
+máximo. Si la palabra aparece entera, la ventana coincide y da **exactamente 1.00**. Para «leche»
+puntúan igual `Leche entera Hacendado` y `Aftersun leche corporal Ecran hidratante y reparadora`.
+
+Consecuencia práctica: `order by word_similarity(...) desc` **no ordena nada** cuando hay muchas
+coincidencias, cae al criterio siguiente, y si detrás hay un `limit` te llevas un corte arbitrario.
+En `search_catalog` eso hizo que la leche no llegara nunca al cliente, con el test de RLS en verde.
+
+El reparto que funciona son dos funciones distintas para dos preguntas distintas:
+
+| Pregunta                    | Función                             | Dónde va      |
+| --------------------------- | ----------------------------------- | ------------- |
+| ¿Aparece esta palabra?      | `word_similarity(q, nombre) >= 0.5` | El `where`    |
+| ¿Cuánto se parece del todo? | `similarity(q, nombre)`             | El `order by` |
+
+Y por delante de las dos, un desempate exacto que no opina:
+`order by starts_with(nombre_normalizado, q) desc, …`. Los trigramas son aproximados por diseño;
+cuando existe una respuesta exacta, se pregunta primero por ella.
+
+**Al medir una función de Postgres, mídela contra Postgres.** El fallo de arriba no se vio en una
+sonda local porque la aproximación en JS de `word_similarity` sí daba valores graduados. Una
+reimplementación de la dependencia no valida el contrato con ella.
 
 ## join_code
 

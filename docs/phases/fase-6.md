@@ -1,9 +1,9 @@
 # Fase 6 · Catálogo de productos y reparto de gastos
 
-- Estado: **abierta**, solo el bloque A. Incrementos A.1, A.2 y A.3 hechos
+- Estado: **abierta**, solo el bloque A. A.1 a A.4 hechos; de A.5 va el primero de tres
 - Inicio: 2026-08-07
-- Bloque A (catálogo, RF-10): 4.957 productos de Mercadona en la tabla desde el 2026-08-15, y la
-  Action que los refresca escrita. Faltan buscar y enseñar
+- Bloque A (catálogo, RF-10): 4.957 productos de Mercadona en la tabla desde el 2026-08-15, la Action
+  que los refresca escrita, la búsqueda lista y su puerto y adaptador también. Falta enseñarla
 - Pendiente que no es mío: el secret `SUPABASE_SECRET_KEY` del repo, sin el cual la Action no corre
 - Bloque B (reparto de gastos, RF-9): **no empieza**, tiene un requisito de entrada sin cumplir
 
@@ -50,8 +50,8 @@ nuestra.
 
 ## Incrementos del bloque A
 
-El orden importa: cada uno es verificable solo y ninguno depende del siguiente. Del A.4 en adelante,
-sin escribir.
+El orden importa: cada uno es verificable solo y ninguno depende del siguiente. Del A.5 va el primero
+de sus tres.
 
 ### A.1 · El esquema — hecho el 2026-08-14
 
@@ -260,7 +260,7 @@ verificado en local:
 Cuando esté subida: _Actions → Catalog ingest → Run workflow_. Debe terminar en verde y dejar la
 tabla del resumen con las 4.957 filas.
 
-### A.4 · La búsqueda
+### A.4 · La búsqueda — hecha el 2026-08-15, con una corrección encima el 2026-08-16
 
 La RPC `search_catalog` con `pg_trgm` para el filtro grueso, y el ranking como función pura de
 `domain/` con sus tests. El reparto está razonado en ADR-0012 y no se discute aquí.
@@ -270,7 +270,229 @@ tres de los ocho fallos no los encontraría ningún catálogo del mundo (`aguaca
 una nota, `azucr` una errata, `copas de vino ikea` no es del supermercado) y dos existen en
 Mercadona con otro nombre. El techo no lo pone la fuente.
 
-### A.5 · La pantalla
+El orden es el de siempre en este repo: primero la mitad que no es SQL, porque se deshace con un
+`git checkout`. La migración va detrás y con el visto bueno delante.
+
+#### El ranking: seis escalones, y los dos primeros desempates salen de mirar los datos
+
+`rankCatalogResults(query, candidates, limit)` en `src/features/catalog/domain/`. Normaliza la
+consulta ella misma con `normalizeCatalogName`, así que quien la llama no puede olvidarse. Con
+consulta vacía —o que la normalización deje vacía, como `¿?`— devuelve cero resultados: no se busca
+sobre nada.
+
+Cada candidato cae en un escalón:
+
+| Escalón | Cuándo                                                      | Ejemplo con `leche entera`                   |
+| ------: | ----------------------------------------------------------- | -------------------------------------------- |
+|       5 | el nombre normalizado **es** la consulta                    | `leche entera`                               |
+|       4 | el nombre **empieza** por la consulta                       | `Leche entera Hacendado`                     |
+|       3 | todas las palabras casan **y el nombre arranca por la 1ª**  | `aceite oliva` → `Aceite de oliva Hacendado` |
+|       2 | cada palabra de la consulta es prefijo de alguna del nombre | `leche hacendado` → `Leche entera Hacendado` |
+|       1 | el nombre la contiene suelta, o la marca empieza por ella   | `Batido de chocolate 90% leche`              |
+|       0 | nada de lo anterior, solo pega por trigrama                 | erratas                                      |
+
+El escalón 2 es el que hace que el orden de las palabras dé igual, que importa aquí porque **la
+marca va siempre al final del nombre** en este dataset (`Leche entera Hacendado`), así que buscar
+«leche hacendado» es lo natural y no encaja en ningún prefijo.
+
+Dentro del mismo escalón: **primero la unidad suelta, después el pack**. Esto salió de los datos, no
+de la teoría: `Leche entera Hacendado` está dos veces, `1 L` a 0,96 € y `6 x 1 L` a 5,76 €. Sin esta
+regla el primer resultado de «leche» es el pack y el usuario ve 5,76 € donde espera 0,96 €. Se
+detecta por el `x` que mete la ingesta en `package_size`; los dos lados del acuerdo son nuestros.
+Luego similitud, luego nombre más corto, y por último nombre e `id` alfabéticos para que el orden
+sea siempre el mismo y los tests no dependan de cómo venga la lista.
+
+Lo que **no** hace: tirar los del escalón 0. Un candidato que solo pega por trigrama es mejor que
+una pantalla vacía, y el `limit` ya lo deja abajo.
+
+#### `word_similarity`, no `similarity`, y el umbral es 0.5 (medido)
+
+El primer intento usaba `similarity()`, que compara la consulta contra el nombre **entero**. Contra
+nombres largos eso hunde cualquier consulta corta. Con los 4.957 productos reales delante:
+
+| Consulta          | `similarity` ≥ 0.12 | `word_similarity` ≥ 0.5 | `word_similarity` ≥ 0.6 |
+| ----------------- | ------------------: | ----------------------: | ----------------------: |
+| `leche`           |                  89 |                     150 |                     150 |
+| `leche entera`    |                  92 |                      21 |                      14 |
+| `lech`            |                  44 |                     155 |                       0 |
+| `papel higienico` |                  23 |                       7 |                       7 |
+
+Dos cosas se leen ahí. Una: con `similarity`, escribir `lech` devolvía `Lechuga Iceberg` por delante
+de la leche, porque contra un nombre largo la lechuga puntúa más. Con `word_similarity` la leche
+sube sola. Y dos: **0.6 —el valor por defecto de `pg_trgm`— deja `lech` en cero resultados**. Es
+justo el caso de escribir a medias, que es el 90% de lo que va a pasar. Por eso el umbral se baja a
+0.5 y se fija dentro de la propia función, no en la sesión.
+
+#### Lo que los trigramas no arreglan, y no se va a fingir que sí
+
+`lehce` no devuelve nada, con ningún umbral. `leche` da los trigramas `lec ech che` y `lehce` da
+`leh ehc hce`: no comparten ninguno. Una transposición en una palabra de cinco letras es el caso
+donde los trigramas no llegan, y bajar el umbral no lo salva, solo mete ruido en todo lo demás.
+Queda así y se dice: el usuario borra y reescribe. Arreglarlo pediría distancia de edición, que no
+tiene índice.
+
+Buscar solo por marca (`hacendado`) devuelve 1.995 candidatos y el orden es arbitrario. Tampoco se
+arregla: nadie apunta «hacendado» en la lista de la compra.
+
+#### La RPC `search_catalog`
+
+`supabase/migrations/20260815120000_search_catalog.sql`. **No toca tablas, ni columnas, ni índices,
+ni políticas**: solo añade la función.
+
+**`security invoker`, y es la primera función de este repo que no es `definer`.** Las otras lo son
+para esquivar la recursión de las políticas de comunidad; aquí no hay nada que esquivar, porque
+`catalog_products` tiene `select to authenticated using (true)`. Un `definer` solo daría permisos
+que nadie necesita. A cambio, el día que el catálogo se restrinja por comunidad esta función lo
+respeta gratis.
+
+**El umbral va escrito en el `where`, y el índice gin no se usa. Esto no era el plan.** El diseño
+aprobado usaba el operador `<%`, que sí tira del índice, con
+`set pg_trgm.word_similarity_threshold = 0.5` en la propia función. Al aplicarlo, Postgres lo
+rechazó:
+
+```
+ERROR: permission denied to set parameter "pg_trgm.word_similarity_threshold" (SQLSTATE 42501)
+```
+
+El motivo es que ese parámetro lo define la librería de `pg_trgm` al cargarse, y en la sesión que
+aplica la migración todavía no está cargada. Postgres lo ve como un parámetro desconocido con
+prefijo, y esos solo los puede fijar un superusuario. El rol `postgres` de Supabase no lo es.
+
+Se puede rodear —cargar `pg_trgm` llamando a una de sus funciones y luego un `alter function`— y se
+descartó por cómo falla, no por cómo se ve. PostgREST abre conexiones nuevas, así que el mismo
+permiso se vuelve a comprobar al ejecutar; y si un día no se aplica, el umbral no da error: vuelve al
+0.6 de fábrica y **`lech` pasa a devolver cero resultados**. Una búsqueda que a veces no encuentra
+nada y nadie sabe por qué es peor que una búsqueda que recorre 4.957 filas.
+
+Así que `word_similarity(…) >= 0.5` escrito a mano y `Seq Scan`. **4.957 filas de nombres cortos**,
+contra una latencia de red que ya es de 100 ms largos desde el móvil. El día que el catálogo tenga
+varios supermercados y esto se note, la salida es un índice GiST, que sí ordena por distancia
+(`<->>`) sin depender de ningún parámetro de sesión.
+
+De ahí sale el `as materialized` del CTE: sin él, `word_similarity` se calcula dos veces por fila,
+una en el `where` y otra en el `order by`. Con él, una.
+
+**Las columnas del `select` final van con alias y una a una**, no un `select *`. Los nombres de
+`returns table` (`id`, `name`, `similarity`) quedan en ámbito dentro del cuerpo y chocan con los de
+la tabla. Esta trampa ya costó una migración de corrección en la Fase 0
+(`20260719151500_fix_join_community_ambiguity.sql`); no hace falta pagarla dos veces.
+
+**La consulta llega ya normalizada desde el cliente, y Postgres no la vuelve a normalizar.**
+Descartado `unaccent`: sería una segunda implementación de la misma regla, con casos límite
+distintos a los de `normalizeCatalogName`, y esa divergencia no da error — da búsquedas que fallan
+sin que nadie sepa por qué. `trim()` se queda como defensa barata. Contrapartida asumida: quien
+llame a la RPC sin normalizar obtiene resultados peores, y por eso el único que la llama es el
+adaptador de `data/`.
+
+**El escalonado no baja a SQL.** Cabía meter el `case when normalized_name = p_query then 4 …` en el
+`order by`. No: ADR-0012 pone el ranking en `domain/` con Jest, y así cada ajuste del orden cuesta un
+test y no una migración nueva.
+
+**`returns table` con `similarity`**, no `setof catalog_products`, porque el dominio necesita ese
+número para desempatar. `currency` sale como `text` aunque la columna sea `char(3)`, para que
+PostgREST y los tipos generados no arrastren `bpchar`.
+
+`p_limit` acotado a 1..100, por defecto 50, los ~50 candidatos que pide ADR-0012.
+`p_supermarket_id` nulo significa todos: hoy solo hay Mercadona, pero la firma ya no cambia cuando
+haya dos.
+
+#### Defecto encontrado al medir de punta a punta: el filtro grueso mataba de hambre al ranking
+
+Aplicada la RPC, la primera búsqueda real de «leche» devolvió `6 Panes de leche 3%`,
+`Chocolate con leche Milka` y `Café con leche en cápsula Tassimo`. La leche, no.
+
+El motivo es que **`word_similarity` de Postgres satura**. Cualquier nombre que contenga la palabra
+entera puntúa exactamente `1.00`, no un valor graduado. Pedidas 100 filas para «leche», las 100
+traían `similarity = 1` — un solo valor distinto. Con todo empatado, `order by similarity desc, name`
+degenera en alfabético, y las filas que empiezan por «leche» no aparecen hasta la posición 80. Con
+`p_limit = 50` no llegaba ninguna al cliente.
+
+El ranking del dominio no fallaba: nunca vio los candidatos buenos. Es el fallo clásico de partir una
+búsqueda en dos mitades, **la mitad que recorta tiene que conservar lo que la mitad que ordena
+sabría promocionar**, y eso ADR-0012 lo daba por supuesto sin decirlo.
+
+Se vio porque la comprobación se hizo contra la RPC de verdad. La sonda previa usaba una
+aproximación de `word_similarity` escrita en JS que sí daba valores graduados, así que en local todo
+parecía correcto. **Una aproximación de la dependencia no vale para validar el contrato con ella.**
+
+#### La corrección: `20260815130000_search_catalog_candidate_order.sql`
+
+La anterior ya estaba aplicada, así que no se edita: se corrige con otra encima. Firma, permisos,
+tablas y umbral no se tocan. Cambian tres cosas.
+
+**Un flag exacto de prefijo manda en el orden de selección.**
+`starts_with(normalized_name, query)` es booleano y no empata: las 21 filas que empiezan por «leche»
+entran antes que las ~130 que solo la contienen, pase lo que pase con los trigramas.
+
+**La columna devuelta pasa de `word_similarity` a `similarity`.** `word_similarity` sigue decidiendo
+quién entra, que es la pregunta que sabe contestar («¿aparece esta palabra?»). Como valor devuelto no
+sirve porque satura. `similarity` compara contra el nombre entero y por tanto penaliza el ruido:
+«leche» contra `Leche entera Hacendado` puntúa alto, contra
+`Aftersun leche corporal Ecran hidratante y reparadora` puntúa bajo. **Pertenencia y grado son dos
+preguntas distintas y se estaban contestando con la misma función.** El dominio no cambia: usa
+`similarity` solo para desempatar, y ahora ese desempate significa algo.
+
+**La CTE materializa solo `(id, sim)` de los supervivientes** y el resto de columnas salen de un
+join. Antes materializaba las 4.957 filas enteras con sus `image_url` para tirar el 97%.
+
+Lo que se descartó:
+
+| Alternativa                                   | Por qué no                                                                                                                                   |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Subir el límite a 500 y que el dominio filtre | Arregla «leche» y ninguna causa. Sigue habiendo un corte ordenado por nada, solo más lejos, y son 500 filas con URLs por red móvil por tecla |
+| Ordenar solo por `similarity`, sin el flag    | Es una heurística de longitud disfrazada: `Pan de leche Hacendado` puntúa casi igual que `Leche entera Hacendado` porque miden lo mismo      |
+| Mover el ranking entero a SQL                 | Lo prohíbe ADR-0012 y con razón: los cinco niveles y la regla del pack tienen 15 tests en Jest                                               |
+
+Lo que se mueve a SQL **no es ranking, es qué candidatos sobreviven al recorte**, que es
+responsabilidad de quien recorta. Esa es la línea, y conviene tenerla escrita: el dominio ordena lo
+que recibe; la RPC decide qué merece viajar.
+
+El coste es una segunda llamada a pg_trgm por fila. Sigue siendo `Seq Scan` sobre 4.957 filas y sigue
+sin importar frente a los ~90 ms de latencia de red.
+
+#### El test de RLS pasa de 27 a 29
+
+Dos comprobaciones, las dos de permisos, que es de lo que va ese script:
+
+| Comprobación                                     | Qué afirma                                                                     |
+| ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Un miembro busca en el catálogo                  | 200, resultados, todos de `mercadona` y **el primero empieza por la consulta** |
+| Sin sesión no se puede ejecutar `search_catalog` | con solo la `apikey`, sin `Authorization`, se rechaza                          |
+
+La segunda es la que vigila el `revoke … from public, anon`. Sin ella, alguien que reescriba la
+función mañana y se deje los `grant` por defecto abre el catálogo a cualquiera con la clave pública,
+y el resto del script seguiría en verde.
+
+La primera afirmaba `similarity ≥ 0.5` y pasaba en verde con la búsqueda rota, porque ese umbral era
+el de `word_similarity` y saturaba a 1 en todas las filas. **Una aserción sobre el rango de un número
+no dice nada del orden.** Ahora comprueba que el primer resultado empieza por lo que se ha escrito, y
+el mensaje imprime su nombre, así que una regresión se lee en la salida sin abrir nada.
+
+#### Cómo probarlo
+
+El ranking va solo: `npx jest src/features/catalog` da 25/25 sin tocar la red.
+
+La RPC necesita la migración aplicada, y eso lo tiene que lanzar Alejandro:
+
+```bash
+npx supabase db push --linked --yes
+npx supabase gen types typescript --linked > src/shared/lib/db.types.ts   # desde Git Bash
+npm run test:rls    # 29/29
+```
+
+Y una medición que conviene hacer una vez, porque es la que decide si el `Seq Scan` es aceptable o
+hay que volver al índice por otra vía:
+
+```sql
+explain analyze
+select * from search_catalog('leche', 'mercadona', 10);
+```
+
+Va a salir un `Seq Scan` sobre `catalog_products`, y eso es lo esperado. Lo que importa es el
+`Execution Time`. Por debajo de ~50 ms no hay nada que hacer: la red desde el móvil cuesta más que
+eso. Si se fuera a cientos de milisegundos, el siguiente paso es el índice GiST con `<->>`.
+
+### A.5 · La pantalla — partida en tres
 
 Sugerencias al escribir el nombre del artículo, y la ficha con foto, precio y **su antigüedad**
 («Mercadona · visto hace 3 días»). Un precio sin fecha es una afirmación que se vuelve falsa sola.
@@ -279,8 +501,111 @@ Las reglas de siempre: `accessibilityLabel` y `accessibilityRole` en todo contro
 de 44 pt, contraste AA, y que la foto propia siga siendo el camino principal. El catálogo es el
 atajo, no al revés: **con el catálogo vacío la app tiene que hacer exactamente lo que hace hoy.**
 
+Es demasiado para un incremento, así que van tres: **A.5.1** dominio y datos sin UI, **A.5.2** la
+lista de sugerencias bajo el campo de añadir, **A.5.3** la foto y el precio en el artículo.
+
+#### A.5.1 · El puerto, el adaptador y el caso de uso — hecho el 2026-08-16
+
+| Fichero                                       | Qué hace                                                       |
+| --------------------------------------------- | -------------------------------------------------------------- |
+| `catalog/domain/catalog-repository.ts`        | El puerto. Un método, `search`                                 |
+| `catalog/domain/search-catalog.ts`            | Pide candidatos y los pasa por `rankCatalogResults`            |
+| `catalog/domain/price-age.ts`                 | `price_checked_at` → `{ unit, count }`, para que lo pinte i18n |
+| `catalog/data/supabase-catalog-repository.ts` | `assertOnline()`, la RPC y el mapeo a la entidad               |
+
+Sin UI todavía, y aun así verificable: 46 tests en la feature, 98% de cobertura.
+
+**Tres caracteres mínimo, medidos sobre el nombre normalizado.** Por debajo, los trigramas devuelven
+ruido y cada tecla es una llamada de red. `isSearchableQuery` corta antes de tocar el repositorio, no
+después, así que escribir «le» no genera tráfico. El corte se comprueba tras normalizar: `«  l.  »`
+son cinco caracteres que valen uno.
+
+**El caso de uso pide 50 candidatos y devuelve 6.** Son dos límites distintos y conviene no
+confundirlos: 50 es lo que viaja por la red para que el ranking tenga con qué trabajar, 6 es lo que
+cabe en pantalla sin tapar el teclado. Ese 50 es justo el número que el defecto de A.4 volvía
+peligroso, y por eso el orden de selección de la RPC importa tanto.
+
+##### El mapeo del adaptador existe para tapar una mentira de `gen types`
+
+Con `returns table`, Supabase **no puede inferir la nulabilidad** y declara `brand`, `image_url`,
+`package_size`, `price_cents` y `price_checked_at` como no nulos. Los cinco lo son.
+
+Si eso se deja pasar, TypeScript deja de avisar justo donde hay que tener cuidado: `price_cents!`
+compila, `priceCents.toFixed(2)` compila, y revienta en el móvil con el primer producto sin precio.
+Y son muchos: el dataset trae fotos y precios a huecos.
+
+El adaptador declara su propio `SearchRow` con los nulos puestos y asigna el resultado de la RPC a
+él. **No hace falta ningún `as`**: `{ brand: string }[]` es asignable a `{ brand: string | null }[]`,
+así que la conversión es una anotación de tipo y el compilador la acepta sola. De ahí para dentro de
+la feature, los nulos son visibles y `strict` vuelve a hacer su trabajo.
+
+Hay un test dedicado solo a esto, con las cinco columnas a `null`, para que se caiga si alguien
+«arregla» el mapeo copiando los tipos generados.
+
+##### `price-age.ts` en dominio, y no `Intl.RelativeTimeFormat`
+
+Devuelve `{ unit: 'today' | 'day' | 'week' | 'month', count }` y el plural lo resuelve i18n, que ya
+tiene un test que falla si ES e EN se desincronizan. Con `Intl` la cadena la construiría Hermes, que
+es lo único de esta app que no se puede probar en Jest ni traducir con las reglas del proyecto.
+
+Dos casos raros resueltos en el código, que es donde manda `CLAUDE.md` para el código async y los
+bordes: una fecha ilegible devuelve `null` y la pantalla no enseña antigüedad; una fecha futura
+(reloj del móvil mal, o una ingesta con fecha adelantada) cuenta como hoy en vez de dar días
+negativos.
+
+##### La misma sonda que destapó lo de A.4 destapó un escalón que faltaba
+
+Con la corrección aplicada, `similarity` pasó de un valor único a 11-29 valores distintos por
+consulta y «leche», «leche entera» y «papel higiénico» salieron bien a la primera. `aceite oliva`, no:
+devolvía **`Barra pan de aceite de oliva`** por delante del aceite.
+
+No era el filtro esta vez, era el ranking. Los dos caían en el escalón 2 (todas las palabras de la
+consulta son prefijo de alguna del nombre) y ahí decidía la similitud, que premia al nombre con menos
+ruido alrededor. `Barra pan de` mete menos ruido que `1º Hacendado`, así que el pan ganaba.
+
+Escalón 3 nuevo: **de los que casan todas las palabras, van primero los que arrancan por la primera
+palabra escrita.** Un nombre que empieza por lo que has empezado a escribir es más probable que sea
+lo que buscas, y eso es una comprobación exacta, no una heurística de longitud.
+
+Solo afecta a consultas de varias palabras. Con una sola, «el nombre empieza por la primera palabra»
+es exactamente el escalón 4, así que el 3 no se alcanza nunca y las búsquedas de una palabra ordenan
+igual que antes. Hay un test dedicado a fijar eso, porque es justo el tipo de cosa que se rompe sin
+que nadie se entere.
+
+##### Tres caracteres, ahora con la medición delante
+
+| Escrito | Candidatos que devuelve la RPC | Tres primeras sugerencias                   |
+| ------- | ------------------------------ | ------------------------------------------- |
+| `le`    | 100 (el tope)                  | Lechuga hoja roble, Lenguado rubio, Lechuga |
+| `lec`   | 100 (el tope)                  | Lechuga Iceberg, Lechuga hoja roble, Leche  |
+| `pa`    | 100 (el tope)                  | Patata, Papaya, Patatas                     |
+| `pan`   | 100 (el tope)                  | Pan Viena, Pan Bretzel, Pan 5 semillas      |
+| `hue`   | 66                             | Huevos, Hueso garrón, Hueso vacuno          |
+
+Con dos caracteres los resultados no son basura, y aun así el mínimo se queda en tres por dos
+motivos. Uno, que cada tecla es una llamada de red y con dos letras el usuario no ha dicho todavía
+qué quiere. Dos, y este es el que importa: **con dos caracteres la RPC devuelve siempre el tope de
+candidatos**, o sea que el filtro grueso vuelve a estar recortando a ciegas. Que los resultados
+salgan bien de todas formas es mérito del `starts_with` de la corrección de A.4, que ordena antes de
+recortar. Se sostiene, pero no es un sitio donde apoyarse a propósito.
+
+`hue` con 66 candidatos es el caso sano: por debajo del tope, el ranking ve el conjunto entero.
+
+##### Y la comprobación de que el mapeo hacía falta
+
+De los 100 productos que devuelve «leche», **7 vienen con `brand` a `null`**. Los tipos generados
+juran que esa columna es `string`. Sin el mapeo del adaptador, el primer `brand.toLowerCase()` de la
+pantalla revienta en el móvil con TypeScript diciendo que todo está bien.
+
 ---
 
 ## Decisiones sobre la marcha
 
-Aquí van las que se tomen durante la fase y no den para ADR. De momento, ninguna.
+Aquí van las que se tomen durante la fase y no den para ADR.
+
+**`rank-catalog-results.ts` es solo de la app, y da igual.** La regla de la skill `expo-stack` —el
+fichero que comparte script y app no importa nada— tiene esta consecuencia: como el ranking importa
+`./normalized-name` sin extensión, que es lo correcto para el bundler, Node no lo puede cargar con
+`--experimental-strip-types`. Se descubrió al querer probar el ranking contra los datos reales desde
+un script. No se toca: ningún script ordena resultados, solo la app. Si algún día hiciera falta,
+la salida es la de siempre, bajarlo a `.js` con JSDoc.

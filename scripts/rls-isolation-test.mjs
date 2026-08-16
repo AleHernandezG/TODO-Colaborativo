@@ -118,6 +118,15 @@ async function selectWithoutSession(path) {
   return { status: res.status, body: await res.json().catch(() => null) }
 }
 
+async function rpcWithoutSession(name, args) {
+  const res = await fetch(`${url}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  })
+  return { status: res.status, body: await res.json().catch(() => null) }
+}
+
 async function insertCatalogProduct(token, product) {
   const res = await fetch(`${url}/rest/v1/catalog_products`, {
     method: 'POST',
@@ -312,6 +321,28 @@ async function main() {
     'Nadie con sesión de usuario escribe en el catálogo',
     catalogWrite.status >= 400,
     `HTTP ${catalogWrite.status}`,
+  )
+
+  const search = await rpc(tokenA, 'search_catalog', {
+    p_query: 'leche',
+    p_supermarket_id: 'mercadona',
+    p_limit: 10,
+  })
+  check(
+    'Un miembro busca en el catálogo con search_catalog',
+    search.status === 200 &&
+      Array.isArray(search.body) &&
+      search.body.length > 0 &&
+      search.body.every((row) => row.supermarket_id === 'mercadona') &&
+      search.body[0].normalized_name.startsWith('leche'),
+    `HTTP ${search.status}, ${search.body?.length ?? '?'} resultados, 1º «${search.body?.[0]?.name ?? '?'}»`,
+  )
+
+  const searchWithoutSession = await rpcWithoutSession('search_catalog', { p_query: 'leche' })
+  check(
+    'Sin sesión no se puede ejecutar search_catalog',
+    searchWithoutSession.status >= 400,
+    `HTTP ${searchWithoutSession.status}`,
   )
 
   const badCode = await rpc(tokenA, 'join_community', {
