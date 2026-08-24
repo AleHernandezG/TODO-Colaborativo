@@ -1,4 +1,4 @@
-import type { CatalogCandidate } from './catalog-product'
+import type { CatalogCandidate, CatalogProduct } from './catalog-product'
 
 export type CatalogSearchInput = {
   query: string
@@ -8,4 +8,5 @@ export type CatalogSearchInput = {
 
 export interface CatalogRepository {
   search(input: CatalogSearchInput): Promise<CatalogCandidate[]>
+  byIds(ids: readonly string[]): Promise<CatalogProduct[]>
 }

@@ -10,6 +10,7 @@ import { ItemImage } from './ItemImage'
 type ItemRowProps = {
   item: Item
   uploadingImage: boolean
+  catalogImageUrl: string | null
   onToggle: () => void
   onEdit: () => void
   onDelete: () => void
@@ -18,9 +19,16 @@ type ItemRowProps = {
 const appear = FadeIn.duration(180)
 const reflow = LinearTransition.duration(180)
 
-export function ItemRow({ item, uploadingImage, onToggle, onEdit, onDelete }: ItemRowProps) {
+export function ItemRow({
+  item,
+  uploadingImage,
+  catalogImageUrl,
+  onToggle,
+  onEdit,
+  onDelete,
+}: ItemRowProps) {
   const { t } = useTranslation()
-  const showsImage = uploadingImage || item.imagePath !== null
+  const showsImage = uploadingImage || item.imagePath !== null || catalogImageUrl !== null
 
   return (
     <Animated.View entering={appear} layout={reflow}>
@@ -49,6 +57,7 @@ export function ItemRow({ item, uploadingImage, onToggle, onEdit, onDelete }: It
           {showsImage ? (
             <ItemImage
               path={item.imagePath}
+              catalogUrl={catalogImageUrl}
               name={item.name}
               size={36}
               uploading={uploadingImage}

@@ -23,6 +23,7 @@ it('normaliza el nombre y usa cantidad 1 por defecto', async () => {
     communityId: 'c1',
     name: 'pan de molde',
     quantity: 1,
+    catalogProductId: null,
   })
 })
 
@@ -36,7 +37,23 @@ it('pasa la cantidad indicada al repositorio', async () => {
     communityId: 'c1',
     name: 'Huevos',
     quantity: 12,
+    catalogProductId: null,
   })
+})
+
+it('enlaza el producto del catálogo cuando el alta viene de una sugerencia', async () => {
+  const repository = repositoryThatAdds()
+
+  await addItem(repository, {
+    id: 'i1',
+    communityId: 'c1',
+    name: 'Leche entera Hacendado',
+    catalogProductId: 'prod-1',
+  })
+
+  expect(repository.add).toHaveBeenCalledWith(
+    expect.objectContaining({ catalogProductId: 'prod-1' }),
+  )
 })
 
 it('rechaza un nombre vacío sin tocar la red', async () => {
@@ -51,7 +68,12 @@ it('rechaza un nombre vacío sin tocar la red', async () => {
 it('rechaza una cantidad menor que 1', async () => {
   const repository = repositoryThatAdds()
 
-  const result = await addItem(repository, { id: 'i1', communityId: 'c1', name: 'Pan', quantity: 0 })
+  const result = await addItem(repository, {
+    id: 'i1',
+    communityId: 'c1',
+    name: 'Pan',
+    quantity: 0,
+  })
 
   expect(result).toEqual({ status: 'invalid_quantity' })
   expect(repository.add).not.toHaveBeenCalled()

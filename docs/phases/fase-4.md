@@ -526,7 +526,8 @@ Los cuatro puntos, con el detalle en la auditoría F de [`fase-3.md`](fase-3.md)
 superado, contraste y áreas táctiles comprobados por tests, modo oscuro y fuente grande vistos en
 el móvil, y «Deshacer» funcionando con su borrado diferido.
 
-**Aplazado: la pasada con TalkBack.** Decisión del usuario, se hace antes de publicar.
+**Aplazado: la pasada con TalkBack.** Decisión del usuario, se hace antes de publicar. Se hizo el
+2026-08-16, como incremento 4 de la Fase 5, y pasó limpio.
 
 ### G · Calidad de código
 

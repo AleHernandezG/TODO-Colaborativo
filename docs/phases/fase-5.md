@@ -1,8 +1,8 @@
 # Fase 5 · Endurecimiento antes de publicar
 
-- Estado: **abierta**. Incrementos 1 y 2 probados en dispositivo el 2026-08-06, sin un solo fallo.
-  El 3 está verde en local y se queda sin recorrer en el móvil por decisión del usuario, ver su
-  apartado. Queda el incremento 4 (TalkBack), que es prueba manual entera
+- Estado: **cerrada el 2026-08-16**. Incrementos 1 y 2 probados en dispositivo el 2026-08-06, sin un
+  solo fallo. El 3 está verde en local y se queda sin recorrer en el móvil por decisión del usuario,
+  ver su apartado. El 4 (TalkBack) lo recorrió Alejandro entero el 2026-08-16 y pasó limpio
 - Inicio: 2026-08-05
 - Luz verde del usuario: 2026-08-05, con el MVP (fases 0 → 4) ya cerrado
 - El update sobre el que se probó: `v1.2.0 · 019fd8a6`, grupo
@@ -25,8 +25,9 @@ Se eligió el paquete **mínimo para publicar**. Cuatro incrementos:
 3. [x] **i18n en inglés.** La estructura está desde la Fase 0; faltaba el `en.json` y la detección
        del idioma del sistema. Escrito y verde en local; su guion en el móvil no se recorre, ver el
        apartado del incremento.
-4. [ ] **La pasada con TalkBack.** Es el criterio F.2 de la Fase 3, aplazado por decisión el
-       2026-08-05. Guion en el bloque 4 de `docs/guias/prueba-de-cierre-en-dispositivo.md`.
+4. [x] **La pasada con TalkBack.** Es el criterio F.2 de la Fase 3, aplazado por decisión el
+       2026-08-05 y recorrido el 2026-08-16. Guion en el bloque 4 de
+       `docs/guias/prueba-de-cierre-en-dispositivo.md`.
 
 **Lo que queda fuera, y se decidió que quedara fuera:** PIN por miembro, Sentry, notificaciones
 push, roles dentro de la comunidad, analítica y pasar a development build. Ninguna es necesaria
@@ -489,8 +490,23 @@ leen en momentos distintos.
 
 ## Incremento 4 · TalkBack
 
-Pendiente. Cierra F.2 de la Fase 3. El guion está escrito en el bloque 4 de
-`docs/guias/prueba-de-cierre-en-dispositivo.md`; lo que salga de ahí se anota aquí y se marca allí.
+**Hecho el 2026-08-16. Cierra F.2 de la Fase 3 y con él la fase entera.** Alejandro recorrió el
+bloque 4 de `docs/guias/prueba-de-cierre-en-dispositivo.md` con TalkBack encendido en el Android de
+pruebas, los diez puntos, y **pasó limpio**: ninguno se comportó distinto de lo que dice el guion.
+No hay deuda que apuntar.
+
+Merece la pena decir qué es lo que no falló, porque es lo que más papeletas tenía. **El foco entra
+en el diálogo de confirmación al abrirse** y lee su texto, que es el fallo clásico de un modal en
+React Native y el único control cuya accesibilidad no se había validado junto al resto: se escribió
+la tarde del 2026-08-05, después de que la lista original ya estuviera cerrada. El `Dialog` de Paper
+lo resuelve solo, que era exactamente la razón de dejarle a Paper las superposiciones en
+[ADR-0004](../adr/ADR-0004-libreria-de-ui.md) en vez de hacerlas a mano.
+
+Que pasara limpio no es suerte: la accesibilidad se fue escribiendo control a control desde la Fase
+1, con la regla de `CLAUDE.md` de que nada entra sin `accessibilityLabel`, rol, contraste AA y 44 pt.
+La pasada manual confirma lo que un test no ve —que lo leído en voz alta tenga sentido y en el orden
+bueno—, no lo arregla. Aplazarla costó tener que actualizar el guion a mano una vez; haberla dejado
+para el final no costó ni un arreglo.
 
 El 2026-08-06 ese guion pasó de siete comprobaciones a diez. Las tres nuevas son del incremento 2 de
 esta fase: el botón de generar código con su hint, que el foco entre en el diálogo de confirmación

@@ -31,6 +31,7 @@ export function useAddItem(communityId: string) {
         quantity: input.quantity,
         isPurchased: false,
         imagePath: null,
+        catalogProductId: input.catalogProductId,
         createdAt: new Date().toISOString(),
       }
 
@@ -49,7 +50,7 @@ export function useAddItem(communityId: string) {
   })
 
   return {
-    mutate: (input: { name: string; quantity: number }) =>
+    mutate: (input: { name: string; quantity: number; catalogProductId: string | null }) =>
       mutation.mutate({ ...input, id: randomUuid(), communityId }),
   }
 }

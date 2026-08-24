@@ -4,5 +4,6 @@ export type Item = {
   quantity: number
   isPurchased: boolean
   imagePath: string | null
+  catalogProductId: string | null
   createdAt: string
 }

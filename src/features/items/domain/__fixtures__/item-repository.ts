@@ -25,6 +25,7 @@ export function fakeItem(overrides: Partial<Item> = {}): Item {
     quantity: 1,
     isPurchased: false,
     imagePath: null,
+    catalogProductId: null,
     createdAt: '2026-07-20T10:00:00.000Z',
     ...overrides,
   }

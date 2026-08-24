@@ -17,6 +17,7 @@ export type AddItemVariables = {
   communityId: string
   name: string
   quantity: number
+  catalogProductId: string | null
 }
 
 export type EditItemVariables = {
@@ -63,16 +64,13 @@ export function registerItemMutationDefaults(client: QueryClient) {
     onError: (_error, input) => reportQueuedFailure(input.communityId),
   })
 
-  client.setMutationDefaults<void, Error, ItemMutationVariables>(
-    itemMutationKeys.togglePurchased,
-    {
-      scope: itemMutationScope,
-      mutationFn: (input) =>
-        setPurchased(supabaseItemRepository, input.item.id, !input.item.isPurchased),
-      onSuccess: (_result, input) => reconcile(input.communityId),
-      onError: (_error, input) => reportQueuedFailure(input.communityId),
-    },
-  )
+  client.setMutationDefaults<void, Error, ItemMutationVariables>(itemMutationKeys.togglePurchased, {
+    scope: itemMutationScope,
+    mutationFn: (input) =>
+      setPurchased(supabaseItemRepository, input.item.id, !input.item.isPurchased),
+    onSuccess: (_result, input) => reconcile(input.communityId),
+    onError: (_error, input) => reportQueuedFailure(input.communityId),
+  })
 
   client.setMutationDefaults<void, Error, ItemMutationVariables>(itemMutationKeys.remove, {
     scope: itemMutationScope,

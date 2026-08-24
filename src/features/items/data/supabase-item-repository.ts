@@ -4,7 +4,7 @@ import type { Item } from '../domain/item'
 import { imageUrlTtlSeconds } from '../domain/item-image'
 import type { ItemRepository } from '../domain/item-repository'
 
-const columns = 'id, name, quantity, is_purchased, image_path, created_at'
+const columns = 'id, name, quantity, is_purchased, image_path, catalog_product_id, created_at'
 const imagesBucket = 'item-images'
 const duplicateKey = '23505'
 
@@ -14,6 +14,7 @@ type ItemRow = {
   quantity: number
   is_purchased: boolean
   image_path: string | null
+  catalog_product_id: string | null
   created_at: string
 }
 
@@ -24,6 +25,7 @@ function toItem(row: ItemRow): Item {
     quantity: row.quantity,
     isPurchased: row.is_purchased,
     imagePath: row.image_path,
+    catalogProductId: row.catalog_product_id,
     createdAt: row.created_at,
   }
 }
@@ -45,12 +47,18 @@ export const supabaseItemRepository: ItemRepository = {
     return (data ?? []).map(toItem)
   },
 
-  async add({ id, communityId, name, quantity }) {
+  async add({ id, communityId, name, quantity, catalogProductId }) {
     await assertOnline()
 
     const { data, error } = await supabase
       .from('items')
-      .insert({ id, community_id: communityId, name, quantity })
+      .insert({
+        id,
+        community_id: communityId,
+        name,
+        quantity,
+        catalog_product_id: catalogProductId,
+      })
       .select(columns)
       .single()
 

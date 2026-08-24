@@ -252,21 +252,20 @@ descartó y a costa de qué) y **qué implica** para quien toque eso después.
 Si una decisión no encaja en ninguna, va en `docs/phases/fase-N.md` bajo "Decisiones sobre la
 marcha". Nunca se queda sin escribir.
 
-**Fase actual: 5 (endurecimiento), abierta el 2026-08-05 con luz verde del usuario.** El MVP
-(fases 0 → 4) está cerrado y probado en dispositivo con dos móviles; su diario está en
-`docs/phases/`. Las dos últimas se cerraron el 2026-08-05 de una sentada; qué se probó y con qué
-resultado, en `docs/guias/prueba-de-cierre-en-dispositivo.md`.
+**Fase actual: 6 (catálogo y reparto de gastos), abierta el 2026-08-07.** El MVP (fases 0 → 4) está
+cerrado y probado en dispositivo con dos móviles; su diario está en `docs/phases/`. Las dos últimas
+se cerraron el 2026-08-05 de una sentada; qué se probó y con qué resultado, en
+`docs/guias/prueba-de-cierre-en-dispositivo.md`.
 
-El alcance de la Fase 5 lo eligió el usuario y son cuatro cosas: id del artículo generado en el
-cliente (hecho), expiración y rotación del `join_code` (hecho, migración aplicada el 2026-08-05),
-i18n en inglés (hecho) y la pasada con TalkBack, que es lo único que queda. Todo lo demás (PIN,
-Sentry, push, roles, analítica, development build) queda fuera a propósito. Detalle en
+**La Fase 5 (endurecimiento) se cerró el 2026-08-16.** Su alcance lo eligió el usuario y fueron
+cuatro cosas: id del artículo generado en el cliente, expiración y rotación del `join_code`
+(migración aplicada el 2026-08-05), i18n en inglés y la pasada con TalkBack, que se recorrió entera
+el 2026-08-16 y pasó limpio, cerrando de paso el criterio F.2 que la Fase 3 dejó a deber. Todo lo
+demás (PIN, Sentry, push, roles, analítica, development build) quedó fuera a propósito. Detalle en
 `docs/phases/fase-5.md`.
 
 Lo que se arrastra y no se puede perder de vista:
 
-- **La pasada con TalkBack (F.2 de la Fase 3) está aplazada, no hecha.** Se hace antes de publicar
-  la beta. Guion en el bloque 4 de la guía de cierre.
 - **El inglés no se ha visto nunca en un móvil.** Los incrementos 1 y 2 se probaron en dispositivo
   el 2026-08-06 y pasaron enteros; el guion del 3 (cambiar el idioma del sistema) no se recorrió por
   decisión del usuario, porque para esta beta lo que importa es el castellano. Si la detección de
@@ -294,13 +293,14 @@ bloque A de la Fase 6 y **está en Aceptado desde el 2026-08-07**: la fuente la 
 la medición delante y es el dataset público de Mercadona en Hugging Face, un solo supermercado, con
 GitHub Action semanal. Razonado en
 [ADR-0013](docs/adr/ADR-0013-fuente-del-catalogo-mercadona.md). **El esquema está aplicado en remoto
-desde el 2026-08-14** y **la tabla tiene 4.957 productos de Mercadona desde el 2026-08-15**, metidos
-por `npm run catalog:ingest`. La Action que los refresca (`catalog-ingest.yml`, martes) está escrita
-pero **no corre hasta que el secret `SUPABASE_SECRET_KEY` esté en el repo**, y eso lo pone Alejandro.
+desde el 2026-08-14** y **la tabla tiene 4.979 productos de Mercadona actualizados por la GitHub Action el 2026-08-24**
+(`catalog-ingest.yml`, ejecutada en verde en 23s tras configurar el secret `SUPABASE_SECRET_KEY`).
 La búsqueda funciona de punta a punta desde el 2026-08-16: el ranking en
 `src/features/catalog/domain/rank-catalog-results.ts` con sus tests, la RPC `search_catalog` con su
-corrección aplicada, y el puerto y el adaptador en `src/features/catalog/`. Falta la pantalla, que va
-en dos incrementos (A.5.2 la lista de sugerencias, A.5.3 la foto y el precio). Dos trampas de esa
+corrección aplicada, y el puerto y el adaptador en `src/features/catalog/`. **Las sugerencias salen
+bajo el campo de añadir y su foto llega al artículo** (`catalog/presentation/`), probado en Jest y
+**verificado en el Android real el 2026-08-24** con todos los flujos pasando limpios. El precio se guarda enlazado pero **no se
+pinta en la lista**; su consumidor es RF-9, que no ha empezado. Dos trampas de esa
 búsqueda están contadas en el diario de la fase y conviene leerlas antes de tocarla: **el
 `word_similarity` de Postgres satura a 1** (sirve para filtrar, nunca para ordenar) y **`gen types`
 no sabe inferir la nulabilidad de un `returns table`**, así que jura que `brand`, `image_url`,
@@ -310,6 +310,13 @@ afectan a reglas de arriba desde ya: `supermarkets` y `catalog_products` son las
 política de escritura, así que escribe solo la ingesta con la secret key), y el precio que trae es
 **de referencia**: se enseña con su fecha y no se convierte en un gasto sin que una persona lo
 confirme.
+
+**`items.image_path` guarda solo rutas de nuestro bucket, nunca una URL.** Si está a `null` y el
+artículo tiene `catalog_product_id`, la foto es la del CDN del supermercado y se saca del catálogo al
+pintar; la foto propia siempre gana. La regla vive en `src/features/items/domain/item-image-source.ts`
+y está razonada en [ADR-0014](docs/adr/ADR-0014-origen-de-la-foto-del-articulo.md), que matiza el
+apartado 2 de ADR-0012 (decía lo contrario y se rompía en cuanto alguien fotografiaba un artículo
+venido del catálogo).
 
 Y una tercera que condiciona la UI antes de que exista: **si el catálogo acaba trayendo datos de
 Open Food Facts, la pantalla que los enseñe lleva atribución visible.** Su base de datos es ODbL 1.0

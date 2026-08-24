@@ -88,7 +88,13 @@ describe('sin conexión', () => {
   it('no lee, no añade, no edita, no marca ni borra', async () => {
     await expect(supabaseItemRepository.list('c1')).rejects.toBeInstanceOf(OfflineError)
     await expect(
-      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Leche', quantity: 1 }),
+      supabaseItemRepository.add({
+        id: 'i1',
+        communityId: 'c1',
+        name: 'Leche',
+        quantity: 1,
+        catalogProductId: null,
+      }),
     ).rejects.toBeInstanceOf(OfflineError)
     await expect(
       supabaseItemRepository.edit('i1', { name: 'Leche', quantity: 1 }),
@@ -123,6 +129,7 @@ describe('list', () => {
         quantity: 2,
         is_purchased: false,
         image_path: 'c1/i1.jpg',
+        catalog_product_id: null,
         created_at: '2026-07-20T10:00:00.000Z',
       },
     ])
@@ -134,6 +141,7 @@ describe('list', () => {
         quantity: 2,
         isPurchased: false,
         imagePath: 'c1/i1.jpg',
+        catalogProductId: null,
         createdAt: '2026-07-20T10:00:00.000Z',
       },
     ])
@@ -160,17 +168,25 @@ describe('add', () => {
       quantity: 12,
       is_purchased: false,
       image_path: null,
+      catalog_product_id: null,
       created_at: '2026-07-20T10:05:00.000Z',
     })
 
     await expect(
-      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Huevos', quantity: 12 }),
+      supabaseItemRepository.add({
+        id: 'i1',
+        communityId: 'c1',
+        name: 'Huevos',
+        quantity: 12,
+        catalogProductId: null,
+      }),
     ).resolves.toEqual({
       id: 'i1',
       name: 'Huevos',
       quantity: 12,
       isPurchased: false,
       imagePath: null,
+      catalogProductId: null,
       createdAt: '2026-07-20T10:05:00.000Z',
     })
     expect(insert).toHaveBeenCalledWith({
@@ -178,14 +194,44 @@ describe('add', () => {
       community_id: 'c1',
       name: 'Huevos',
       quantity: 12,
+      catalog_product_id: null,
     })
+  })
+
+  it('guarda el producto del catálogo cuando el alta viene de una sugerencia', async () => {
+    const insert = mockInsert({
+      id: 'i1',
+      name: 'Leche entera Hacendado',
+      quantity: 1,
+      is_purchased: false,
+      image_path: null,
+      catalog_product_id: 'prod-1',
+      created_at: '2026-08-16T10:05:00.000Z',
+    })
+
+    const item = await supabaseItemRepository.add({
+      id: 'i1',
+      communityId: 'c1',
+      name: 'Leche entera Hacendado',
+      quantity: 1,
+      catalogProductId: 'prod-1',
+    })
+
+    expect(item.catalogProductId).toBe('prod-1')
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ catalog_product_id: 'prod-1' }))
   })
 
   it('falla con un mensaje que dice qué pasó', async () => {
     mockInsert(null, { message: 'fila viola la política' })
 
     await expect(
-      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Pan', quantity: 1 }),
+      supabaseItemRepository.add({
+        id: 'i1',
+        communityId: 'c1',
+        name: 'Pan',
+        quantity: 1,
+        catalogProductId: null,
+      }),
     ).rejects.toThrow('fila viola la política')
   })
 
@@ -196,17 +242,25 @@ describe('add', () => {
       quantity: 2,
       is_purchased: true,
       image_path: null,
+      catalog_product_id: null,
       created_at: '2026-08-05T09:00:00.000Z',
     })
 
     await expect(
-      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Pan', quantity: 2 }),
+      supabaseItemRepository.add({
+        id: 'i1',
+        communityId: 'c1',
+        name: 'Pan',
+        quantity: 2,
+        catalogProductId: null,
+      }),
     ).resolves.toEqual({
       id: 'i1',
       name: 'Pan',
       quantity: 2,
       isPurchased: true,
       imagePath: null,
+      catalogProductId: null,
       createdAt: '2026-08-05T09:00:00.000Z',
     })
   })
@@ -215,7 +269,13 @@ describe('add', () => {
     mockDuplicateInsert(null)
 
     await expect(
-      supabaseItemRepository.add({ id: 'i1', communityId: 'c1', name: 'Pan', quantity: 2 }),
+      supabaseItemRepository.add({
+        id: 'i1',
+        communityId: 'c1',
+        name: 'Pan',
+        quantity: 2,
+        catalogProductId: null,
+      }),
     ).rejects.toThrow('ya se había añadido')
   })
 })
@@ -305,7 +365,9 @@ describe('fotos', () => {
   })
 
   it('falla con un mensaje que dice qué pasó al subir', async () => {
-    mockStorage({ upload: jest.fn(() => Promise.resolve({ error: { message: 'demasiado grande' } })) })
+    mockStorage({
+      upload: jest.fn(() => Promise.resolve({ error: { message: 'demasiado grande' } })),
+    })
 
     await expect(
       supabaseItemRepository.uploadImage({

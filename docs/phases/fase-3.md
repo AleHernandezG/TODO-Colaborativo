@@ -1,7 +1,8 @@
 # Fase 3 · Imágenes y pulido UX
 
 - Estado: **cerrada el 2026-08-05**, probada en dispositivo sobre la 1.2.0 con el update de
-  arreglos. Queda una deuda abierta: la pasada con TalkBack (F.2), aplazada por decisión.
+  arreglos. Dejó una deuda abierta, la pasada con TalkBack (F.2), aplazada por decisión y **saldada
+  el 2026-08-16** en el incremento 4 de la Fase 5: se recorrió entera y pasó limpio.
 - Inicio: 2026-08-03
 - Cierre: 2026-08-05
 
@@ -884,6 +885,9 @@ resuelto con `borderStrong`. Está contado arriba, en el incremento 4.
 por decisión del usuario del 2026-08-05.** Que un `accessibilityLabel` exista no prueba que lo que
 lee tenga sentido ni que el orden de recorrido sea el bueno, y eso solo se ve con el lector puesto
 en el móvil. Los pasos son el 8 del incremento 1, el 5 del 2, el 12 del 3 y el 9-10 del 4.
+
+> **Cerrado el 2026-08-16.** Esa pasada se hizo como incremento 4 de la Fase 5, con los diez puntos
+> del bloque 4 de la guía de cierre, y pasó limpio. F.2 queda completo, lo automático y lo manual.
 
 La fase se cierra con esto pendiente porque lo que puede fallar aquí es de presentación, no de
 datos ni de seguridad: un label que suene raro se arregla cambiando una cadena de `es.json`, sin

@@ -8,12 +8,15 @@ import { useSyncStatus } from '../../../shared/hooks/use-sync-status'
 import { OfflineError } from '../../../shared/lib/network'
 import { BuildTag } from '../../../shared/ui/BuildTag'
 import { Button } from '../../../shared/ui/Button'
+import type { CatalogProductsById } from '../../catalog/domain/catalog-products-by-id'
+import { useCatalogProducts } from '../../catalog/presentation/use-catalog-products'
 import type { Community } from '../../community/domain/community'
 import { useActiveCommunityStore } from '../../community/presentation/active-community-store'
 import { JoinCodeCard } from '../../community/presentation/JoinCodeCard'
 import { useViewers } from '../../community/presentation/use-viewers'
 import { ViewersLine } from '../../community/presentation/ViewersLine'
 import type { Item } from '../domain/item'
+import { catalogImageProductIds, itemImageSource } from '../domain/item-image-source'
 import { AddItemBar } from './components/AddItemBar'
 import { EditItemDialog } from './components/EditItemDialog'
 import { ItemRow } from './components/ItemRow'
@@ -27,6 +30,14 @@ import { useItemsRealtime } from './use-items-realtime'
 import { useTogglePurchased } from './use-toggle-purchased'
 
 type Section = { title: string; data: Item[] }
+
+function catalogImageUrl(item: Item, products: CatalogProductsById): string | null {
+  const source = itemImageSource(item)
+  if (source.kind !== 'catalog') {
+    return null
+  }
+  return products[source.productId]?.imageUrl ?? null
+}
 
 export function ItemsScreen() {
   const membership = useActiveCommunityStore((state) => state.membership)
@@ -66,6 +77,9 @@ function ItemsView({ community, username }: { community: Community; username: st
   const realtimeStatus = useItemsRealtime(community.id)
   const viewers = useViewers(community.id, username)
 
+  const catalogIds = useMemo(() => catalogImageProductIds(items ?? []), [items])
+  const catalogProducts = useCatalogProducts(catalogIds)
+
   const { sections, allDone } = useMemo(() => {
     const all = items ?? []
     const pending = all.filter((item) => !item.isPurchased)
@@ -92,6 +106,7 @@ function ItemsView({ community, username }: { community: Community; username: st
           <ItemRow
             item={item}
             uploadingImage={item.id === uploadingImageItemId}
+            catalogImageUrl={catalogImageUrl(item, catalogProducts)}
             onToggle={() => togglePurchased.mutate(item)}
             onEdit={() => setItemBeingEdited(item)}
             onDelete={() => removeItem(item)}
@@ -167,6 +182,9 @@ function ItemsView({ community, username }: { community: Community; username: st
 
       <EditItemDialog
         item={itemBeingEdited}
+        catalogImageUrl={
+          itemBeingEdited === null ? null : catalogImageUrl(itemBeingEdited, catalogProducts)
+        }
         onDismiss={() => setItemBeingEdited(null)}
         onSave={(input) => editItem.mutate(input)}
       />

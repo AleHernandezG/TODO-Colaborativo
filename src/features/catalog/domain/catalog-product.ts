@@ -1,4 +1,5 @@
 export const defaultSupermarketId = 'mercadona'
+export const defaultSupermarketName = 'Mercadona'
 
 export type CatalogProduct = {
   id: string

@@ -2,7 +2,8 @@ import { isValidItemName, normalizeItemName } from './item-name'
 import type { ItemRepository } from './item-repository'
 import { isValidQuantity } from './quantity'
 
-export type ItemImageChange = { kind: 'keep' } | { kind: 'clear' } | { kind: 'replace'; uri: string }
+export type ItemImageChange =
+  { kind: 'keep' } | { kind: 'clear' } | { kind: 'replace'; uri: string }
 
 export type EditItemInput = {
   itemId: string
@@ -14,9 +15,7 @@ export type EditItemInput = {
 }
 
 export type EditItemResult =
-  | { status: 'ok'; name: string }
-  | { status: 'invalid_name' }
-  | { status: 'invalid_quantity' }
+  { status: 'ok'; name: string } | { status: 'invalid_name' } | { status: 'invalid_quantity' }
 
 export async function editItem(
   repository: ItemRepository,

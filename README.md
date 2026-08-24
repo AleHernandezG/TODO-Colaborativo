@@ -133,7 +133,7 @@ solo con color: «comprado» lleva icono y texto además del tachado. La app res
 fuente del sistema y el modo claro y oscuro desde los tokens.
 
 Lo que un test no puede ver, que es si lo que se lee en voz alta tiene sentido y en el orden bueno,
-se comprueba a mano con TalkBack antes de publicar.
+se comprueba a mano con TalkBack. La última pasada fue el 2026-08-16 y salió limpia.
 
 ## Seguridad
 
@@ -147,9 +147,9 @@ se comprueba a mano con TalkBack antes de publicar.
 
 ## Estado
 
-**Fase 5, endurecimiento antes de publicar.** El MVP está cerrado y probado con dos móviles reales.
-De la fase en curso quedan verificados en dispositivo el id generado en el cliente y la rotación
-del código; falta la pasada con TalkBack.
+**Fase 6, catálogo de productos de supermercado.** El MVP está cerrado y probado con dos móviles
+reales, y la Fase 5 (endurecimiento) se cerró el 2026-08-16: el id generado en el cliente y la
+rotación del código se verificaron en dispositivo, y la pasada con TalkBack salió limpia.
 
 Se distribuye como APK con EAS Build y se parchea por aire con `eas update`. La versión que corre
 en el móvil se lee al pie de la pantalla de lista, que es la forma rápida de saber si un cambio

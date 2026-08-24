@@ -9,8 +9,25 @@ Copia `.env.example` a `.env` y rellena:
 
 - `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY` — panel, Settings → API. Usa la
   **publishable key** (`sb_publishable_...`).
-- `SUPABASE_SECRET_KEY` — opcional, solo para que el test de RLS limpie sus datos. Se salta
-  RLS: nunca en la app.
+- `SUPABASE_SECRET_KEY` — opcional, solo para que el test de RLS limpie sus datos y para
+  `npm run catalog:ingest`. Se salta RLS: nunca en la app.
+
+**Ojo con la secret key en `.env`: Expo la copia a sus logs.** `npx expo start` y
+`npx expo export` vuelcan el entorno cargado entero en `.expo/dev/logs/start.log` y
+`export.log`, **incluidas las variables sin prefijo `EXPO_PUBLIC_`**, en texto plano y en JSON.
+`.expo/` está en `.gitignore`, así que no llega al repo, pero queda en el disco y reaparece en
+cada arranque. Comprobado el 2026-08-16 mirando esos dos ficheros.
+
+Dos consecuencias prácticas. Una, borrar esos logs no es suficiente si la clave sigue en `.env`:
+vuelven a escribirla en el siguiente `expo start`. Dos, la ingesta del catálogo ya corre en la
+GitHub Action con su propio secret, así que en el día a día la clave local solo hace falta para
+`npm run test:rls` (29/29 en vez de 28/28) y para lanzar la ingesta a mano. Si no vas a hacer ni
+una cosa ni la otra, sácala de `.env` y los logs dejan de tener nada que copiar.
+
+Lo que **no** pasa, comprobado también: el bundle de Android no lleva la clave. `dist/*.hbc`
+contiene la cadena `sb_secret_`, pero es un literal de `@supabase/*` (hay una comprobación de
+prefijo en `FunctionsClient.js`), no el valor. Expo solo incrusta en el bundle lo que lleva
+prefijo `EXPO_PUBLIC_`, que es justo por lo que la regla del prefijo existe.
 
 Si añades reglas al `.gitignore` desde PowerShell usa `Add-Content -Encoding utf8`. Un `echo >>`
 lo escribe en UTF-16 y git deja de interpretar el fichero entero, con lo que `.env` deja de

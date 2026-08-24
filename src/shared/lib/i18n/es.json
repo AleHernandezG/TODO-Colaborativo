@@ -147,6 +147,26 @@
       "queuedFailed": "Un cambio que estaba pendiente no se pudo guardar. Revisa la lista."
     }
   },
+  "catalog": {
+    "suggestions_one": "{{count}} sugerencia del catálogo",
+    "suggestions_other": "{{count}} sugerencias del catálogo",
+    "pickHint": "Pone este nombre en el campo de añadir",
+    "price": "{{amount}} {{symbol}}",
+    "decimalSeparator": ",",
+    "source": "Precios de {{supermarket}}, orientativos",
+    "searching": "Buscando en el catálogo…",
+    "offline": "Sin conexión: el catálogo no se puede consultar.",
+    "unreachable": "El catálogo no responde. Escribe el nombre a mano.",
+    "seen": {
+      "today": "visto hoy",
+      "day_one": "visto hace {{count}} día",
+      "day_other": "visto hace {{count}} días",
+      "week_one": "visto hace {{count}} semana",
+      "week_other": "visto hace {{count}} semanas",
+      "month_one": "visto hace {{count}} mes",
+      "month_other": "visto hace {{count}} meses"
+    }
+  },
   "errors": {
     "offline": "No tienes conexión. Conéctate y vuelve a intentarlo.",
     "network": "No se pudo conectar con el servidor. Revisa la conexión y vuelve a intentarlo.",

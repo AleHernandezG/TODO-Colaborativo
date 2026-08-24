@@ -136,6 +136,54 @@ Las dos comprobaciones hacen falta: si la hidratación termina entre el render y
 evento ya pasó y suscribirse tarde te deja esperando para siempre. Un `hasHydrated()` dentro
 del efecto cierra esa carrera.
 
+### Una consulta que se escribe: `keepPreviousData` sobrevive a `enabled: false`
+
+Una búsqueda mientras se teclea quiere `placeholderData: keepPreviousData`, o la lista parpadea en
+blanco entre teclas. El efecto que no se ve venir es que `data` **no se vacía** cuando la consulta
+deja de estar habilitada: al borrar el campo, la caja de sugerencias se queda colgada bajo un input
+vacío hasta que el usuario escriba otra cosa.
+
+El hook decide lo que enseña, no lo delega en `data`:
+
+```ts
+const settled = isSearchableQuery(typed) && isSearchableQuery(query)
+
+return {
+  suggestions: settled && data !== undefined ? data : [],
+  loading: settled && online && data === undefined && isFetching,
+  problem: searchProblem(isSearchableQuery(typed), online, isError),
+}
+```
+
+Las dos comprobaciones son distintas a propósito: `typed` es lo que hay escrito **ahora**, `query` es
+lo que cuajó tras el debounce. Vaciar limpia al instante porque manda la primera. Y un aviso de "sin
+conexión" también sale de `typed`, porque no tiene por qué esperar a que pares de escribir.
+
+**El debounce es un hook genérico** (`shared/hooks/use-debounced-value.ts`), no un `setTimeout`
+dentro del hook de la feature. Se prueba con `jest.useFakeTimers()` y `renderHook`, que en
+`@testing-library/react-native` v14 **es asíncrono**: `await renderHook(...)`, `await rerender(...)`,
+`await act(...)`. Sin los `await` el test compila mal y no arranca.
+
+### Lo que una lista necesita de otra tabla se pide una vez, con la clave ordenada
+
+Cuando cada fila necesita un dato de otra tabla (la foto del catálogo de cada artículo), la consulta
+va en la pantalla y trae el lote entero. Un `useQuery` dentro de la fila serían veinte peticiones
+para veinte artículos, cada una con su `assertOnline()` y su entrada de caché.
+
+Los ids se juntan en `domain/`, se deduplican y **se ordenan**:
+
+```ts
+export function catalogImageProductIds(items: readonly Item[]): string[] {
+  const ids = items.flatMap(...)
+  return [...new Set(ids)].sort()
+}
+```
+
+Ese `.sort()` no es cosmético. La clave de consulta se construye con esa lista, y sin ordenar
+cualquier cosa que reordene la pantalla —marcar un artículo como comprado lo cambia de sección—
+produce una clave distinta con los mismos ids, así que TanStack Query lo trata como otra consulta y
+vuelve a la red. El síntoma es una foto que parpadea al tocar una casilla.
+
 ## Mutaciones optimistas
 
 Toda mutación sigue este patrón. El `cancelQueries` es el paso que se olvida: sin él, un

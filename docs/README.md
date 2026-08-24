@@ -51,18 +51,18 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 2 · Colaboración en tiempo real](./phases/fase-2.md) — cerrada
 - [Fase 3 · Imágenes y pulido UX](./phases/fase-3.md) — cerrada
 - [Fase 4 · Robustez y offline](./phases/fase-4.md) — cerrada
-- [Fase 5 · Endurecimiento antes de publicar](./phases/fase-5.md) — **abierta**, le queda TalkBack
+- [Fase 5 · Endurecimiento antes de publicar](./phases/fase-5.md) — cerrada
 - [Fase 6 · Catálogo de productos y reparto de gastos](./phases/fase-6.md) — **abierta**, solo el
   bloque A
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
 [la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).
 
-Que la 5 y la 6 estén abiertas a la vez es a propósito y tiene límite: a la 5 solo le queda la
-pasada con TalkBack, que es prueba manual en el móvil, y el primer trabajo de la 6 es SQL. Nada de
-la 6 se publica antes de cerrar aquello. De sus dos bloques solo empieza el catálogo (RF-10); el
-reparto de gastos (RF-9) sigue parado por el requisito de entrada de
-[ADR-0005](./adr/ADR-0005-reparto-de-gastos.md).
+La 5 y la 6 estuvieron abiertas a la vez a propósito y con límite: a la 5 solo le quedaba la pasada
+con TalkBack, que es prueba manual en el móvil, y el primer trabajo de la 6 era SQL. La condición
+era no publicar nada de la 6 antes de cerrar aquello, y la 5 se cerró el 2026-08-16. De los dos
+bloques de la 6 solo empieza el catálogo (RF-10); el reparto de gastos (RF-9) sigue parado por el
+requisito de entrada de [ADR-0005](./adr/ADR-0005-reparto-de-gastos.md).
 
 ## Guías
 

@@ -22,8 +22,9 @@ de lo que la gente escribe.
 
 - **No abre la Fase 6.** Medir es investigación, no construcción. La Fase 6 empieza cuando haya
   fuente elegida y primera migración escrita. Hasta entonces no se crea `docs/phases/fase-6.md`.
-- **No cierra la Fase 5.** Sigue pendiente el incremento 4, la pasada con TalkBack, que es prueba
-  manual en el dispositivo. Esto avanza en paralelo y no la sustituye.
+- **No cierra la Fase 5.** Cuando esto se escribió seguía pendiente su incremento 4, la pasada con
+  TalkBack, que es prueba manual en el dispositivo; se hizo el 2026-08-16. Esto avanzó en paralelo y
+  no la sustituía.
 
 Se respeta así la regla de `CLAUDE.md` de no saltar de fase sin cerrar la anterior, sin dejar de
 avanzar en lo que no depende de un móvil.

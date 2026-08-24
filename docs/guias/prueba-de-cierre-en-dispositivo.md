@@ -146,9 +146,13 @@ regresión nueva.
 
 ## 4 · TalkBack, en una pasada aparte
 
-**Aplazado por decisión del usuario el 2026-08-05: no se considera necesario para esta beta y se
-hará al final, antes de publicar.** Deja de bloquear el cierre de la Fase 3; sigue siendo criterio
-de F.2 y está anotado como deuda abierta en [`fase-3.md`](../phases/fase-3.md).
+**Recorrido el 2026-08-16, los diez puntos, y pasó limpio.** Se aplazó por decisión del usuario el
+2026-08-05 para no bloquear el cierre de la Fase 3 y se hizo al final, como estaba dicho: es el
+incremento 4 de la Fase 5 y con él se cierra F.2 y la fase. El resultado está contado en
+[`fase-5.md`](../phases/fase-5.md).
+
+La lista sigue aquí porque hay que volver a recorrerla: cada vez que un incremento añada controles
+nuevos, y antes de publicar.
 
 Antes de nada, dos gestos, porque son los que atascan la primera vez: con TalkBack puesto **un
 toque simple ya no pulsa**, hay que dar dos toques, y para desplazar la pantalla se arrastra con
@@ -157,28 +161,28 @@ de Ajustes, o manteniendo las dos teclas de volumen si tienes el atajo puesto.
 
 Lo que hay que recorrer cuando toque:
 
-- [ ] Al enfocar una fila: lee el nombre y la cantidad, y ofrece la casilla como control separado
+- [x] Al enfocar una fila: lee el nombre y la cantidad, y ofrece la casilla como control separado
       («Marcar Leche como comprado, casilla, no marcada»). **Con cantidad 1 lee solo «Leche,
       botón», sin decir «cantidad 1»**: es a propósito, la clave `items.edit.open_one` no la lleva.
       No lo apuntes como fallo
-- [ ] En una fila **con foto**: lee «Leche, cantidad 3, botón» y pasa directo al botón de borrar,
+- [x] En una fila **con foto**: lee «Leche, cantidad 3, botón» y pasa directo al botón de borrar,
       sin pararse en la miniatura
-- [ ] Los botones «Copiar» y «Compartir» se anuncian con su nombre y su pista
-- [ ] El código de invitación se deletrea (`P A N - 4 2 X K`), no se lee del tirón
-- [ ] En el diálogo de editar: «Hacer foto» y «De la galería» se anuncian con su hint, que es donde
+- [x] Los botones «Copiar» y «Compartir» se anuncian con su nombre y su pista
+- [x] El código de invitación se deletrea (`P A N - 4 2 X K`), no se lee del tirón
+- [x] En el diálogo de editar: «Hacer foto» y «De la galería» se anuncian con su hint, que es donde
       vive ahora la explicación larga
-- [ ] Los botones del diálogo siguen midiendo 44 pt (pasaron a `size="sm"`, que baja el padding
+- [x] Los botones del diálogo siguen midiendo 44 pt (pasaron a `size="sm"`, que baja el padding
       pero mantiene el `minHeight`). Este no se oye, se ve: el recuadro de foco de TalkBack dibuja
       el tamaño real del control
-- [ ] Marca el último artículo pendiente: anuncia «Ya está todo comprado» solo, sin buscarlo
+- [x] Marca el último artículo pendiente: anuncia «Ya está todo comprado» solo, sin buscarlo
 
 Y lo que trajo el incremento 2 de la Fase 5, que no existía cuando se escribió la lista de arriba:
 
-- [ ] El botón de generar código nuevo se anuncia con su nombre y la pista «Cambia el código de
+- [x] El botón de generar código nuevo se anuncia con su nombre y la pista «Cambia el código de
       invitación de esta lista»
-- [ ] Al abrirse el diálogo de confirmación, **el foco entra en el diálogo** y lee su texto. Si se
+- [x] Al abrirse el diálogo de confirmación, **el foco entra en el diálogo** y lee su texto. Si se
       queda detrás, en la pantalla de la lista, es el fallo clásico de un modal
-- [ ] La línea de caducidad se lee dentro de la tarjeta («Caduca dentro de 6 días»), y con el código
+- [x] La línea de caducidad se lee dentro de la tarjeta («Caduca dentro de 6 días»), y con el código
       caducado el estado se oye, no depende solo del tachado
 
 Estos tres se añadieron el 2026-08-06, al ver que el guion original es del 2026-08-05 por la mañana
@@ -201,7 +205,7 @@ pero nunca se han ejecutado, así que la primera pasada puede pedir ajustes de t
 
 ## Lo que queda sin ver
 
-Dos huecos. Ninguno bloquea la beta y los dos están anotados donde toca para que no se pierdan.
+Un hueco. No bloquea la beta y está anotado donde toca para que no se pierda.
 
 **«Quitar animaciones» de Android.** No se probó porque el ajuste no se encontró: está en
 **Ajustes → Accesibilidad → Quitar animaciones** en Android 12+, y en algunos fabricantes cuelga de
@@ -213,13 +217,12 @@ así que quien tenga el ajuste puesto no ve `FadeIn` ni `LinearTransition` sin q
 programar nada. Lo que la prueba habría confirmado es que al saltarse la animación no quede un
 parpadeo, y eso es cosa de la librería, no de la app.
 
-**TalkBack.** Aplazado a propósito, ver el bloque 4.
-
 ---
 
 ## Qué se cerró con esto
 
-- **Fase 3:** cerrada. Bloques 1 y 2 en verde. F.1 superado, F.2 con lo automático cumplido y la
-  pasada de TalkBack aplazada por decisión.
+- **Fase 3:** cerrada. Bloques 1 y 2 en verde. F.1 superado y F.2 completo: lo automático lo
+  cumplían los tests desde el principio y la pasada con TalkBack, aplazada por decisión aquel día,
+  se recorrió el 2026-08-16 y pasó limpio.
 - **Fase 4:** cerrada. Bloque 3 en verde, incluido el reinicio con la cola llena, que era el paso
   que de verdad decidía la fase.

@@ -10,6 +10,7 @@ type ItemImageProps = {
   name: string
   size: number
   localUri?: string | null
+  catalogUrl?: string | null
   uploading?: boolean
   decorative?: boolean
 }
@@ -19,12 +20,14 @@ export function ItemImage({
   name,
   size,
   localUri = null,
+  catalogUrl = null,
   uploading = false,
   decorative = false,
 }: ItemImageProps) {
   const { t } = useTranslation()
   const { data: signedUrl, isLoading } = useItemImageUrl(localUri ? null : path)
-  const uri = localUri ?? signedUrl ?? null
+  const ownPhoto = localUri !== null || path !== null
+  const uri = localUri ?? signedUrl ?? (ownPhoto ? null : catalogUrl)
   const box = { width: size, height: size, borderRadius: radius.sm }
   const a11y = decorative
     ? ({ accessible: false, importantForAccessibility: 'no-hide-descendants' } as const)

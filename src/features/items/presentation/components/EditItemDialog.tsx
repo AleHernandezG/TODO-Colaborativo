@@ -14,6 +14,7 @@ import { ItemImage } from './ItemImage'
 
 type EditItemDialogProps = {
   item: Item | null
+  catalogImageUrl: string | null
   onDismiss: () => void
   onSave: (input: {
     itemId: string
@@ -26,7 +27,7 @@ type EditItemDialogProps = {
 
 const keepImage: ItemImageChange = { kind: 'keep' }
 
-export function EditItemDialog({ item, onDismiss, onSave }: EditItemDialogProps) {
+export function EditItemDialog({ item, catalogImageUrl, onDismiss, onSave }: EditItemDialogProps) {
   const { t } = useTranslation()
   const pickImage = usePickImage()
   const [name, setName] = useState('')
@@ -97,6 +98,7 @@ export function EditItemDialog({ item, onDismiss, onSave }: EditItemDialogProps)
             <ItemImage
               path={previewPath}
               localUri={previewLocalUri}
+              catalogUrl={catalogImageUrl}
               name={name || t('items.image.sectionLabel')}
               size={96}
             />

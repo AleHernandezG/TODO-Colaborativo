@@ -1,3 +1,13 @@
+const symbols: Record<string, string> = { EUR: '€', USD: '$', GBP: '£' }
+
+export function priceAmount(cents: number, decimalSeparator: string): string {
+  return (Math.round(cents) / 100).toFixed(2).replace('.', decimalSeparator)
+}
+
+export function currencySymbol(currency: string): string {
+  return symbols[currency.toUpperCase()] ?? currency.toUpperCase()
+}
+
 export type PriceAgeUnit = 'today' | 'day' | 'week' | 'month'
 
 export type PriceAge = {

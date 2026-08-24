@@ -8,7 +8,13 @@ export type AddItemResult =
 
 export async function addItem(
   repository: ItemRepository,
-  input: { id: string; communityId: string; name: string; quantity?: number },
+  input: {
+    id: string
+    communityId: string
+    name: string
+    quantity?: number
+    catalogProductId?: string | null
+  },
 ): Promise<AddItemResult> {
   const name = normalizeItemName(input.name)
   const quantity = input.quantity ?? minQuantity
@@ -22,6 +28,12 @@ export async function addItem(
 
   return {
     status: 'ok',
-    item: await repository.add({ id: input.id, communityId: input.communityId, name, quantity }),
+    item: await repository.add({
+      id: input.id,
+      communityId: input.communityId,
+      name,
+      quantity,
+      catalogProductId: input.catalogProductId ?? null,
+    }),
   }
 }

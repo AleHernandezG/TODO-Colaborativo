@@ -147,6 +147,26 @@
       "queuedFailed": "A pending change couldn't be saved. Check the list."
     }
   },
+  "catalog": {
+    "suggestions_one": "{{count}} catalogue suggestion",
+    "suggestions_other": "{{count}} catalogue suggestions",
+    "pickHint": "Puts this name in the add field",
+    "price": "{{symbol}}{{amount}}",
+    "decimalSeparator": ".",
+    "source": "{{supermarket}} prices, for reference only",
+    "searching": "Searching the catalogue…",
+    "offline": "No connection: the catalogue can't be searched.",
+    "unreachable": "The catalogue isn't answering. Type the name yourself.",
+    "seen": {
+      "today": "seen today",
+      "day_one": "seen {{count}} day ago",
+      "day_other": "seen {{count}} days ago",
+      "week_one": "seen {{count}} week ago",
+      "week_other": "seen {{count}} weeks ago",
+      "month_one": "seen {{count}} month ago",
+      "month_other": "seen {{count}} months ago"
+    }
+  },
   "errors": {
     "offline": "You have no connection. Get online and try again.",
     "network": "Couldn't reach the server. Check your connection and try again.",

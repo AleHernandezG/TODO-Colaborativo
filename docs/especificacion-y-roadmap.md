@@ -602,7 +602,7 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 
 ### Fase 5 · Endurecimiento (post-beta)
 
-- El alcance real se recortó al abrirla, el 2026-08-05, y lo eligió el usuario: id del artículo generado en el cliente, expiración y rotación del `join_code`, i18n EN y la pasada con TalkBack. Diario en `docs/phases/fase-5.md`.
+- **Cerrada el 2026-08-16.** El alcance real se recortó al abrirla, el 2026-08-05, y lo eligió el usuario: id del artículo generado en el cliente, expiración y rotación del `join_code`, i18n EN y la pasada con TalkBack, que se recorrió entera el 2026-08-16 y pasó limpio. Diario en `docs/phases/fase-5.md`.
 - **Lo que se quedó fuera a propósito:** PIN por miembro, Sentry, push, roles y analítica. Ninguna hace falta para una beta entre gente conocida.
 - **Ojo con el PIN:** sigue siendo requisito previo del bloque B de la Fase 6. Sacarlo de la Fase 5 no lo cancela, lo aplaza; hay que recuperarlo antes de tocar dinero.
 
@@ -830,7 +830,8 @@ Usar Supabase (Postgres + Realtime + Storage + RLS).
       entre sí.)_
 - [x] RLS impide fugas entre comunidades (test explícito). `npm run test:rls`, 19/19.
 - [x] Accesibilidad AA verificada + test con usuario novato superado. _(La pasada con TalkBack se
-      aplazó a antes de publicar; ver F.2 en `docs/phases/fase-3.md`.)_
+      aplazó a antes de publicar y se hizo el 2026-08-16, limpia; ver F.2 en
+      `docs/phases/fase-3.md` y el incremento 4 de `docs/phases/fase-5.md`.)_
 - [x] Arquitectura desacoplada verificada (dominio limpio, repos como puertos).
 - [x] Lint/typecheck/tests en verde; cobertura dominio/repos ≥ 70%. 96.9% de sentencias.
 - [x] `docs/` completo: ADRs, docs por fase, READMEs de feature. _(Sin READMEs de feature, a

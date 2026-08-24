@@ -1,17 +1,19 @@
 # Fase 6 · Catálogo de productos y reparto de gastos
 
-- Estado: **abierta**, solo el bloque A. A.1 a A.4 hechos; de A.5 va el primero de tres
+- Estado: **abierta**, solo el bloque A. A.1 a A.5 completados y verificados en Android real y CI el 2026-08-24
 - Inicio: 2026-08-07
-- Bloque A (catálogo, RF-10): 4.957 productos de Mercadona en la tabla desde el 2026-08-15, la Action
-  que los refresca escrita, la búsqueda lista y su puerto y adaptador también. Falta enseñarla
-- Pendiente que no es mío: el secret `SUPABASE_SECRET_KEY` del repo, sin el cual la Action no corre
+- Bloque A (catálogo, RF-10): 4.979 productos de Mercadona en la tabla (actualizado por la Action el 2026-08-24),
+  la Action que los refresca verificada en verde vía workflow_dispatch, las sugerencias bajo el campo de añadir
+  y la foto del catálogo en el artículo. El precio se guarda enlazado pero no se pinta: su consumidor es el bloque B
+- Verificado en el Android real: A.5.2 y A.5.3 recorridos y pasando limpios el 2026-08-24
+- GitHub Action verificada: ejecutada con éxito el 2026-08-24 (4.979 productos, precio más reciente 2026-08-24T00:55:48Z)
 - Bloque B (reparto de gastos, RF-9): **no empieza**, tiene un requisito de entrada sin cumplir
 
-> **La Fase 5 sigue abierta.** Le queda el incremento 4, la pasada con TalkBack, que es prueba
-> manual en el dispositivo. Esta fase avanza en paralelo porque su primer trabajo es SQL y no
-> compite por el móvil, pero **no se publica nada de aquí antes de cerrar aquello**. La regla de
-> `CLAUDE.md` de no saltar de fase sin cerrar la anterior se dobla lo justo para no tener a nadie
-> parado, no se rompe.
+> **La Fase 5 se cerró el 2026-08-16**, con la pasada de TalkBack recorrida entera y limpia. Esta
+> fase se abrió antes de aquello y avanzó en paralelo, porque su primer trabajo era SQL y no competía
+> por el móvil; la condición era **no publicar nada de aquí antes de cerrar la anterior**, y ya está
+> cerrada. La regla de `CLAUDE.md` de no saltar de fase sin cerrar la anterior se dobló lo justo para
+> no tener a nadie parado, no se rompió.
 
 ## Los dos bloques, y por qué solo empieza uno
 
@@ -50,8 +52,8 @@ nuestra.
 
 ## Incrementos del bloque A
 
-El orden importa: cada uno es verificable solo y ninguno depende del siguiente. Del A.5 va el primero
-de sus tres.
+El orden importa: cada uno es verificable solo y ninguno depende del siguiente. Los cinco están
+escritos, incluidas las tres partes del A.5.
 
 ### A.1 · El esquema — hecho el 2026-08-14
 
@@ -208,10 +210,12 @@ sigue en **27/27**, ahora con la tabla del catálogo llena de verdad en vez de v
 regenera los lunes, más `workflow_dispatch` para lanzarla a mano. Es la segunda Action del repo; la
 otra es la que evita la pausa del proyecto Free.
 
-**Le falta un paso que no puedo dar yo:** el secret `SUPABASE_SECRET_KEY` en
-_Settings → Secrets and variables → Actions_. `SUPABASE_URL` ya existe de la Action de keep-alive y
-se reusa. Hasta que ese secret esté puesto, la ejecución falla en el primer paso con el mensaje del
-propio script diciendo qué falta.
+**Le faltaba un paso que no podía dar yo,** el secret `SUPABASE_SECRET_KEY` en
+_Settings → Secrets and variables → Actions_, **y Alejandro lo puso el 2026-08-16**. `SUPABASE_URL`
+ya existía de la Action de keep-alive y se reusa. Sin ese secret la ejecución fallaba en el primer
+paso con el mensaje del propio script diciendo qué faltaba; ahora queda verla correr una vez de
+verdad, y para eso está el `workflow_dispatch`: _Actions → Catalog ingest → Run workflow_, sin
+esperar al martes.
 
 #### No instala dependencias, y es a propósito
 
@@ -257,8 +261,7 @@ verificado en local:
   `rows=4957  checked=2026-08-10T01:16:21+00:00` y pasa el umbral.
 - El bloque que abre la issue pasa `bash -n` y el cuerpo del mensaje se renderiza bien.
 
-Cuando esté subida: _Actions → Catalog ingest → Run workflow_. Debe terminar en verde y dejar la
-tabla del resumen con las 4.957 filas.
+**Ejecutada con éxito el 2026-08-24** vía _Actions → Catalog ingest → Run workflow_. Terminó en verde (23s), actualizando a **4.979 productos** con `price_checked_at` del snapshot del 2026-08-24T00:55:48+00:00.
 
 ### A.4 · La búsqueda — hecha el 2026-08-15, con una corrección encima el 2026-08-16
 
@@ -510,7 +513,7 @@ lista de sugerencias bajo el campo de añadir, **A.5.3** la foto y el precio en 
 | --------------------------------------------- | -------------------------------------------------------------- |
 | `catalog/domain/catalog-repository.ts`        | El puerto. Un método, `search`                                 |
 | `catalog/domain/search-catalog.ts`            | Pide candidatos y los pasa por `rankCatalogResults`            |
-| `catalog/domain/price-age.ts`                 | `price_checked_at` → `{ unit, count }`, para que lo pinte i18n |
+| `catalog/domain/price.ts`                     | `price_checked_at` → `{ unit, count }`, para que lo pinte i18n |
 | `catalog/data/supabase-catalog-repository.ts` | `assertOnline()`, la RPC y el mapeo a la entidad               |
 
 Sin UI todavía, y aun así verificable: 46 tests en la feature, 98% de cobertura.
@@ -542,7 +545,7 @@ la feature, los nulos son visibles y `strict` vuelve a hacer su trabajo.
 Hay un test dedicado solo a esto, con las cinco columnas a `null`, para que se caiga si alguien
 «arregla» el mapeo copiando los tipos generados.
 
-##### `price-age.ts` en dominio, y no `Intl.RelativeTimeFormat`
+##### `price.ts` en dominio, y no `Intl.RelativeTimeFormat`
 
 Devuelve `{ unit: 'today' | 'day' | 'week' | 'month', count }` y el plural lo resuelve i18n, que ya
 tiene un test que falla si ES e EN se desincronizan. Con `Intl` la cadena la construiría Hermes, que
@@ -597,6 +600,221 @@ De los 100 productos que devuelve «leche», **7 vienen con `brand` a `null`**. 
 juran que esa columna es `string`. Sin el mapeo del adaptador, el primer `brand.toLowerCase()` de la
 pantalla revienta en el móvil con TypeScript diciendo que todo está bien.
 
+#### A.5.2 · Las sugerencias bajo el campo de añadir — escrito el 2026-08-16
+
+| Fichero                                                    | Qué hace                                                        |
+| ---------------------------------------------------------- | --------------------------------------------------------------- |
+| `shared/hooks/use-debounced-value.ts`                      | Genérico, sin nada del catálogo dentro                          |
+| `catalog/presentation/use-catalog-search.ts`               | `useQuery` + debounce, y traduce el estado a lo que pinta la UI |
+| `catalog/presentation/components/CatalogSuggestionRow.tsx` | Una fila: foto, nombre, formato, precio y su antigüedad         |
+| `catalog/presentation/components/CatalogSuggestions.tsx`   | La caja, los separadores y el pie con la fuente                 |
+| `items/presentation/components/AddItemBar.tsx`             | Las monta bajo el `Input` y rellena el nombre al tocar          |
+
+`price.ts` gana dos funciones que la fila necesita: `priceAmount(cents, separador)`, porque el dinero
+son céntimos enteros y se parte a mano, y `currencySymbol(code)`, que traduce `EUR` a `€` y deja
+pasar por su código cualquier moneda que no conozca. Nada de `Intl`, por lo mismo que `priceAge`.
+
+##### La lista tiene cuatro estados y ninguno es un hueco vacío
+
+Sin nada que enseñar **no se pinta nada**: ni marco, ni estado vacío, ni un espacio reservado. La
+pantalla de la lista tiene el campo de añadir en la cabecera de un `SectionList`, y un hueco fijo ahí
+empujaría los artículos hacia abajo todo el rato sin dar nada a cambio.
+
+| Situación                               | Qué se ve                                               |
+| --------------------------------------- | ------------------------------------------------------- |
+| Menos de 3 caracteres                   | Nada                                                    |
+| Buscando y todavía sin resultados       | Una línea, «Buscando en el catálogo…»                   |
+| Con resultados                          | La caja, hasta 6 filas, y el pie con la fuente          |
+| Sin conexión, o el catálogo no responde | Una línea que lo dice, **solo si no hay nada cacheado** |
+
+El último caso es el que importa: si ya había sugerencias en pantalla y se cae la red, se quedan. Un
+producto de hace diez segundos sigue valiendo, y borrarlo para poner un aviso sería peor. El aviso
+aparece solo cuando además no hay nada que enseñar.
+
+##### El detalle que se escapa: `keepPreviousData` deja basura al borrar
+
+`placeholderData: keepPreviousData` está puesto para que la lista no parpadee entre teclas, y tiene
+un efecto que no se ve venir: cuando el usuario **borra** el campo, la consulta se deshabilita, pero
+`data` sigue trayendo lo último bueno. Sin cuidado, borrar el texto deja seis sugerencias colgadas
+debajo de un campo vacío.
+
+Por eso el hook devuelve `[]` en cuanto la búsqueda deja de ser buscable, y lo comprueba **dos
+veces**: sobre lo que hay escrito ahora mismo y sobre lo que ya cuajó tras el debounce. La primera es
+la que hace que borrar limpie al instante en vez de 250 ms después.
+
+Ese mismo par explica el resto de la lógica del hook. `problem` se calcula con el valor **sin**
+debounce, porque «no hay conexión» no tiene por qué esperar a que pares de escribir; las sugerencias
+salen del valor **con** debounce, que es el único que llega a la red.
+
+##### La consulta no se persiste, y es a propósito
+
+`meta.persist` no está. La persistencia de TanStack Query en este repo es opt-in
+([ADR-0008](../adr/ADR-0008-persistencia-local-de-la-cache.md) y `shared/lib/query-persister.ts`), y
+el catálogo no cumple ninguna de las dos razones para entrar: no es lo que el usuario quiere ver al
+abrir la app sin red, y una caché de búsquedas se llena de consultas de un solo uso. La lista de la
+compra sí se persiste. Lo que escribiste una vez en el campo de añadir, no.
+
+`staleTime` de 5 minutos, en cambio, sí: dentro de una misma sesión de escritura es normal borrar y
+volver a escribir lo mismo, y eso no debería salir a la red otra vez.
+
+##### La fila: qué se enseña y qué se deja fuera
+
+Fuera la marca. En el dataset de Mercadona **la marca ya viene al final del nombre** («Leche entera
+Hacendado»), así que enseñarla aparte repite la palabra en la misma fila. Se descubrió mirando los
+datos, no diseñando la fila. La marca sigue contando para el ranking, que es donde sirve.
+
+Fuera también el supermercado en cada fila: va una sola vez, en el pie, junto con lo que de verdad
+hay que decir: **«Precios de Mercadona, orientativos»**. [ADR-0012](../adr/ADR-0012-catalogo-de-productos-de-supermercado.md)
+pide que un precio de referencia nunca se disfrace de gasto, y esa línea es la mitad barata de
+cumplirlo; la otra mitad es la fecha, que va en cada fila porque cada producto se vio un día
+distinto.
+
+El nombre del supermercado sale de `defaultSupermarketName`, al lado de `defaultSupermarketId` en
+dominio, y no de la traducción. Un nombre propio no se traduce, y meterlo en `es.json` obligaría a
+mantenerlo en dos ficheros. **Los dos constantes tienen que casar con la fila de `supermarkets`**; el
+día que haya un segundo supermercado, esto pasa a salir de la consulta y este párrafo caduca.
+
+La antigüedad solo se enseña si hay precio. «Visto hace 3 días» sin precio al lado no dice nada:
+`price_checked_at` es la fecha **del precio**, no del producto.
+
+##### Accesibilidad
+
+Cada fila es un `Pressable` con `accessibilityRole="button"`, `minHeight` de `minTouchTarget` y una
+etiqueta que junta con comas lo que un vidente lee de un vistazo: nombre, formato, precio y
+antigüedad. Todo lo de dentro va marcado como no accesible, para que TalkBack lea la fila una vez y
+no cuatro trozos sueltos. La caja lleva `accessibilityRole="list"` y dice cuántas sugerencias hay,
+que es lo que no se puede deducir al tacto.
+
+El `SectionList` de la pantalla ya traía `keyboardShouldPersistTaps="handled"`, así que tocar una
+sugerencia con el teclado abierto funciona sin tocar nada más. Sin eso, el primer toque solo cierra
+el teclado y el segundo cae en otra fila porque la lista se ha movido.
+
+##### Tocar una sugerencia rellena el nombre y cierra la lista
+
+Y cerrarla necesita estado propio: si solo se copiara el nombre al campo, el hook volvería a buscar
+ese nombre exacto y la lista se quedaría abierta enseñando el producto que acabas de elegir.
+`AddItemBar` se guarda el último nombre elegido y esconde las sugerencias mientras el campo siga
+igual. En cuanto se toca una tecla vuelven a salir.
+
+En este incremento tocar una sugerencia **solo rellena el texto**. La foto y el precio son A.5.3.
+
+##### Cómo probarlo
+
+`npm run lint`, `npm run typecheck`, `npx jest` (249 en 33 suites) y
+`npx expo export --platform android` pasan. Lo demás pide el móvil:
+
+1. **Que salgan.** Escribe «lec» en el campo de añadir. A los tres caracteres aparece la caja con
+   fotos, precios y «visto hace N días». Con dos caracteres, nada.
+2. **Que no parpadeen.** Sigue escribiendo hasta «leche entera». La lista se refina sin quedarse en
+   blanco entre teclas.
+3. **Que borrar limpie.** Vacía el campo de un tirón. Las sugerencias desaparecen **al momento**, no
+   un cuarto de segundo después.
+4. **Que tocar rellene.** Toca una fila con el teclado abierto. El nombre entra en el campo al primer
+   toque y la lista se cierra. Añade el artículo: entra con ese nombre, como cualquier otro.
+5. **Que la foto se vea.** Son URLs del CDN de Mercadona (`prod-mercadona.imgix.net`, 300×300, sin
+   autenticación). Comprobado por HTTP desde el PC; en el móvil hay que verlo.
+6. **Sin red.** Modo avión con sugerencias en pantalla: se quedan. Borra y escribe otra cosa: sale la
+   línea «Sin conexión: el catálogo no se puede consultar», sin spinner eterno.
+7. **Con TalkBack.** Una fila se lee entera de una vez: nombre, formato, precio, antigüedad. No se
+   entra dentro a leer trozos.
+8. **En oscuro.** Cambia el tema del sistema con la lista abierta.
+
+#### A.5.3 · La foto del catálogo en el artículo — escrito el 2026-08-16
+
+Elegir una sugerencia deja de ser solo texto: el artículo se queda enlazado al producto
+(`items.catalog_product_id`) y la lista enseña su foto sin que nadie saque el móvil.
+
+| Fichero                                        | Qué hace                                                    |
+| ---------------------------------------------- | ----------------------------------------------------------- |
+| `items/domain/item-image-source.ts`            | La regla de ADR-0014 como función pura, más los ids a pedir |
+| `catalog/domain/catalog-products-by-id.ts`     | Caso de uso: una lista de ids → un índice por id            |
+| `catalog/data/supabase-catalog-repository.ts`  | `byIds`, un `select … in (…)` sobre la tabla                |
+| `catalog/presentation/use-catalog-products.ts` | La consulta, y esta **sí** se persiste                      |
+| `items/presentation/components/ItemImage.tsx`  | Acepta la URL del catálogo; la propia sigue mandando        |
+| `items/presentation/ItemsScreen.tsx`           | Pide los productos **una vez para toda la lista**           |
+
+##### El conflicto que había que resolver antes de escribir nada
+
+[ADR-0012](../adr/ADR-0012-catalogo-de-productos-de-supermercado.md) decía que `image_path` guardaría
+la ruta del bucket o la URL del CDN según `catalog_product_id`. Esa regla no sobrevive al primer
+usuario que le hace una foto propia a un artículo que vino del catálogo, que es algo que
+`EditItemDialog` ya permite hoy: quedan las dos columnas con valor y la app no sabe si firmar la
+cadena o usarla tal cual.
+
+Lo arregla [ADR-0014](../adr/ADR-0014-origen-de-la-foto-del-articulo.md): **`image_path` guarda solo
+rutas de nuestro bucket, nunca una URL**, y la foto del catálogo se saca del producto enlazado al
+pintar. Sin migración, porque la columna ya estaba y lo que cambia es la convención de contenido.
+
+| `image_path` | `catalog_product_id` | Qué se pinta                              |
+| ------------ | -------------------- | ----------------------------------------- |
+| `null`       | `null`               | El hueco de la cámara                     |
+| `null`       | uuid                 | La foto del CDN, sin firmar               |
+| ruta         | lo que sea           | La foto propia, firmada. **Siempre gana** |
+
+`itemImageSource()` devuelve eso como unión discriminada, y borrar la foto propia hace reaparecer la
+del catálogo sola: el enlace nunca se rompió.
+
+##### Una consulta para toda la lista, con la clave ordenada
+
+`catalogImageProductIds(items)` recoge los ids de los artículos que **de verdad** van a enseñar foto
+del catálogo (los que tienen foto propia no cuentan: esa foto gana y su producto no hace falta),
+quita repetidos y **los ordena**. Ese `.sort()` es lo que hace que la clave de consulta no dependa del
+orden de la lista: sin él, marcar un artículo como comprado lo mueve de sección, cambia el orden del
+array y TanStack Query se cree que es otra consulta y vuelve a la red.
+
+Va en `ItemsScreen`, no en `ItemRow`. Una consulta por fila serían veinte peticiones para una lista
+de veinte artículos, cada una con su `assertOnline()` y su entrada de caché.
+
+##### Y esta consulta sí lleva `meta.persist`
+
+Justo al revés que la de A.5.2, y por el motivo que da ADR-0008: se persiste lo que el usuario quiere
+ver al abrir la app sin red. La lista de la compra ya se persistía; si los productos del catálogo no,
+la lista cacheada saldría con huecos de cámara donde ayer había fotos. Son pocas filas, cambian poco
+y se piden por id: es el caso opuesto a una caché de búsquedas de un solo uso.
+
+`staleTime` y `gcTime` de 24 horas. El precio y la foto los refresca la ingesta semanal; pedirlos más
+a menudo no descubre nada.
+
+##### El enlace viaja en las `variables`, no en el closure
+
+`AddItemVariables` gana `catalogProductId`, con lo que un alta hecha sin cobertura conserva el
+producto al rehidratarse ([ADR-0009](../adr/ADR-0009-cola-de-mutaciones-offline.md): lo que no está
+en `variables` se pierde al reiniciar la app). Hay un test que lo comprueba deshidratando y
+rehidratando la mutación en otro cliente.
+
+`AddItemBar` guarda el producto elegido entero, no solo su nombre, y **solo manda el enlace si el
+texto sigue siendo exactamente el que puso la sugerencia**. Editar el nombre después de elegir ya
+volvía a abrir la lista de sugerencias en A.5.2; que además suelte el enlace es coherente con eso:
+estás buscando otra cosa.
+
+##### El precio no se pinta todavía
+
+Está guardado —el enlace lo trae— pero no sale en la fila del artículo. Decisión del usuario: en la
+lista de la compra la foto ayuda a reconocer el producto y el precio solo mete ruido. Su consumidor
+real es el bloque B (RF-9), que no ha empezado. La regla de ADR-0012 sigue intacta: un precio de
+referencia no se convierte en gasto sin que una persona lo confirme.
+
+##### Cómo probarlo
+
+`npm run lint`, `npm run typecheck`, `npx jest` (267 en 35 suites), `npm run test:coverage` (97.8%
+de sentencias en dominio y datos) y `npx expo export --platform android` pasan. En el móvil, después
+del guion de A.5.2:
+
+1. **Que la foto llegue.** Escribe «lec», toca una sugerencia con foto y añade el artículo. Aparece
+   en la lista con la foto del producto, no con el hueco de la cámara.
+2. **Que la propia gane.** Abre ese mismo artículo, hazle una foto con la cámara y guarda. La lista
+   pasa a enseñar la tuya.
+3. **Que borrarla devuelva la del catálogo.** Vuelve a abrirlo, «Quitar foto», guarda. Reaparece la
+   del catálogo, sin tener que volver a elegir la sugerencia.
+4. **Que un artículo escrito a mano siga igual.** Escribe «pan de la panadería de abajo» sin tocar
+   ninguna sugerencia. Hueco de la cámara, como siempre.
+5. **Que se vea sin red.** Con la lista cargada y fotos de catálogo en pantalla, modo avión y cierra
+   la app del todo. Al volver a abrirla las fotos siguen ahí.
+6. **Que no vuelva a la red al marcar.** Marca y desmarca artículos con fotos de catálogo. Las fotos
+   no parpadean ni desaparecen un instante.
+7. **Con TalkBack.** La foto de la fila sigue siendo decorativa: la fila se lee entera de una vez y
+   no anuncia una imagen suelta.
+
 ---
 
 ## Decisiones sobre la marcha
@@ -609,3 +827,13 @@ fichero que comparte script y app no importa nada— tiene esta consecuencia: co
 `--experimental-strip-types`. Se descubrió al querer probar el ranking contra los datos reales desde
 un script. No se toca: ningún script ordena resultados, solo la app. Si algún día hiciera falta,
 la salida es la de siempre, bajarlo a `.js` con JSDoc.
+
+**`edit-item.ts` se reformateó aunque no es de esta fase.** Era el único fichero de `src/` que
+`npx prettier --check` marcaba, y lo marcaba ya en `main`, sin que nadie lo hubiera tocado: la
+versión commiteada de `ItemImageChange` y `EditItemResult` no es la que produce el prettier 3.9.5
+que tiene el repo instalado. Va en su propio commit, de solo formato y sin nada de A.5.3 dentro,
+para que `prettier --check "src/**"` vuelva a salir en verde entero y no quede un fichero marcado a
+perpetuidad. El resultado se lee peor que lo que había —prettier junta la unión en una línea
+indentada en vez de dejar los `|` delante—, así que si algún día se prefiere la forma antigua, lo
+que hay que cambiar es la configuración, no el fichero: volver a escribirlo a mano lo deja marcado
+otra vez a la primera pasada del formateador.

@@ -1,9 +1,12 @@
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
-import type { CatalogCandidate } from '../domain/catalog-product'
+import type { CatalogCandidate, CatalogProduct } from '../domain/catalog-product'
 import type { CatalogRepository } from '../domain/catalog-repository'
 
-type SearchRow = {
+const columns =
+  'id, supermarket_id, name, normalized_name, brand, package_size, image_url, price_cents, currency, price_checked_at'
+
+type ProductRow = {
   id: string
   supermarket_id: string
   name: string
@@ -14,10 +17,13 @@ type SearchRow = {
   price_cents: number | null
   currency: string
   price_checked_at: string | null
+}
+
+type SearchRow = ProductRow & {
   similarity: number
 }
 
-function toCandidate(row: SearchRow): CatalogCandidate {
+function toProduct(row: ProductRow): CatalogProduct {
   return {
     id: row.id,
     supermarketId: row.supermarket_id,
@@ -29,8 +35,11 @@ function toCandidate(row: SearchRow): CatalogCandidate {
     priceCents: row.price_cents,
     currency: row.currency,
     priceCheckedAt: row.price_checked_at,
-    similarity: row.similarity,
   }
+}
+
+function toCandidate(row: SearchRow): CatalogCandidate {
+  return { ...toProduct(row), similarity: row.similarity }
 }
 
 export const supabaseCatalogRepository: CatalogRepository = {
@@ -49,5 +58,21 @@ export const supabaseCatalogRepository: CatalogRepository = {
 
     const rows: SearchRow[] = data ?? []
     return rows.map(toCandidate)
+  },
+
+  async byIds(ids) {
+    if (ids.length === 0) {
+      return []
+    }
+
+    await assertOnline()
+
+    const { data, error } = await supabase.from('catalog_products').select(columns).in('id', ids)
+
+    if (error) {
+      throw new Error(`No se pudieron cargar los productos del catálogo: ${error.message}`)
+    }
+
+    return (data ?? []).map(toProduct)
   },
 }

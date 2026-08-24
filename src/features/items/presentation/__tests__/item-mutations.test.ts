@@ -74,6 +74,7 @@ it('un alta sin conexión se guarda, se rehidrata en otro cliente y llega al ser
     communityId: 'c1',
     name: 'Pan',
     quantity: 2,
+    catalogProductId: 'prod-1',
   })
   await settle()
 
@@ -95,6 +96,7 @@ it('un alta sin conexión se guarda, se rehidrata en otro cliente y llega al ser
     quantity: 2,
     isPurchased: false,
     imagePath: null,
+    catalogProductId: 'prod-1',
     createdAt: '2026-08-04T10:00:00.000Z',
   })
 
@@ -105,6 +107,7 @@ it('un alta sin conexión se guarda, se rehidrata en otro cliente y llega al ser
     communityId: 'c1',
     name: 'Pan',
     quantity: 2,
+    catalogProductId: 'prod-1',
   })
 })
 
@@ -117,6 +120,7 @@ it('marcar un artículo añadido sin cobertura llega al servidor con el mismo id
     communityId: 'c1',
     name: 'Pan',
     quantity: 2,
+    catalogProductId: null,
   })
   startPaused(client, itemMutationKeys.togglePurchased, {
     communityId: 'c1',
@@ -126,6 +130,7 @@ it('marcar un artículo añadido sin cobertura llega al servidor con el mismo id
       quantity: 2,
       isPurchased: false,
       imagePath: null,
+      catalogProductId: null,
       createdAt: '2026-08-04T10:00:00.000Z',
     },
   })
@@ -147,6 +152,7 @@ it('marcar un artículo añadido sin cobertura llega al servidor con el mismo id
     quantity: 2,
     isPurchased: false,
     imagePath: null,
+    catalogProductId: null,
     createdAt: '2026-08-04T10:00:00.000Z',
   })
   repository.setPurchased.mockResolvedValue(undefined)
@@ -158,6 +164,7 @@ it('marcar un artículo añadido sin cobertura llega al servidor con el mismo id
     communityId: 'c1',
     name: 'Pan',
     quantity: 2,
+    catalogProductId: null,
   })
   expect(repository.setPurchased).toHaveBeenCalledWith('item-nuevo', true)
 })

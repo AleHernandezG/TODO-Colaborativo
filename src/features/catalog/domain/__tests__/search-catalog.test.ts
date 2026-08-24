@@ -30,7 +30,7 @@ function candidate(name: string, overrides: Partial<CatalogCandidate> = {}): Cat
 
 function repositoryReturning(candidates: CatalogCandidate[]) {
   const search = jest.fn((_input: CatalogSearchInput) => Promise.resolve(candidates))
-  const repository: CatalogRepository = { search }
+  const repository: CatalogRepository = { search, byIds: () => Promise.resolve([]) }
   return { repository, search }
 }
 
@@ -119,6 +119,7 @@ describe('searchCatalog', () => {
   it('propaga el fallo del repositorio', async () => {
     const repository: CatalogRepository = {
       search: () => Promise.reject(new Error('sin red')),
+      byIds: () => Promise.resolve([]),
     }
 
     await expect(searchCatalog(repository, { query: 'leche' })).rejects.toThrow('sin red')
