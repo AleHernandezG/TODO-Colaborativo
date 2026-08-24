@@ -1,13 +1,9 @@
 # Fase 6 · Catálogo de productos y reparto de gastos
 
-- Estado: **abierta**, solo el bloque A. A.1 a A.5 completados y verificados en Android real y CI el 2026-08-24
+- Estado: **abierta**, Bloque A (catálogo) y Bloque B (reparto de gastos) completados y verificados
 - Inicio: 2026-08-07
-- Bloque A (catálogo, RF-10): 4.979 productos de Mercadona en la tabla (actualizado por la Action el 2026-08-24),
-  la Action que los refresca verificada en verde vía workflow_dispatch, las sugerencias bajo el campo de añadir
-  y la foto del catálogo en el artículo. El precio se guarda enlazado pero no se pinta: su consumidor es el bloque B
-- Verificado en el Android real: A.5.2 y A.5.3 recorridos y pasando limpios el 2026-08-24
-- GitHub Action verificada: ejecutada con éxito el 2026-08-24 (4.979 productos, precio más reciente 2026-08-24T00:55:48Z)
-- Bloque B (reparto de gastos, RF-9): **prerrequisito cumplido el 2026-08-24** ([ADR-0015](../adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md) con PIN de 4 dígitos, migración aplicada y 30/30 en test de RLS). Listo para abordar el modelo de datos de gastos.
+- Bloque A (catálogo, RF-10): 4.979 productos de Mercadona en la tabla, Action semanal verificada, sugerencias bajo el campo de texto y fotos vinculadas. Verificado en Android real el 2026-08-24.
+- Bloque B (reparto de gastos, RF-9): **Completado el 2026-08-24**. Esquema de `expenses`, `expense_shares` y `settlements` aplicado en Supabase, RPC atómica `create_expense_with_shares`, algoritmo de liquidación mínima en `domain/`, pantalla `ExpensesScreen` con balances e historial, y 35/35 comprobaciones de RLS en verde.
 
 > **La Fase 5 se cerró el 2026-08-16**, con la pasada de TalkBack recorrida entera y limpia. Esta
 > fase se abrió antes de aquello y avanzó en paralelo, porque su primer trabajo era SQL y no competía

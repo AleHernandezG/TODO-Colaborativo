@@ -119,6 +119,106 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_shares: {
+        Row: {
+          created_at: string
+          expense_id: string
+          id: string
+          member_id: string
+          share_cents: number
+        }
+        Insert: {
+          created_at?: string
+          expense_id: string
+          id?: string
+          member_id: string
+          share_cents: number
+        }
+        Update: {
+          created_at?: string
+          expense_id?: string
+          id?: string
+          member_id?: string
+          share_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_shares_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_shares_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount_cents: number
+          community_id: string
+          created_at: string
+          created_by_auth_user_id: string
+          currency: string
+          description: string
+          id: string
+          item_id: string | null
+          paid_by_member_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          community_id: string
+          created_at?: string
+          created_by_auth_user_id?: string
+          currency?: string
+          description: string
+          id?: string
+          item_id?: string | null
+          paid_by_member_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          community_id?: string
+          created_at?: string
+          created_by_auth_user_id?: string
+          currency?: string
+          description?: string
+          id?: string
+          item_id?: string | null
+          paid_by_member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_paid_by_member_id_fkey"
+            columns: ["paid_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           catalog_product_id: string | null
@@ -236,6 +336,61 @@ export type Database = {
           },
         ]
       }
+      settlements: {
+        Row: {
+          amount_cents: number
+          community_id: string
+          created_at: string
+          created_by_auth_user_id: string
+          currency: string
+          from_member_id: string
+          id: string
+          to_member_id: string
+        }
+        Insert: {
+          amount_cents: number
+          community_id: string
+          created_at?: string
+          created_by_auth_user_id?: string
+          currency?: string
+          from_member_id: string
+          id?: string
+          to_member_id: string
+        }
+        Update: {
+          amount_cents?: number
+          community_id?: string
+          created_at?: string
+          created_by_auth_user_id?: string
+          currency?: string
+          from_member_id?: string
+          id?: string
+          to_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlements_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_to_member_id_fkey"
+            columns: ["to_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supermarkets: {
         Row: {
           country: string
@@ -274,6 +429,17 @@ export type Database = {
               join_code: string
             }[]
           }
+      create_expense_with_shares: {
+        Args: {
+          p_amount_cents: number
+          p_community_id: string
+          p_description: string
+          p_item_id: string
+          p_paid_by_member_id: string
+          p_shares: Json
+        }
+        Returns: string
+      }
       current_member_id: { Args: { p_community_id: string }; Returns: string }
       generate_join_code: { Args: never; Returns: string }
       join_code_lifetime: { Args: never; Returns: string }

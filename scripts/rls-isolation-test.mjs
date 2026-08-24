@@ -55,6 +55,15 @@ async function select(token, path) {
   return { status: res.status, body: await res.json().catch(() => null) }
 }
 
+async function post(token, path, payload, prefer = 'return=representation') {
+  const res = await fetch(`${url}/rest/v1/${path}`, {
+    method: 'POST',
+    headers: authHeaders(token, prefer ? { Prefer: prefer } : {}),
+    body: JSON.stringify(payload),
+  })
+  return { status: res.status, body: await res.json().catch(() => null) }
+}
+
 async function insertItem(token, item) {
   const res = await fetch(`${url}/rest/v1/items`, {
     method: 'POST',
@@ -345,6 +354,72 @@ async function main() {
     'Sin sesión no se puede ejecutar search_catalog',
     searchWithoutSession.status >= 400,
     `HTTP ${searchWithoutSession.status}`,
+  )
+
+  // RF-9: Reparto de gastos y liquidaciones
+  const membersA = await select(tokenA, `members?select=id&community_id=eq.${communityA}`)
+  const memberAId = membersA.body?.[0]?.id
+
+  const expenseCreated = await rpc(tokenA, 'create_expense_with_shares', {
+    p_community_id: communityA,
+    p_item_id: null,
+    p_paid_by_member_id: memberAId,
+    p_amount_cents: 1500,
+    p_description: 'Compra de prueba',
+    p_shares: [{ member_id: memberAId, share_cents: 1500 }],
+  })
+  check(
+    'Un miembro crea un gasto atómico con cuotas cuadradas',
+    expenseCreated.status === 200 && typeof expenseCreated.body === 'string',
+    `HTTP ${expenseCreated.status}`,
+  )
+
+  const crossExpenses = await select(tokenB, `expenses?select=id&community_id=eq.${communityA}`)
+  check(
+    'B no lee los gastos de A',
+    Array.isArray(crossExpenses.body) && crossExpenses.body.length === 0,
+    `${crossExpenses.body?.length ?? '?'} filas`,
+  )
+
+  const crossExpenseShares = await select(tokenB, 'expense_shares?select=id')
+  check(
+    'B no lee las cuotas de gastos de A',
+    Array.isArray(crossExpenseShares.body) && crossExpenseShares.body.length === 0,
+    `${crossExpenseShares.body?.length ?? '?'} filas`,
+  )
+
+  const crossExpenseInsert = await post(
+    tokenB,
+    'expenses',
+    {
+      community_id: communityA,
+      paid_by_member_id: memberAId,
+      amount_cents: 1000,
+      description: 'Intruso',
+    },
+    'return=representation',
+  )
+  check(
+    'B no puede insertar gastos en la comunidad de A',
+    crossExpenseInsert.status >= 400,
+    `HTTP ${crossExpenseInsert.status}`,
+  )
+
+  const settlementA = await post(
+    tokenA,
+    'settlements',
+    {
+      community_id: communityA,
+      from_member_id: memberAId,
+      to_member_id: memberAId, // check constraint will reject self to self, so we test constraint
+      amount_cents: 500,
+    },
+    'return=representation',
+  )
+  check(
+    'La base de datos rechaza liquidaciones hacia uno mismo',
+    settlementA.status >= 400,
+    `HTTP ${settlementA.status}`,
   )
 
   const badCode = await rpc(tokenA, 'join_community', {

@@ -1,7 +1,11 @@
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
 import type { Community, JoinCodeInfo } from '../domain/community'
-import type { CommunityRepository, JoinOutcome } from '../domain/community-repository'
+import type {
+  CommunityMember,
+  CommunityRepository,
+  JoinOutcome,
+} from '../domain/community-repository'
 
 const failedJoinStatuses = [
   'invalid_join_code',
@@ -116,7 +120,7 @@ export const supabaseCommunityRepository: CommunityRepository = {
     })
 
     if (error) {
-      throw new Error(`No se pudo generar un código nuevo: ${error.message}`)
+      throw new Error(`No se pudo cambiar el código de invitación: ${error.message}`)
     }
 
     const rotated = data?.[0]
@@ -125,5 +129,30 @@ export const supabaseCommunityRepository: CommunityRepository = {
     }
 
     return { code: rotated.join_code, expiresAt: rotated.expires_at }
+  },
+
+  async listMembers(communityId: string): Promise<CommunityMember[]> {
+    await assertOnline()
+
+    const { data: sessionData } = await supabase.auth.getSession()
+    const currentAuthId = sessionData?.session?.user?.id
+
+    const { data, error } = await supabase
+      .from('members')
+      .select('id, username, auth_user_id')
+      .eq('community_id', communityId)
+      .order('username', { ascending: true })
+
+    if (error) {
+      throw new Error(`No se pudieron cargar los miembros: ${error.message}`)
+    }
+
+    return (
+      (data as unknown as { id: string; username: string; auth_user_id: string | null }[]) ?? []
+    ).map((m) => ({
+      id: m.id,
+      username: m.username,
+      isSelf: Boolean(currentAuthId && m.auth_user_id === currentAuthId),
+    }))
   },
 }

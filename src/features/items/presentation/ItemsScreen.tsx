@@ -127,18 +127,26 @@ function ItemsView({ community, username }: { community: Community; username: st
         }
         ListHeaderComponent={
           <View className="gap-4 pb-2">
-            <View className="gap-1">
-              <Text
-                accessibilityRole="header"
-                className="text-3xl font-bold text-content dark:text-content-dark"
-              >
-                {community.name}
-              </Text>
-              <Text className="text-base text-muted dark:text-muted-dark">
-                {t('list.signedInAs', { username })}
-              </Text>
-              <ViewersLine names={viewers} />
+            <View className="flex-row items-start justify-between gap-2">
+              <View className="flex-1 gap-1">
+                <Text
+                  accessibilityRole="header"
+                  className="text-3xl font-bold text-content dark:text-content-dark"
+                >
+                  {community.name}
+                </Text>
+                <Text className="text-base text-muted dark:text-muted-dark">
+                  {t('list.signedInAs', { username })}
+                </Text>
+              </View>
+              <Button
+                label={t('expenses.screenTitle')}
+                onPress={() => router.push('/expenses' as any)}
+                variant="secondary"
+                size="sm"
+              />
             </View>
+            <ViewersLine names={viewers} />
 
             {online ? (
               <RealtimeStatus status={realtimeStatus} />

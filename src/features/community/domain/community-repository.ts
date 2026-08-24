@@ -9,9 +9,16 @@ export type JoinOutcome =
   | { status: 'wrong_pin' }
   | { status: 'too_many_attempts' }
 
+export type CommunityMember = {
+  id: string
+  username: string
+  isSelf: boolean
+}
+
 export interface CommunityRepository {
   create(input: { name: string; username: string; pin: string }): Promise<Membership>
   join(input: { joinCode: string; username: string; pin: string }): Promise<JoinOutcome>
   getJoinCode(communityId: string): Promise<JoinCodeInfo>
   rotateJoinCode(communityId: string): Promise<JoinCodeInfo>
+  listMembers(communityId: string): Promise<CommunityMember[]>
 }
