@@ -33,14 +33,14 @@ describe('sin conexión', () => {
 
   it('no llega a llamar a create_community', async () => {
     await expect(
-      supabaseCommunityRepository.create({ name: 'Casa', username: 'Ana' }),
+      supabaseCommunityRepository.create({ name: 'Casa', username: 'Ana', pin: '1234' }),
     ).rejects.toBeInstanceOf(OfflineError)
     expect(rpc).not.toHaveBeenCalled()
   })
 
   it('no llega a llamar a join_community', async () => {
     await expect(
-      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana' }),
+      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana', pin: '1234' }),
     ).rejects.toBeInstanceOf(OfflineError)
     expect(rpc).not.toHaveBeenCalled()
   })
@@ -66,10 +66,15 @@ describe('create', () => {
     })
 
     await expect(
-      supabaseCommunityRepository.create({ name: 'Casa', username: 'Ana' }),
+      supabaseCommunityRepository.create({ name: 'Casa', username: 'Ana', pin: '1234' }),
     ).resolves.toEqual({
       community: { id: 'c1', name: 'Casa', joinCode: 'PAN-42XK' },
       username: 'Ana',
+    })
+    expect(rpc).toHaveBeenCalledWith('create_community', {
+      p_name: 'Casa',
+      p_username: 'Ana',
+      p_pin: '1234',
     })
   })
 
@@ -77,7 +82,7 @@ describe('create', () => {
     rpc.mockResolvedValue({ data: null, error: { message: 'sin conexión' } })
 
     await expect(
-      supabaseCommunityRepository.create({ name: 'Casa', username: 'Ana' }),
+      supabaseCommunityRepository.create({ name: 'Casa', username: 'Ana', pin: '1234' }),
     ).rejects.toThrow('sin conexión')
   })
 })
@@ -88,10 +93,15 @@ describe('join', () => {
     mockCommunityRow({ id: 'c1', name: 'Casa', join_code: 'PAN-42XK' })
 
     await expect(
-      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana' }),
+      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana', pin: '1234' }),
     ).resolves.toEqual({
       status: 'ok',
       membership: { community: { id: 'c1', name: 'Casa', joinCode: 'PAN-42XK' }, username: 'Ana' },
+    })
+    expect(rpc).toHaveBeenCalledWith('join_community', {
+      p_join_code: 'PAN-42XK',
+      p_username: 'Ana',
+      p_pin: '1234',
     })
   })
 
@@ -102,8 +112,20 @@ describe('join', () => {
     })
 
     await expect(
-      supabaseCommunityRepository.join({ joinCode: 'ZZZ-9999', username: 'Ana' }),
+      supabaseCommunityRepository.join({ joinCode: 'ZZZ-9999', username: 'Ana', pin: '1234' }),
     ).resolves.toEqual({ status: 'invalid_join_code' })
+    expect(from).not.toHaveBeenCalled()
+  })
+
+  it('devuelve el estado de PIN erróneo', async () => {
+    rpc.mockResolvedValue({
+      data: [{ status: 'invalid_pin', community_id: null }],
+      error: null,
+    })
+
+    await expect(
+      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana', pin: '0000' }),
+    ).resolves.toEqual({ status: 'wrong_pin' })
     expect(from).not.toHaveBeenCalled()
   })
 
@@ -114,7 +136,7 @@ describe('join', () => {
     })
 
     await expect(
-      supabaseCommunityRepository.join({ joinCode: 'ZZZ-9999', username: 'Ana' }),
+      supabaseCommunityRepository.join({ joinCode: 'ZZZ-9999', username: 'Ana', pin: '1234' }),
     ).resolves.toEqual({ status: 'too_many_attempts' })
   })
 
@@ -122,7 +144,7 @@ describe('join', () => {
     rpc.mockResolvedValue({ data: [{ status: 'community_full', community_id: null }], error: null })
 
     await expect(
-      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana' }),
+      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana', pin: '1234' }),
     ).rejects.toThrow('community_full')
   })
 
@@ -131,7 +153,7 @@ describe('join', () => {
     mockCommunityRow(null, { message: 'permiso denegado' })
 
     await expect(
-      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana' }),
+      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana', pin: '1234' }),
     ).rejects.toThrow('permiso denegado')
   })
 
@@ -142,7 +164,7 @@ describe('join', () => {
     })
 
     await expect(
-      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana' }),
+      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana', pin: '1234' }),
     ).resolves.toEqual({ status: 'expired_join_code' })
     expect(from).not.toHaveBeenCalled()
   })

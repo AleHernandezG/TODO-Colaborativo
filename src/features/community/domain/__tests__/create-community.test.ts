@@ -16,7 +16,7 @@ function fakeRepository(): jest.Mocked<CommunityRepository> {
 it('crea la comunidad y devuelve la pertenencia', async () => {
   const repository = fakeRepository()
 
-  const result = await createCommunity(repository, { name: 'Casa', username: 'Ana' })
+  const result = await createCommunity(repository, { name: 'Casa', username: 'Ana', pin: '1234' })
 
   expect(result).toEqual({
     status: 'ok',
@@ -27,15 +27,15 @@ it('crea la comunidad y devuelve la pertenencia', async () => {
 it('normaliza antes de llamar al repositorio', async () => {
   const repository = fakeRepository()
 
-  await createCommunity(repository, { name: '  Casa  del   pueblo ', username: ' Ana ' })
+  await createCommunity(repository, { name: '  Casa  del   pueblo ', username: ' Ana ', pin: ' 1234 ' })
 
-  expect(repository.create).toHaveBeenCalledWith({ name: 'Casa del pueblo', username: 'Ana' })
+  expect(repository.create).toHaveBeenCalledWith({ name: 'Casa del pueblo', username: 'Ana', pin: '1234' })
 })
 
 it('rechaza un nombre de lista vacío sin tocar la red', async () => {
   const repository = fakeRepository()
 
-  const result = await createCommunity(repository, { name: '   ', username: 'Ana' })
+  const result = await createCommunity(repository, { name: '   ', username: 'Ana', pin: '1234' })
 
   expect(result).toEqual({ status: 'invalid_name' })
   expect(repository.create).not.toHaveBeenCalled()
@@ -44,8 +44,18 @@ it('rechaza un nombre de lista vacío sin tocar la red', async () => {
 it('rechaza un nombre de usuario demasiado corto', async () => {
   const repository = fakeRepository()
 
-  const result = await createCommunity(repository, { name: 'Casa', username: 'A' })
+  const result = await createCommunity(repository, { name: 'Casa', username: 'A', pin: '1234' })
 
   expect(result).toEqual({ status: 'invalid_username' })
   expect(repository.create).not.toHaveBeenCalled()
 })
+
+it('rechaza un pin que no tenga 4 dígitos numéricos', async () => {
+  const repository = fakeRepository()
+
+  const result = await createCommunity(repository, { name: 'Casa', username: 'Ana', pin: '123' })
+
+  expect(result).toEqual({ status: 'invalid_pin' })
+  expect(repository.create).not.toHaveBeenCalled()
+})
+

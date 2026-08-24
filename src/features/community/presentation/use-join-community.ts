@@ -9,7 +9,7 @@ export function useJoinCommunity() {
 
   return useMutation({
     networkMode: 'always',
-    mutationFn: (input: { joinCode: string; username: string }) =>
+    mutationFn: (input: { joinCode: string; username: string; pin: string }) =>
       joinCommunity(supabaseCommunityRepository, input),
     onSuccess: (result) => {
       if (result.status === 'ok') {

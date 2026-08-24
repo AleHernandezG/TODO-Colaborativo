@@ -5,11 +5,13 @@ export type JoinOutcome =
   | { status: 'invalid_join_code' }
   | { status: 'expired_join_code' }
   | { status: 'username_taken' }
+  | { status: 'invalid_pin' }
+  | { status: 'wrong_pin' }
   | { status: 'too_many_attempts' }
 
 export interface CommunityRepository {
-  create(input: { name: string; username: string }): Promise<Membership>
-  join(input: { joinCode: string; username: string }): Promise<JoinOutcome>
+  create(input: { name: string; username: string; pin: string }): Promise<Membership>
+  join(input: { joinCode: string; username: string; pin: string }): Promise<JoinOutcome>
   getJoinCode(communityId: string): Promise<JoinCodeInfo>
   rotateJoinCode(communityId: string): Promise<JoinCodeInfo>
 }

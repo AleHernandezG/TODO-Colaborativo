@@ -7,6 +7,8 @@ const failedJoinStatuses = [
   'invalid_join_code',
   'expired_join_code',
   'username_taken',
+  'invalid_pin',
+  'wrong_pin',
   'too_many_attempts',
 ] as const
 
@@ -31,12 +33,13 @@ async function readCommunity(id: string): Promise<Community> {
 }
 
 export const supabaseCommunityRepository: CommunityRepository = {
-  async create({ name, username }) {
+  async create({ name, username, pin }) {
     await assertOnline()
 
     const { data, error } = await supabase.rpc('create_community', {
       p_name: name,
       p_username: username,
+      p_pin: pin,
     })
 
     if (error) {
@@ -54,12 +57,13 @@ export const supabaseCommunityRepository: CommunityRepository = {
     }
   },
 
-  async join({ joinCode, username }): Promise<JoinOutcome> {
+  async join({ joinCode, username, pin }): Promise<JoinOutcome> {
     await assertOnline()
 
     const { data, error } = await supabase.rpc('join_community', {
       p_join_code: joinCode,
       p_username: username,
+      p_pin: pin,
     })
 
     if (error) {
@@ -72,6 +76,9 @@ export const supabaseCommunityRepository: CommunityRepository = {
     }
 
     if (isFailedJoinStatus(result.status)) {
+      if (result.status === 'invalid_pin') {
+        return { status: 'wrong_pin' }
+      }
       return { status: result.status }
     }
 

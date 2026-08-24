@@ -7,7 +7,7 @@
   y la foto del catálogo en el artículo. El precio se guarda enlazado pero no se pinta: su consumidor es el bloque B
 - Verificado en el Android real: A.5.2 y A.5.3 recorridos y pasando limpios el 2026-08-24
 - GitHub Action verificada: ejecutada con éxito el 2026-08-24 (4.979 productos, precio más reciente 2026-08-24T00:55:48Z)
-- Bloque B (reparto de gastos, RF-9): **no empieza**, tiene un requisito de entrada sin cumplir
+- Bloque B (reparto de gastos, RF-9): **prerrequisito cumplido el 2026-08-24** ([ADR-0015](../adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md) con PIN de 4 dígitos, migración aplicada y 30/30 en test de RLS). Listo para abordar el modelo de datos de gastos.
 
 > **La Fase 5 se cerró el 2026-08-16**, con la pasada de TalkBack recorrida entera y limpia. Esta
 > fase se abrió antes de aquello y avanzó en paralelo, porque su primer trabajo era SQL y no competía
@@ -15,18 +15,17 @@
 > cerrada. La regla de `CLAUDE.md` de no saltar de fase sin cerrar la anterior se dobló lo justo para
 > no tener a nadie parado, no se rompió.
 
-## Los dos bloques, y por qué solo empieza uno
+## Los dos bloques
 
 **Bloque A · Catálogo de productos (RF-10).** Escribir «leche» y que salga la foto ya hecha y el
 precio de referencia. Diseñado entero en
 [ADR-0012](../adr/ADR-0012-catalogo-de-productos-de-supermercado.md) y con la fuente elegida en
-[ADR-0013](../adr/ADR-0013-fuente-del-catalogo-mercadona.md). Es lo que se hace ahora.
+[ADR-0013](../adr/ADR-0013-fuente-del-catalogo-mercadona.md). **Completado y verificado el 2026-08-24**.
 
-**Bloque B · Reparto de gastos (RF-9).** Quién debe qué a quién. **No empieza**, y no es por falta
-de tiempo: [ADR-0005](../adr/ADR-0005-reparto-de-gastos.md) le puso un requisito de entrada, que la
-identidad no sea suplantable. Hoy se entra con un código y un nombre escrito a mano, así que
-cualquiera puede ser cualquiera. Repartir dinero encima de eso es construir sobre arena. Ese ADR se
-lee entero antes de tocar nada de gastos.
+**Bloque B · Reparto de gastos (RF-9).** Quién debe qué a quién. Su requisito de entrada
+([ADR-0005](../adr/ADR-0005-reparto-de-gastos.md), identidad no suplantable) quedó resuelto el
+2026-08-24 con el PIN de 4 dígitos por miembro ([ADR-0015](../adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md)).
+Ahora sí es seguro construir balances y deudas sobre miembros con identidad protegida.
 
 El bloque A además le allana el camino: la Fase 6 con catálogo arranca con los importes
 prerrellenados en vez de con un teclado numérico por artículo.

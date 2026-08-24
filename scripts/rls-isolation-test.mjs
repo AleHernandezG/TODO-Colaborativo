@@ -178,10 +178,12 @@ async function main() {
   const createdA = await rpc(tokenA, 'create_community', {
     p_name: `rls-test-A-${stamp}`,
     p_username: 'ana',
+    p_pin: '1234',
   })
   const createdB = await rpc(tokenB, 'create_community', {
     p_name: `rls-test-B-${stamp}`,
     p_username: 'bruno',
+    p_pin: '1234',
   })
 
   if (createdA.status !== 200 || createdB.status !== 200) {
@@ -348,6 +350,7 @@ async function main() {
   const badCode = await rpc(tokenA, 'join_community', {
     p_join_code: 'ZZZ-9999',
     p_username: 'ana',
+    p_pin: '1234',
   })
   check(
     'Un join_code inexistente da invalid_join_code',
@@ -355,14 +358,27 @@ async function main() {
     badCode.body?.[0]?.status ?? `HTTP ${badCode.status}`,
   )
 
-  const takenName = await rpc(tokenA, 'join_community', {
+  const wrongPin = await rpc(tokenA, 'join_community', {
     p_join_code: joinCodeB,
     p_username: 'bruno',
+    p_pin: '9999',
   })
   check(
-    'Un username ya usado da username_taken',
-    takenName.body?.[0]?.status === 'username_taken',
-    takenName.body?.[0]?.status ?? `HTTP ${takenName.status}`,
+    'Un PIN incorrecto sobre usuario existente da invalid_pin',
+    wrongPin.body?.[0]?.status === 'invalid_pin',
+    wrongPin.body?.[0]?.status ?? `HTTP ${wrongPin.status}`,
+  )
+
+  const tokenB2 = await signInAnonymously()
+  const reclaimed = await rpc(tokenB2, 'join_community', {
+    p_join_code: joinCodeB,
+    p_username: 'bruno',
+    p_pin: '1234',
+  })
+  check(
+    'Un miembro se puede recuperar desde otro dispositivo con el PIN correcto',
+    reclaimed.body?.[0]?.status === 'ok' && reclaimed.body?.[0]?.community_id === communityB,
+    reclaimed.body?.[0]?.status ?? `HTTP ${reclaimed.status}`,
   )
 
   let rateLimited = null
@@ -370,6 +386,7 @@ async function main() {
     const attempt = await rpc(tokenA, 'join_community', {
       p_join_code: 'ZZZ-9999',
       p_username: 'ana',
+      p_pin: '1234',
     })
     if (attempt.body?.[0]?.status === 'too_many_attempts') {
       rateLimited = i + 1
@@ -385,6 +402,7 @@ async function main() {
   const stillWorks = await rpc(tokenB, 'join_community', {
     p_join_code: joinCodeB,
     p_username: 'bruno',
+    p_pin: '1234',
   })
   check(
     'El rate limit es por usuario, no global',
@@ -403,6 +421,7 @@ async function main() {
   const codeSurvives = await rpc(tokenC, 'join_community', {
     p_join_code: joinCodeB,
     p_username: 'carla',
+    p_pin: '1234',
   })
   check(
     'El código de B sigue valiendo tras el intento de A',
@@ -422,6 +441,7 @@ async function main() {
   const oldCode = await rpc(tokenD, 'join_community', {
     p_join_code: joinCodeB,
     p_username: 'daniel',
+    p_pin: '1234',
   })
   check(
     'El código anterior deja de valer al instante',
@@ -434,6 +454,7 @@ async function main() {
     const expiredCode = await rpc(tokenD, 'join_community', {
       p_join_code: newCodeB,
       p_username: 'daniel',
+      p_pin: '1234',
     })
     check(
       'Un código caducado da expired_join_code',

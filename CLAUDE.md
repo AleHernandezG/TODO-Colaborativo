@@ -284,9 +284,9 @@ bundle del APK, `v1.2.0 · <id>` si es un update por aire). Compruébala ahí an
 hecho que un cambio llegó al dispositivo.
 
 RF-8 (PDF), RF-9 (reparto de gastos) y RF-10 (catálogo de productos de supermercado) son
-**post-MVP**: están registrados en §3 y §12 del documento maestro y no se tocan antes de tiempo.
-El reparto de gastos además tiene un requisito de entrada, ver
-[ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md).
+**post-MVP**: están registrados en §3 y §12 del documento maestro.
+El requisito de entrada del reparto de gastos ([ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md), identidad no suplantable)
+quedó resuelto el 2026-08-24 con el PIN por miembro ([ADR-0015](docs/adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md)).
 
 El catálogo (RF-10, [ADR-0012](docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md)) es el
 bloque A de la Fase 6 y **está en Aceptado desde el 2026-08-07**: la fuente la eligió el usuario con

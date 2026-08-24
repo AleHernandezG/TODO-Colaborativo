@@ -9,6 +9,7 @@ import { OfflineError } from '../../../shared/lib/network'
 import { Button } from '../../../shared/ui/Button'
 import { Input } from '../../../shared/ui/Input'
 import { communityNameMaxLength, usernameMaxLength } from '../domain/names'
+import { pinLength } from '../domain/pin'
 import { useCreateCommunity } from './use-create-community'
 import { useGoToList } from './use-go-to-list'
 
@@ -21,15 +22,18 @@ export function CreateCommunityScreen() {
 
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
+  const [pin, setPin] = useState('')
   const [nameError, setNameError] = useState<string | null>(null)
   const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [pinError, setPinError] = useState<string | null>(null)
 
   const submit = () => {
     setNameError(null)
     setUsernameError(null)
+    setPinError(null)
 
     mutate(
-      { name, username },
+      { name, username, pin },
       {
         onSuccess: (result) => {
           if (result.status === 'invalid_name') {
@@ -38,6 +42,10 @@ export function CreateCommunityScreen() {
           }
           if (result.status === 'invalid_username') {
             setUsernameError(t('community.errors.invalidUsername'))
+            return
+          }
+          if (result.status === 'invalid_pin') {
+            setPinError(t('community.errors.invalidPin'))
             return
           }
           goToList()
@@ -91,6 +99,21 @@ export function CreateCommunityScreen() {
               error={usernameError}
               maxLength={usernameMaxLength}
               autoCapitalize="words"
+              autoCorrect={false}
+              returnKeyType="next"
+            />
+
+            <Input
+              testID="create-community-pin"
+              label={t('community.pinLabel')}
+              placeholder={t('community.pinPlaceholder')}
+              value={pin}
+              onChangeText={setPin}
+              error={pinError}
+              maxLength={pinLength}
+              keyboardType="numeric"
+              secureTextEntry
+              autoCapitalize="none"
               autoCorrect={false}
               onSubmitEditing={submit}
             />

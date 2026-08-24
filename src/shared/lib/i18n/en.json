@@ -21,6 +21,8 @@
   "community": {
     "usernameLabel": "Your name",
     "usernamePlaceholder": "How the others see you",
+    "pinLabel": "Access PIN (4 digits)",
+    "pinPlaceholder": "4 digits to protect your user",
     "create": {
       "title": "Create a list",
       "subtitle": "We'll give you a code so you can share it with whoever you want.",
@@ -40,6 +42,8 @@
     "errors": {
       "invalidName": "Give it a name of at least two letters.",
       "invalidUsername": "Your name needs at least two letters.",
+      "invalidPin": "The PIN must be exactly 4 digits.",
+      "wrongPin": "Incorrect PIN for this user.",
       "invalidJoinCode": "That code doesn't exist. Check it and try again.",
       "expiredJoinCode": "That code has expired. Ask whoever sent it for a new one.",
       "usernameTaken": "That name is already taken in this list. Try another one.",

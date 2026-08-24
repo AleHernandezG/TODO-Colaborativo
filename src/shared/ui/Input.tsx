@@ -15,6 +15,8 @@ type InputProps = {
   returnKeyType?: 'next' | 'done'
   onSubmitEditing?: () => void
   testID?: string
+  secureTextEntry?: boolean
+  keyboardType?: 'default' | 'numeric' | 'email-address' | 'number-pad'
 }
 
 export function Input({
@@ -30,6 +32,8 @@ export function Input({
   returnKeyType = 'done',
   onSubmitEditing,
   testID,
+  secureTextEntry = false,
+  keyboardType = 'default',
 }: InputProps) {
   const palette = usePalette()
 
@@ -49,6 +53,8 @@ export function Input({
         autoFocus={autoFocus}
         returnKeyType={returnKeyType}
         onSubmitEditing={onSubmitEditing}
+        secureTextEntry={secureTextEntry}
+        keyboardType={keyboardType}
         accessibilityLabel={label}
         accessibilityHint={error ?? undefined}
         style={{ minHeight: minTouchTarget, color: palette.text }}

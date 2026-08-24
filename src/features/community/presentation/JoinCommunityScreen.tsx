@@ -10,6 +10,7 @@ import { Button } from '../../../shared/ui/Button'
 import { Input } from '../../../shared/ui/Input'
 import { normalizeJoinCode } from '../domain/join-code'
 import { usernameMaxLength } from '../domain/names'
+import { pinLength } from '../domain/pin'
 import { useGoToList } from './use-go-to-list'
 import { useJoinCommunity } from './use-join-community'
 
@@ -22,15 +23,18 @@ export function JoinCommunityScreen() {
 
   const [joinCode, setJoinCode] = useState('')
   const [username, setUsername] = useState('')
+  const [pin, setPin] = useState('')
   const [joinCodeError, setJoinCodeError] = useState<string | null>(null)
   const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [pinError, setPinError] = useState<string | null>(null)
 
   const submit = () => {
     setJoinCodeError(null)
     setUsernameError(null)
+    setPinError(null)
 
     mutate(
-      { joinCode, username },
+      { joinCode, username, pin },
       {
         onSuccess: (result) => {
           if (result.status === 'ok') {
@@ -39,6 +43,14 @@ export function JoinCommunityScreen() {
           }
           if (result.status === 'invalid_username') {
             setUsernameError(t('community.errors.invalidUsername'))
+            return
+          }
+          if (result.status === 'invalid_pin') {
+            setPinError(t('community.errors.invalidPin'))
+            return
+          }
+          if (result.status === 'wrong_pin') {
+            setPinError(t('community.errors.wrongPin'))
             return
           }
           if (result.status === 'username_taken') {
@@ -102,6 +114,21 @@ export function JoinCommunityScreen() {
               error={usernameError}
               maxLength={usernameMaxLength}
               autoCapitalize="words"
+              autoCorrect={false}
+              returnKeyType="next"
+            />
+
+            <Input
+              testID="join-community-pin"
+              label={t('community.pinLabel')}
+              placeholder={t('community.pinPlaceholder')}
+              value={pin}
+              onChangeText={setPin}
+              error={pinError}
+              maxLength={pinLength}
+              keyboardType="numeric"
+              secureTextEntry
+              autoCapitalize="none"
               autoCorrect={false}
               onSubmitEditing={submit}
             />
