@@ -310,11 +310,15 @@ RF-8 (PDF), RF-9 (reparto de gastos) y RF-10 (catálogo de productos de supermer
 El requisito de entrada del reparto de gastos ([ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md), identidad no suplantable)
 quedó resuelto el 2026-08-24 con el PIN por miembro ([ADR-0015](docs/adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md)).
 
-**RF-9 está escrito, no terminado.** El bloque B de la Fase 6 tiene esquema, RPC transaccional,
-balances y liquidación mínima en `domain/` y su pantalla, pero **no cumple cuatro reglas duras de este
-fichero**: sus mutaciones no son optimistas, borrar un gasto no se puede deshacer, no hay suscripción
-a Realtime y no se puede encolar sin conexión. Está listado en `docs/phases/fase-6.md` (B.5) y es lo
-siguiente que hay que hacer en la fase. Tampoco se ha visto nunca en un móvil.
+**RF-9 cumple las reglas desde el 2026-08-28, y sigue sin verse en un móvil.** El bloque B de la
+Fase 6 tiene esquema, RPC transaccional, balances y liquidación mínima en `domain/` y su pantalla, y
+desde el cierre de B.5 también mutaciones optimistas, deshacer al borrar, suscripción a Realtime y
+cola offline con el id del gasto puesto por el cliente. Detalle en `docs/phases/fase-6.md` (B.9).
+**Lo que falta es la prueba en dispositivo**: la pantalla de gastos nunca se ha abierto en el Android
+real, y hasta que se recorra el guion de dos móviles de B.10 el bloque no está cerrado. Dos cosas se
+quedaron anotadas como deuda ahí: la X de borrar sale en gastos ajenos que la RLS no deja borrar, y
+`scope: { id: 'expenses' }` solo es correcto mientras el gasto no cuelgue de un artículo creado sin
+conexión.
 
 El catálogo (RF-10, [ADR-0012](docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md)) es el
 bloque A de la Fase 6 y **está en Aceptado desde el 2026-08-07**: la fuente la eligió el usuario con
@@ -378,12 +382,13 @@ npx expo start
 # Desde Git Bash. En PowerShell 5.1 el '>' escribe UTF-16 y rompe ESLint: ver skill supabase-data
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
-# Aislamiento entre comunidades (RLS + Storage + rotación del código), y lectura y búsqueda del
-# catálogo, que es la única tabla compartida. Debe dar 37/37
-# (36/37 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
+# Aislamiento entre comunidades (RLS + Storage + rotación del código), lectura y búsqueda del
+# catálogo (la única tabla compartida) y el alta idempotente de gastos. Debe dar 39/39
+# (38/39 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
 npm run test:rls
 
-# Realtime: eventos, filtro por comunidad, aislamiento y presencia. Debe dar 12/12
+# Realtime: eventos de artículos y de gastos, filtro por comunidad, aislamiento y presencia.
+# Debe dar 15/15
 npm run test:realtime
 
 # Fuentes del catálogo (RF-10): cuántos artículos reales encuentra cada una.

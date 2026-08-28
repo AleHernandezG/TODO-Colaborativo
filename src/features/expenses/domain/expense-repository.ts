@@ -1,6 +1,7 @@
 import type { Expense, Settlement } from './expense'
 
 export type CreateExpenseInput = {
+  id: string
   communityId: string
   itemId?: string | null
   paidByMemberId: string
@@ -14,6 +15,7 @@ export type CreateExpenseInput = {
 }
 
 export type CreateSettlementInput = {
+  id: string
   communityId: string
   fromMemberId: string
   toMemberId: string
@@ -21,11 +23,19 @@ export type CreateSettlementInput = {
   currency?: string
 }
 
+export type ExpensesChannelStatus = 'connecting' | 'connected' | 'disconnected'
+
+export type ExpensesSubscriptionHandlers = {
+  onChange: () => void
+  onStatus: (status: ExpensesChannelStatus) => void
+}
+
 export interface ExpenseRepository {
   listExpenses(communityId: string): Promise<Expense[]>
-  createExpense(input: CreateExpenseInput): Promise<Expense>
+  createExpense(input: CreateExpenseInput): Promise<void>
   deleteExpense(expenseId: string): Promise<void>
   listSettlements(communityId: string): Promise<Settlement[]>
-  createSettlement(input: CreateSettlementInput): Promise<Settlement>
+  createSettlement(input: CreateSettlementInput): Promise<void>
   deleteSettlement(settlementId: string): Promise<void>
+  subscribe(communityId: string, handlers: ExpensesSubscriptionHandlers): () => void
 }

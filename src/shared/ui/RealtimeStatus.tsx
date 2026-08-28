@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
-import type { ItemsChannelStatus } from '../../domain/item-repository'
+export type ChannelStatus = 'connecting' | 'connected' | 'disconnected'
 
 const graceMs = 2000
 
-export function RealtimeStatus({ status }: { status: ItemsChannelStatus }) {
+export function RealtimeStatus({ status }: { status: ChannelStatus }) {
   const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
 

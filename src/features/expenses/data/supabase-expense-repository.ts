@@ -1,4 +1,4 @@
-import { ServerError, serverError } from '../../../shared/lib/errors'
+import { serverError } from '../../../shared/lib/errors'
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
 import type { Expense, Settlement } from '../domain/expense'
@@ -7,6 +7,12 @@ import type {
   CreateSettlementInput,
   ExpenseRepository,
 } from '../domain/expense-repository'
+
+const expenseColumns =
+  'id, community_id, item_id, paid_by_member_id, created_by_auth_user_id, amount_cents, currency, description, created_at, updated_at, shares:expense_shares(id, expense_id, member_id, share_cents)'
+const settlementColumns =
+  'id, community_id, from_member_id, to_member_id, amount_cents, currency, created_by_auth_user_id, created_at'
+const duplicateKey = '23505'
 
 type ExpenseRow = {
   id: string
@@ -38,7 +44,7 @@ type SettlementRow = {
   created_at: string
 }
 
-function mapExpenseRow(row: ExpenseRow): Expense {
+function toExpense(row: ExpenseRow): Expense {
   return {
     id: row.id,
     communityId: row.community_id,
@@ -50,16 +56,16 @@ function mapExpenseRow(row: ExpenseRow): Expense {
     description: row.description,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    shares: (row.shares ?? []).map((s) => ({
-      id: s.id,
-      expenseId: s.expense_id,
-      memberId: s.member_id,
-      shareCents: s.share_cents,
+    shares: (row.shares ?? []).map((share) => ({
+      id: share.id,
+      expenseId: share.expense_id,
+      memberId: share.member_id,
+      shareCents: share.share_cents,
     })),
   }
 }
 
-function mapSettlementRow(row: SettlementRow): Settlement {
+function toSettlement(row: SettlementRow): Settlement {
   return {
     id: row.id,
     communityId: row.community_id,
@@ -73,14 +79,12 @@ function mapSettlementRow(row: SettlementRow): Settlement {
 }
 
 export const supabaseExpenseRepository: ExpenseRepository = {
-  async listExpenses(communityId: string): Promise<Expense[]> {
+  async listExpenses(communityId) {
     await assertOnline()
 
     const { data, error } = await supabase
       .from('expenses')
-      .select(
-        'id, community_id, item_id, paid_by_member_id, created_by_auth_user_id, amount_cents, currency, description, created_at, updated_at, shares:expense_shares(id, expense_id, member_id, share_cents)',
-      )
+      .select(expenseColumns)
       .eq('community_id', communityId)
       .order('created_at', { ascending: false })
 
@@ -88,48 +92,31 @@ export const supabaseExpenseRepository: ExpenseRepository = {
       throw serverError('expenses.select', error)
     }
 
-    return (data ?? []).map(mapExpenseRow)
+    return (data ?? []).map(toExpense)
   },
 
-  async createExpense(input: CreateExpenseInput): Promise<Expense> {
+  async createExpense(input: CreateExpenseInput) {
     await assertOnline()
 
-    const { data, error } = await supabase.rpc('create_expense_with_shares', {
+    const { error } = await supabase.rpc('create_expense_with_shares', {
+      p_expense_id: input.id,
       p_community_id: input.communityId,
       p_item_id: (input.itemId ?? null) as unknown as string,
       p_paid_by_member_id: input.paidByMemberId,
       p_amount_cents: input.amountCents,
       p_description: input.description,
-      p_shares: input.shares.map((s) => ({
-        member_id: s.memberId,
-        share_cents: s.shareCents,
+      p_shares: input.shares.map((share) => ({
+        member_id: share.memberId,
+        share_cents: share.shareCents,
       })),
     })
 
     if (error) {
       throw serverError('create_expense_with_shares', error)
     }
-
-    const expenseId = data
-
-    const { data: createdRow, error: readError } = await supabase
-      .from('expenses')
-      .select(
-        'id, community_id, item_id, paid_by_member_id, created_by_auth_user_id, amount_cents, currency, description, created_at, updated_at, shares:expense_shares(id, expense_id, member_id, share_cents)',
-      )
-      .eq('id', expenseId)
-      .single()
-
-    if (readError || !createdRow) {
-      throw readError
-        ? serverError('expenses.selectCreated', readError)
-        : new ServerError('expenses.selectCreated', 'sin datos')
-    }
-
-    return mapExpenseRow(createdRow)
   },
 
-  async deleteExpense(expenseId: string): Promise<void> {
+  async deleteExpense(expenseId) {
     await assertOnline()
 
     const { error } = await supabase.from('expenses').delete().eq('id', expenseId)
@@ -139,14 +126,12 @@ export const supabaseExpenseRepository: ExpenseRepository = {
     }
   },
 
-  async listSettlements(communityId: string): Promise<Settlement[]> {
+  async listSettlements(communityId) {
     await assertOnline()
 
     const { data, error } = await supabase
       .from('settlements')
-      .select(
-        'id, community_id, from_member_id, to_member_id, amount_cents, currency, created_by_auth_user_id, created_at',
-      )
+      .select(settlementColumns)
       .eq('community_id', communityId)
       .order('created_at', { ascending: false })
 
@@ -154,42 +139,63 @@ export const supabaseExpenseRepository: ExpenseRepository = {
       throw serverError('settlements.select', error)
     }
 
-    return (data ?? []).map(mapSettlementRow)
+    return (data ?? []).map(toSettlement)
   },
 
-  async createSettlement(input: CreateSettlementInput): Promise<Settlement> {
+  async createSettlement(input: CreateSettlementInput) {
     await assertOnline()
 
-    const { data, error } = await supabase
-      .from('settlements')
-      .insert({
-        community_id: input.communityId,
-        from_member_id: input.fromMemberId,
-        to_member_id: input.toMemberId,
-        amount_cents: input.amountCents,
-        currency: input.currency ?? 'EUR',
-      })
-      .select(
-        'id, community_id, from_member_id, to_member_id, amount_cents, currency, created_by_auth_user_id, created_at',
-      )
-      .single()
+    const { error } = await supabase.from('settlements').insert({
+      id: input.id,
+      community_id: input.communityId,
+      from_member_id: input.fromMemberId,
+      to_member_id: input.toMemberId,
+      amount_cents: input.amountCents,
+      currency: input.currency ?? 'EUR',
+    })
 
-    if (error || !data) {
-      throw error
-        ? serverError('settlements.insert', error)
-        : new ServerError('settlements.insert', 'sin datos')
+    if (error?.code === duplicateKey) {
+      return
     }
 
-    return mapSettlementRow(data)
+    if (error) {
+      throw serverError('settlements.insert', error)
+    }
   },
 
-  async deleteSettlement(settlementId: string): Promise<void> {
+  async deleteSettlement(settlementId) {
     await assertOnline()
 
     const { error } = await supabase.from('settlements').delete().eq('id', settlementId)
 
     if (error) {
       throw serverError('settlements.delete', error)
+    }
+  },
+
+  subscribe(communityId, { onChange, onStatus }) {
+    const filter = `community_id=eq.${communityId}`
+
+    const channel = supabase
+      .channel(`expenses:${communityId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter }, () =>
+        onChange(),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements', filter }, () =>
+        onChange(),
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          onStatus('connected')
+          return
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          onStatus('disconnected')
+        }
+      })
+
+    return () => {
+      void supabase.removeChannel(channel)
     }
   },
 }

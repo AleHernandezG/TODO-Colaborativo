@@ -76,6 +76,33 @@ function watchItems(client, name, filter) {
   return { channel, events, subscribed }
 }
 
+function watchTables(client, name, tables, filter) {
+  const events = []
+  let channel = client.channel(name)
+
+  for (const table of tables) {
+    channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter }, (payload) =>
+      events.push({ table, ...payload }),
+    )
+  }
+
+  const subscribed = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`El canal ${name} no llegó a SUBSCRIBED`)), 15000)
+    channel.subscribe((status, error) => {
+      if (status === 'SUBSCRIBED') {
+        clearTimeout(timer)
+        resolve()
+      }
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        clearTimeout(timer)
+        reject(new Error(`El canal ${name} falló: ${status} ${error?.message ?? ''}`))
+      }
+    })
+  })
+
+  return { channel, events, subscribed }
+}
+
 function watchPresence(client, communityId, username) {
   const channel = client.channel(`presence:${communityId}`, {
     config: { presence: { key: username, enabled: true } },
@@ -279,6 +306,88 @@ async function main() {
     'Quien escribe también recibe su propio evento',
     watcherC.events.some((e) => e.new?.id === fromC.id),
     `${watcherC.events.length} evento(s) en el canal del segundo miembro`,
+  )
+
+  const expenseTables = ['expenses', 'settlements']
+  const expensesA = watchTables(
+    clientA,
+    `expenses:${communityA}`,
+    expenseTables,
+    `community_id=eq.${communityA}`,
+  )
+  const expensesB = watchTables(
+    clientB,
+    `expenses:${communityB}`,
+    expenseTables,
+    `community_id=eq.${communityB}`,
+  )
+
+  await Promise.all([expensesA.subscribed, expensesB.subscribed])
+  await wait(2000)
+
+  const { data: membersOfA } = await clientA
+    .from('members')
+    .select('id, username')
+    .eq('community_id', communityA)
+
+  const ana = membersOfA.find((m) => m.username === 'ana')
+  const carla = membersOfA.find((m) => m.username === 'carla')
+
+  const expenseId = crypto.randomUUID()
+  const { error: expenseError } = await clientA.rpc('create_expense_with_shares', {
+    p_expense_id: expenseId,
+    p_community_id: communityA,
+    p_item_id: null,
+    p_paid_by_member_id: ana.id,
+    p_amount_cents: 1200,
+    p_description: 'Compra de prueba',
+    p_shares: [
+      { member_id: ana.id, share_cents: 600 },
+      { member_id: carla.id, share_cents: 600 },
+    ],
+  })
+
+  if (expenseError) {
+    throw new Error(`No se pudo crear el gasto de prueba: ${expenseError.message}`)
+  }
+
+  await wait(1500)
+
+  const { error: settlementError } = await clientA.from('settlements').insert({
+    community_id: communityA,
+    from_member_id: ana.id,
+    to_member_id: carla.id,
+    amount_cents: 600,
+  })
+
+  if (settlementError) {
+    throw new Error(`No se pudo crear la liquidación de prueba: ${settlementError.message}`)
+  }
+
+  await wait(2500)
+
+  const expenseEvent = expensesA.events.find(
+    (e) => e.table === 'expenses' && e.new?.id === expenseId,
+  )
+  check(
+    'Un gasto nuevo llega al canal de su comunidad',
+    Boolean(expenseEvent),
+    expenseEvent ? `${expenseEvent.eventType} ${expenseEvent.new.description}` : 'no llegó',
+  )
+
+  const settlementEvent = expensesA.events.find((e) => e.table === 'settlements')
+  check(
+    'Una liquidación nueva llega al mismo canal',
+    settlementEvent?.new?.community_id === communityA,
+    settlementEvent ? `${settlementEvent.eventType}` : 'no llegó',
+  )
+
+  check(
+    'El canal de gastos de B no recibe nada de la comunidad de A',
+    expensesB.events.length === 0,
+    expensesB.events.length === 0
+      ? 'ni gastos, ni liquidaciones'
+      : `${expensesB.events.length} eventos: ${expensesB.events.map((e) => e.table).join(', ')}`,
   )
 
   const presenceA = watchPresence(clientA, communityA, 'ana')

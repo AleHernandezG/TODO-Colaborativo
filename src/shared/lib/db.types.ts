@@ -426,6 +426,7 @@ export type Database = {
           p_amount_cents: number
           p_community_id: string
           p_description: string
+          p_expense_id?: string
           p_item_id: string
           p_paid_by_member_id: string
           p_shares: Json

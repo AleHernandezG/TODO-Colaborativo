@@ -1,11 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
-import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
 import { Dialog } from '../../../shared/ui/Dialog'
 import type { DebtTransfer } from '../domain/expense'
 import { formatCents } from '../domain/money'
-import { useCreateSettlement } from './use-expense-mutations'
+import { useCreateSettlement } from './use-create-settlement'
 
 type Props = {
   visible: boolean
@@ -17,29 +16,19 @@ type Props = {
 
 export function SettleDebtModal({ visible, onDismiss, communityId, transfer, onSuccess }: Props) {
   const { t } = useTranslation()
-  const showError = useErrorSnackbar()
-  const { mutate: createSettlement, isPending } = useCreateSettlement(communityId)
+  const { mutate: createSettlement } = useCreateSettlement(communityId)
 
   if (!transfer) return null
 
   const handleConfirm = () => {
-    createSettlement(
-      {
-        communityId,
-        fromMemberId: transfer.fromMemberId,
-        toMemberId: transfer.toMemberId,
-        amountCents: transfer.amountCents,
-      },
-      {
-        onSuccess: () => {
-          onDismiss()
-          onSuccess?.()
-        },
-        onError: (cause) => {
-          showError(cause)
-        },
-      },
-    )
+    createSettlement({
+      fromMemberId: transfer.fromMemberId,
+      toMemberId: transfer.toMemberId,
+      amountCents: transfer.amountCents,
+    })
+
+    onDismiss()
+    onSuccess?.()
   }
 
   return (
@@ -49,7 +38,6 @@ export function SettleDebtModal({ visible, onDismiss, communityId, transfer, onS
       onDismiss={onDismiss}
       confirmLabel={t('expenses.confirmSettle')}
       onConfirm={handleConfirm}
-      confirmDisabled={isPending}
       cancelLabel={t('common.cancel')}
     >
       <View className="gap-3 py-2">

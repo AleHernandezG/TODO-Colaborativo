@@ -260,6 +260,35 @@ select oid::regprocedure from pg_proc where proname = 'join_community';
 y una comprobación en `scripts/rls-isolation-test.mjs` que llame a la RPC **sin** el parámetro nuevo y
 exija que resuelva. Las dos que hay (`create_community` y `join_community`) están ahí por esto.
 
+### Un alta que se puede reenviar: id del cliente y `on conflict do nothing`
+
+Una RPC de alta que puede llegar dos veces (la cola offline reenvía; ADR-0009 y ADR-0010) no puede
+crear dos filas. El id lo pone el cliente y la función lo acepta como último parámetro, con
+`default null` para que las llamadas antiguas sigan resolviendo:
+
+```sql
+insert into expenses (id, community_id, ...)
+values (coalesce(p_expense_id, gen_random_uuid()), p_community_id, ...)
+on conflict (id) do nothing
+returning id into v_expense_id;
+
+if v_expense_id is null then
+  return p_expense_id;
+end if;
+```
+
+**El `if` de después es la mitad que se olvida.** Con `do nothing`, el `returning` no devuelve nada
+cuando la fila ya estaba, así que `v_expense_id` queda a `null` y todo lo que venga detrás (aquí, el
+`insert` de las cuotas) se ejecutaría con un `expense_id` nulo o duplicaría filas hijas. Salir ahí
+devolviendo el id que mandó el cliente es lo que hace que reenviar sea gratis.
+
+`create_expense_with_shares` es el ejemplo, en `20260828150000`. Y su `drop function` de la firma de
+seis argumentos va en esa misma migración, por lo de arriba.
+
+Las validaciones (`not_a_member`, `invalid_amount`, `shares_sum_mismatch`) van **antes** del insert,
+no dentro de un `on conflict`: un reenvío de algo que ya se guardó vuelve a pasar por ellas y tiene
+que dar el mismo resultado.
+
 ## Permisos de las funciones
 
 Postgres da `execute` a `public` por defecto en cualquier función nueva. En una función
@@ -501,6 +530,13 @@ concluyes que la migración no sirvió, que es justo lo que pasó al escribirla.
 suelto. RLS no se puede evaluar sobre una fila que ya no existe, así que Realtime no lo
 intenta. Por eso **la app se suscribe siempre con `filter: community_id=eq.<id>`**: con filtro
 esos borrados ajenos no llegan. Suscribirse a `items` sin filtro es un error de revisión.
+
+**Una tabla sin `community_id` no puede estar en un canal filtrado, así que se queda fuera de la
+publicación.** Es el caso de `expense_shares`: no tiene por dónde filtrar, y sin filtro recibiría los
+borrados de todas las comunidades (ver el párrafo de arriba). No se denormaliza la columna para
+arreglarlo: las cuotas se escriben en la misma transacción que su gasto y se borran en cascada con
+él, así que el evento de `expenses` ya avisa de todo lo que cambió. La publicación lleva `expenses` y
+`settlements`; `expense_shares` no, a propósito (`20260828140000`).
 
 **Tras `SUBSCRIBED` hay una ventana de en torno a un segundo en la que los eventos se pierden.**
 El canal dice que está suscrito antes de que el servidor tenga registrada la suscripción a los

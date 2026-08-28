@@ -1,10 +1,11 @@
 # Fase 6 · Catálogo de productos y reparto de gastos
 
-- Estado: **abierta**. Bloque A cerrado y verificado en dispositivo; bloque B escrito y con datos correctos, pero **sin Realtime, sin optimistic UI y sin cola offline** (ver B.5).
+- Estado: **abierta**. Bloque A cerrado y verificado en dispositivo; bloque B completo en código desde el 2026-08-28 (B.9) y **pendiente de la prueba con dos móviles** (guion en B.10).
 - Inicio: 2026-08-07
 - Bloque A (catálogo, RF-10): 4.979 productos de Mercadona en la tabla, Action semanal verificada, sugerencias bajo el campo de texto y fotos vinculadas. Verificado en Android real el 2026-08-24.
-- Bloque B (reparto de gastos, RF-9): escrito el 2026-08-24. Esquema de `expenses`, `expense_shares` y `settlements` aplicado en Supabase, RPC atómica `create_expense_with_shares`, algoritmo de liquidación mínima en `domain/`, pantalla `ExpensesScreen` con balances e historial. **No verificado en dispositivo** y le faltan cuatro reglas de `CLAUDE.md`, listadas en B.5.
+- Bloque B (reparto de gastos, RF-9): escrito el 2026-08-24. Esquema de `expenses`, `expense_shares` y `settlements` aplicado en Supabase, RPC atómica `create_expense_with_shares`, algoritmo de liquidación mínima en `domain/`, pantalla `ExpensesScreen` con balances e historial. Las cuatro reglas de `CLAUDE.md` que le faltaban (B.5) se cerraron el 2026-08-28: optimistic UI con rollback, deshacer al borrar, Realtime y cola offline con el id del gasto puesto por el cliente. **Sigue sin verificarse en dispositivo.**
 - El 2026-08-28 se arregló el fallo que impedía unirse a cualquier lista desde el 24 (B.6) y se rediseñó cómo se clasifican y se enseñan los errores ([ADR-0016](../adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-usuario.md)). `npm run test:rls` pasa a 37/37 y `npm run test:realtime` vuelve a 12/12.
+- El mismo 2026-08-28, ya de tarde, se cerró B.5 (ver B.9): `npm test` da 327 en 43 suites, `npm run test:rls` 39/39 y `npm run test:realtime` 15/15.
 
 > **La Fase 5 se cerró el 2026-08-16**, con la pasada de TalkBack recorrida entera y limpia. Esta
 > fase se abrió antes de aquello y avanzó en paralelo, porque su primer trabajo era SQL y no competía
@@ -886,21 +887,21 @@ y entre quiénes se reparte; `SettleDebtModal` registra un pago sobre una transf
 Los balances no se piden al servidor: `use-expense-summary.ts` los calcula con las tres queries
 (miembros, gastos, liquidaciones) que ya están en caché.
 
-### B.5 · Lo que el bloque B no tiene todavía
+### B.5 · Lo que el bloque B no tenía — cerrado el 2026-08-28
 
-Esto no es una lista de mejoras: son cuatro reglas duras de `CLAUDE.md` que el bloque B **no
-cumple**, y hay que cerrarlas antes de dar la fase por buena.
+Esto no era una lista de mejoras: eran cuatro reglas duras de `CLAUDE.md` que el bloque B **no
+cumplía**. Las cuatro están puestas. El detalle de cómo, en B.9.
 
-| Regla                                                   | Estado en gastos                                                     |
-| ------------------------------------------------------- | -------------------------------------------------------------------- |
-| Toda mutación con actualización optimista + rollback    | **No.** Las cuatro mutaciones hacen `invalidateQueries` al terminar. |
-| «Deshacer» tras borrar                                  | **No.** Borrar un gasto es inmediato y definitivo.                   |
-| Cada cliente se suscribe a Realtime de su comunidad     | **No.** El repositorio de gastos no tiene `subscribe`.               |
-| Una mutación encolable declara `mutationKey` y defaults | **No.** Sin conexión, un gasto se pierde.                            |
+| Regla                                                   | Cómo quedó                                                              |
+| ------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Toda mutación con actualización optimista + rollback    | Un hook por mutación, con `cancelQueries` y rollback en `onError`.      |
+| «Deshacer» tras borrar                                  | `deleting-rows-store.ts` + `visibleRows`, con el `delete` diferido 5 s. |
+| Cada cliente se suscribe a Realtime de su comunidad     | `subscribe()` en el repositorio y `use-expenses-realtime.ts`.           |
+| Una mutación encolable declara `mutationKey` y defaults | `expense-mutations.ts`, con el id del gasto puesto por el cliente.      |
 
-La consecuencia práctica con dos móviles: quien añade un gasto lo ve; el otro no, hasta que cierre y
-vuelva a abrir la pantalla. Y el botón se queda en carga esperando al servidor en vez de responder al
-instante como el resto de la app.
+La consecuencia práctica con dos móviles era esta: quien añadía un gasto lo veía; el otro no, hasta
+que cerraba y volvía a abrir la pantalla. Y el botón se quedaba en carga esperando al servidor en vez
+de responder al instante como el resto de la app.
 
 ### B.6 · El fallo de las sobrecargas — del 2026-08-24 al 2026-08-28
 
@@ -983,7 +984,182 @@ En el móvil, **con el APK que ya está instalado, sin reinstalar nada**:
    todo, quita el modo avión y ábrela: siguen ahí y se suben. La cola offline no se ha tocado, pero es
    el camino que más errores toca.
 5. **Los gastos.** Botón de gastos en la cabecera de la lista, añade un gasto y una liquidación.
-   Funciona, pero recuerda B.5: el otro móvil no lo verá hasta que reabra la pantalla.
+   Cuando se escribió esto el otro móvil no lo veía hasta reabrir la pantalla; desde B.9 sí. El guion
+   completo de gastos con dos móviles está en B.10.
+
+### B.9 · Gastos al nivel de la lista — 2026-08-28
+
+Cierra B.5. Las cuatro reglas que el bloque B incumplía están puestas, y la pantalla de gastos se
+comporta como la de artículos: responde al instante, se puede deshacer, se entera de lo que hacen
+los demás y no pierde nada sin cobertura.
+
+#### Mutaciones optimistas
+
+Las cuatro mutaciones viven ahora en hooks propios (`use-create-expense.ts`,
+`use-create-settlement.ts`, `use-delete-expense.ts`, `use-delete-settlement.ts`) con el patrón de
+siempre: `cancelQueries` → `getQueryData` → `setQueryData` → rollback en `onError` →
+`invalidateQueries` en `onSuccess`, nunca en `onSettled`.
+
+El gasto optimista se construye entero en `onMutate`, con sus cuotas y con `createdByAuthUserId`
+sacado del store de sesión, porque `use-expense-summary.ts` calcula los balances con lo que hay en
+caché: un gasto a medio construir daría un balance falso durante el segundo que tarda el servidor.
+
+Los dos modales dejan de esperar. `AddExpenseModal` y `SettleDebtModal` llaman a `mutate`, cierran y
+avisan; ya no tienen `isPending` ni `confirmDisabled`, y su `useErrorSnackbar` se fue al hook, que es
+quien sabe si hubo que revertir.
+
+#### Deshacer al borrar
+
+Mismo mecanismo que en artículos, con la misma pieza en dos sitios: `deleting-rows-store.ts` marca
+el id, `visible-rows.ts` lo esconde en el `select` de la consulta y `clearDeleting` va en
+`onSettled`. La fila **no se quita de la caché**: la caché refleja al servidor y el servidor todavía
+la tiene, así que quitarla haría que reapareciese sola en el siguiente evento de Realtime.
+
+El `delete` real se difiere 5 s (`deleteUndoWindowMs`). Si el usuario deshace, el servidor no se
+entera de nada. Vale igual para gastos y para liquidaciones.
+
+`visibleRows` es genérico (`<T extends { id: string }>`) y vive en `domain/` porque lo usan las dos
+consultas y es una función pura con sus tests.
+
+#### Realtime
+
+`ExpenseRepository` gana `subscribe(communityId, { onChange, onStatus })`, que devuelve la función de
+baja. Es el único método del repositorio sin `assertOnline()`, por lo de siempre: un canal reconecta
+solo y ya avisa por `onStatus`.
+
+`use-expenses-realtime.ts` es copia fiel del de artículos, con sus dos temporizadores
+(`eventCoalesceMs = 300`, `subscribeSettleMs = 1500`), sin invalidar mientras
+`queryClient.isMutating() > 0`, y con `useAppForeground` para refrescar al volver de segundo plano.
+Invalida las dos claves, `expenses` y `settlements`.
+
+**`expense_shares` se queda fuera del canal, a propósito.** No tiene `community_id`, así que su
+suscripción no se podría filtrar con `community_id=eq.<id>` y recibiría los borrados de todas las
+comunidades. Las cuotas se escriben en la misma transacción que su gasto y se borran en cascada con
+él, así que el evento de `expenses` ya las cubre. La alternativa era denormalizar `community_id` en
+`expense_shares`: una columna más que mantener y un índice más, a cambio de cero eventos nuevos.
+
+`20260828140000_expenses_realtime.sql` mete `expenses` y `settlements` en la publicación
+`supabase_realtime` y les pone `replica identity full`. Lo segundo no es opcional: sin la fila
+completa, un `DELETE` no lleva `community_id` y el filtro del canal lo descarta, así que el otro
+móvil vería aparecer gastos pero no desaparecerlos.
+
+#### Cola offline y el id que pone el cliente
+
+`expense-mutations.ts` registra las cuatro claves con `setMutationDefaults` (ADR-0009) y
+`_layout.tsx` lo llama junto al de artículos, antes de rehidratar. Las `variables` llevan el
+`communityId` porque la función que se rehidrata no tiene closure donde mirarlo.
+
+Y con eso llega ADR-0010: **el id del gasto y el de la liquidación los genera el cliente** con
+`randomUuid()`, en la llamada a `mutate`, no en `onMutate`. `onMutate` corre otra vez al reanudar una
+mutación pausada; un id generado ahí sería distinto al que se pintó, y el gasto que el usuario ve no
+sería el que se guarda.
+
+Eso obliga a que el alta sea idempotente, y ahí entra la migración
+`20260828150000_create_expense_with_shares_client_id.sql`:
+
+- `p_expense_id uuid default null` **al final** de la firma, y el `drop function` de la firma de seis
+  argumentos en la misma migración (la regla de B.6).
+- `values (coalesce(p_expense_id, gen_random_uuid()), ...) on conflict (id) do nothing returning id`,
+  y si no devuelve nada es que ya estaba: se devuelve `p_expense_id` y no se insertan las cuotas otra
+  vez.
+- El `default null` es lo que mantiene vivo al APK ya instalado, que llama sin ese argumento. Hay un
+  check de `test:rls` que lo comprueba en cada ejecución, con ese nombre, para que no se rompa por
+  descuido.
+
+La liquidación no necesitó migración: es un `insert` normal y su idempotencia se resuelve tragándose
+el `23505` en el adaptador.
+
+`createExpense` y `createSettlement` pasan a devolver `void` y **no releen después de escribir**. La
+versión anterior hacía un `select` detrás del `insert` para devolver la fila; si ese segundo viaje
+fallaba, el `onError` revertía la UI de un gasto que se había guardado perfectamente.
+
+#### Lo que hay que saber antes de tocar esto
+
+- **`scope: { id: 'expenses' }` en las cuatro mutaciones.** Serializa la cola de gastos, que es lo
+  que hace falta para que un borrado no adelante a su alta. Es correcto **mientras `itemId` sea
+  siempre `null`**, que es lo que hace hoy la pantalla. El día que se abra `AddExpenseModal` desde un
+  artículo creado sin conexión, ese gasto puede salir de la cola antes que el artículo del que
+  depende y romper la FK: ahí hay que unificar el scope con el de artículos.
+- **La X de borrar sale en todas las filas y solo el que creó el gasto puede borrarlo.** La RLS es la
+  correcta; la pantalla es la que miente. Con el borrado optimista puesto se nota más que antes: el
+  gasto ajeno desaparece, y a los cinco segundos vuelve con un snackbar «(42501)». Deuda anotada, no
+  arreglada en esta tanda: pide decidir si el borrado ajeno se esconde o se permite, y eso es una
+  regla de producto, no un bug.
+- **`RealtimeStatus` se mudó a `src/shared/ui/`.** Estaba dentro de `items/presentation/components/`
+  y ahora lo usan dos pantallas. Su tipo `ItemsChannelStatus` se sustituyó por un `ChannelStatus`
+  local, porque un componente de `shared/ui` no importa de una feature.
+
+#### Deuda de estilo saldada
+
+Fuera los comentarios en castellano y el JSDoc de `calculate-balances.ts`, `money.ts`, el repositorio
+y los `{/* Header */}` del JSX, que era lo que quedaba pendiente de la última entrada de «Decisiones
+sobre la marcha».
+
+#### Cómo se probó en el PC
+
+`npm run lint` y `npm run typecheck` limpios. `npm test`: **327 tests en 43 suites** (venía de
+304 en 40). `npx expo export --platform android` compila.
+
+Tests nuevos: `create-expense.test.ts` y `visible-rows.test.ts` en `domain/`,
+`expense-mutations.test.ts` en `presentation/` (rehidrata una mutación pausada y comprueba que llega
+al repositorio con el mismo id), y el del repositorio reescrito para el contrato nuevo, con los
+filtros del canal y la traducción de estados dentro.
+
+`npm run test:rls` pasa de 37 a **39/39**: se añaden «El gasto se guarda con el id que genera el
+cliente» y «Reenviar el mismo gasto no lo duplica ni duplica sus cuotas» (dos llamadas idénticas a la
+RPC dejan una fila y una cuota).
+
+`npm run test:realtime` pasa de 12 a **15/15**: un gasto y una liquidación llegan al canal de su
+comunidad, y el canal de la comunidad B no recibe nada de la A.
+
+Un aviso sobre ese último: la primera ejecución dio 14/15, y el que falló fue el check **viejo** de
+artículos («Llega el alta con su `community_id`»), no ninguno de los tres nuevos. Es una carrera del
+propio script, que espera un rato fijo por el evento. La ejecución siguiente dio 15/15. Si vuelve a
+salir, se repite antes de buscar la causa en el código.
+
+### B.10 · Guion de prueba con dos móviles
+
+La pantalla de gastos **no se había visto nunca en un Android real**. Este es el guion para darla por
+buena. Hacen falta dos móviles en la misma comunidad, y da igual si están en la misma Wi-Fi.
+
+**Preparación.** `npx expo start` (o `--tunnel` si no comparten red), los dos móviles dentro de la
+misma lista con miembros distintos, y el botón de gastos en la cabecera de la lista.
+
+1. **Un gasto aparece en los dos.** En A, añade un gasto de 12,00 € pagado por A y repartido entre
+   los dos. Tiene que salir en la lista de A **antes** de que el servidor conteste (el modal se
+   cierra al instante, sin botón en carga). En B tiene que aparecer solo, en un par de segundos, sin
+   tocar nada y sin salir de la pantalla. Esto es lo que no funcionaba.
+2. **Los balances cuadran.** Tras ese gasto, A ve «te deben 6,00 €» y B ve «debes 6,00 €», y en las
+   transferencias sugeridas sale una de B a A por 6,00 €.
+3. **Deshacer de verdad deshace.** En A, borra ese gasto y pulsa «Deshacer» antes de que pase el
+   snackbar. El gasto vuelve en A, y en B **no se ha movido nada en ningún momento**: si en B
+   parpadeó, el borrado no se estaba difiriendo.
+4. **Borrar confirmado se propaga.** En A, borra el gasto y no toques el snackbar. A los cinco
+   segundos desaparece en A y, poco después, en B.
+5. **Una liquidación.** En B, sobre la transferencia sugerida, registra el pago. Sale al instante en
+   B, aparece en A, y los balances de los dos se van a cero.
+6. **Borrar ajeno falla, y se ve.** En B, toca la X de un gasto creado por A. Desaparece, y a los
+   cinco segundos vuelve con «El servidor ha rechazado la operación… (42501)». Es la deuda de B.9: lo
+   que hay que comprobar aquí es que **vuelve**, no que se queda borrado en la pantalla.
+7. **Sin cobertura no se pierde nada.** Modo avión en A, añade dos gastos y borra uno de los que ya
+   había. Todo responde al instante. **Cierra la app del todo** (deslizar en recientes, no solo
+   segundo plano). Quita el modo avión y ábrela: los dos gastos suben, el borrado se ejecuta, y en B
+   aparece todo. Ningún gasto duplicado: si sale uno repetido, el id lo está poniendo el servidor y
+   no el cliente.
+8. **La lista cacheada sigue ahí.** Modo avión y arranque en frío en A: la pantalla de gastos enseña
+   lo último que se descargó, no un error. Si la comunidad es nueva y nunca se abrió con red, sale el
+   aviso de que no hay nada cacheado.
+9. **El aviso de canal solo sale cuando toca.** Con red, la cabecera no enseña nada: `RealtimeStatus`
+   se calla cuando el canal está conectado y solo aparece a los dos segundos si sigue conectando o
+   se ha caído. Si ves «Conectando…» fijo, el canal no está subiendo. En modo avión no sale ninguno
+   de los dos, que es lo correcto: sin red el que informa es el banner de la cola.
+10. **Accesibilidad.** Con TalkBack, recorre la pantalla entera: los importes se leen con su moneda,
+    el botón de añadir gasto es alcanzable sin ver la pantalla y las X se anuncian. Ojo con esas X:
+    su etiqueta es genérica («Borrar gasto»), no dice cuál, así que en una lista larga no se sabe
+    sobre cuál estás. Si con TalkBack delante resulta confuso, es lo primero que hay que arreglar.
+
+Si algo falla, lo primero que hay que leer es el código entre paréntesis del snackbar (ADR-0016) y la
+versión al pie de la pantalla de lista, para asegurarse de que el móvil está corriendo este código.
 
 ---
 
@@ -1021,5 +1197,5 @@ salieron tres cosas del commit del 24 que no son de esta tanda pero conviene ten
   errores.
 - **El código de gastos lleva comentarios en castellano y JSDoc**, en `calculate-balances.ts`,
   `money.ts`, el repositorio y algún `{/* Header */}` en el JSX. `CLAUDE.md` los prohíbe
-  explícitamente y no se pidió ninguna excepción. Se dejan como están en esta tanda para no mezclar una
-  limpieza de estilo con un arreglo de producción, pero es deuda y se quita al cerrar B.5.
+  explícitamente y no se pidió ninguna excepción. Se dejaron como estaban en esa tanda para no mezclar
+  una limpieza de estilo con un arreglo de producción. **Quitados el 2026-08-28** al cerrar B.5.

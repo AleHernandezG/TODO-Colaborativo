@@ -1,4 +1,4 @@
-export const maxAmountCents = 100_000_000 // 1.000.000,00 €
+export const maxAmountCents = 100_000_000
 
 export function isValidAmountCents(cents: number): boolean {
   return Number.isInteger(cents) && cents > 0 && cents <= maxAmountCents
@@ -8,7 +8,6 @@ export function parseCurrencyToCents(input: string): number | null {
   const trimmed = input.trim().replace(/\s/g, '').replace('€', '')
   if (!trimmed) return null
 
-  // Acepta formato "12.34" o "12,34" o "12"
   const normalized = trimmed.replace(',', '.')
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null
 
@@ -25,16 +24,11 @@ export function formatCents(cents: number, currency: string = 'EUR'): string {
   return `${euros.toFixed(2).replace('.', ',')} ${symbol}`
 }
 
-/**
- * Divide un importe en céntimos entre N miembros de forma exacta y determinista.
- * Los céntimos sobrantes del redondeo se reparten secuencialmente entre los primeros participantes.
- */
 export function splitEvenly(totalCents: number, memberIds: string[]): Record<string, number> {
   if (memberIds.length === 0 || !isValidAmountCents(totalCents)) {
     return {}
   }
 
-  // Ordenar IDs para que el reparto del céntimo residual sea 100% determinista
   const sortedMembers = [...memberIds].sort()
   const count = sortedMembers.length
   const baseShare = Math.floor(totalCents / count)

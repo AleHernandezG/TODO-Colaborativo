@@ -5,10 +5,6 @@ export type MemberRef = {
   username: string
 }
 
-/**
- * Calcula el balance individual neto (pagado - debido) para cada miembro de la comunidad.
- * La suma de todos los netBalanceCents siempre es 0.
- */
 export function calculateBalances(
   members: MemberRef[],
   expenses: Expense[],
@@ -16,12 +12,10 @@ export function calculateBalances(
 ): MemberBalance[] {
   const map = new Map<string, { username: string; paid: number; owed: number }>()
 
-  // Inicializar todos los miembros conocidos
   for (const m of members) {
     map.set(m.id, { username: m.username, paid: 0, owed: 0 })
   }
 
-  // Acumular gastos
   for (const expense of expenses) {
     const payer = map.get(expense.paidByMemberId)
     if (payer) {
@@ -36,7 +30,6 @@ export function calculateBalances(
     }
   }
 
-  // Acumular liquidaciones directas (from pagó a to)
   for (const settlement of settlements) {
     const from = map.get(settlement.fromMemberId)
     if (from) {
@@ -63,10 +56,6 @@ export function calculateBalances(
   return result
 }
 
-/**
- * Algoritmo de liquidación mínima de deudas (Debt Simplification).
- * Empareja deudores y acreedores para saldar todas las cuentas con el menor número posible de transferencias.
- */
 export function calculateMinTransfers(balances: MemberBalance[]): DebtTransfer[] {
   type Node = { memberId: string; username: string; amount: number }
 
@@ -81,7 +70,6 @@ export function calculateMinTransfers(balances: MemberBalance[]): DebtTransfer[]
     }
   }
 
-  // Ordenar de mayor a menor para emparejar los montos más grandes primero
   debtors.sort((a, b) => b.amount - a.amount)
   creditors.sort((a, b) => b.amount - a.amount)
 

@@ -402,6 +402,12 @@ Cuatro detalles que importan:
 Si el `delete` diferido falla, no hay nada que restaurar: la fila sigue en la caché y quitarle
 la marca la devuelve a la pantalla. Solo queda avisar por snackbar.
 
+**El mecanismo está dos veces**, en `items` (`deleting-items-store.ts`) y en `expenses`
+(`deleting-rows-store.ts`, que sirve a gastos y a liquidaciones porque marca ids sueltos). El filtro
+sí se compartió en forma de función pura, `expenses/domain/visible-rows.ts`, genérica sobre
+`{ id: string }` y usada desde el `select` de la consulta. Si aparece una tercera pantalla que borre,
+lo que hay que subir a `shared/` es el store, no volver a copiarlo.
+
 ## Realtime
 
 El `RefreshControl` (tirar para refrescar) enganchado al `refetch` de la query **no se quita**
@@ -669,6 +675,11 @@ De ahí, tres cosas:
   cerrar la app; restaurarla pisaría lo que hayan hecho los demás. Se invalida y manda el servidor.
 
 `scope` compartido serializa el reenvío, así que los cambios llegan en el orden en que se hicieron.
+Artículos usan `{ id: 'items' }` y gastos `{ id: 'expenses' }`, y esa separación tiene una condición:
+**dos colas distintas no se ordenan entre sí.** Mientras un gasto no cuelgue de un artículo, da igual;
+el día que se cree un gasto sobre un artículo creado sin conexión, el gasto puede salir antes que el
+artículo del que depende y el `insert` se estrella contra la FK. Si dos entidades se pueden crear en
+la misma sesión offline y una referencia a la otra, van en el mismo scope.
 
 **El id de lo que se crea sin conexión lo genera el cliente**, y en la llamada a `mutate`, no en
 `onMutate`:
@@ -686,7 +697,9 @@ error (el `update` afecta a cero filas y Postgres no se queja).
 
 `randomUuid()` está en `shared/lib/uuid.ts` y sale del `uuid.v4()` de `expo-modules-core`, que ya
 va dentro del APK. Consecuencia útil: el alta pasa a ser idempotente, y el adaptador trata el
-`23505` como «esto ya se guardó» y devuelve la fila que hay.
+`23505` como «esto ya se guardó» y devuelve la fila que hay. Si el alta va por RPC en vez de por
+`insert`, la idempotencia se resuelve dentro de la función y hay que escribirla: ver «Un alta que se
+puede reenviar» en la skill `supabase-data`.
 [ADR-0010](../../../docs/adr/ADR-0010-id-del-articulo-generado-en-el-cliente.md).
 
 **`assertOnline()` no sobra por esto.** Es más fresco (un `NetInfo.fetch()` por llamada, frente al

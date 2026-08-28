@@ -220,10 +220,19 @@
     "settleDebtModalTitle": "Settle debt",
     "confirmSettle": "Record payment",
     "settleDebtDescription": "Confirm that {{from}} has paid {{amount}} to {{to}} to settle the debt?",
+    "loading": "Loading the expenses…",
+    "loadError": "Couldn't load the expenses.",
+    "noCachedExpenses": "No expenses saved on this phone.",
+    "deleted": "Expense “{{description}}” deleted",
+    "settlementDeleted": "Settlement deleted",
     "errors": {
       "descriptionRequired": "Enter a description for the expense.",
       "invalidAmount": "Enter a valid amount greater than 0.",
-      "noParticipants": "Select at least one member to split the expense with."
+      "noParticipants": "Select at least one member to split the expense with.",
+      "addFailed": "Couldn't save the expense. Try again.",
+      "deleteFailed": "Couldn't delete it. Try again.",
+      "settleFailed": "Couldn't record the payment. Try again.",
+      "queuedFailed": "A pending change couldn't be saved. Check the expenses."
     }
   }
 }

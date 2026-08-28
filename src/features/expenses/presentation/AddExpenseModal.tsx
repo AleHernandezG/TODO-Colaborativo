@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
-import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
 import { Checkbox } from '../../../shared/ui/Checkbox'
 import { Dialog } from '../../../shared/ui/Dialog'
 import { Input } from '../../../shared/ui/Input'
 import type { CommunityMember } from '../../community/domain/community-repository'
 import { formatCents, parseCurrencyToCents, splitEvenly } from '../domain/money'
-import { useCreateExpense } from './use-expense-mutations'
+import { useCreateExpense } from './use-create-expense'
 
 type Props = {
   visible: boolean
@@ -32,8 +31,7 @@ export function AddExpenseModal({
   onSuccess,
 }: Props) {
   const { t } = useTranslation()
-  const showError = useErrorSnackbar()
-  const { mutate: createExpense, isPending } = useCreateExpense(communityId)
+  const { mutate: createExpense } = useCreateExpense(communityId)
 
   const [description, setDescription] = useState(initialDescription)
   const [amountText, setAmountText] = useState(
@@ -95,25 +93,16 @@ export function AddExpenseModal({
       shareCents,
     }))
 
-    createExpense(
-      {
-        communityId,
-        itemId,
-        paidByMemberId,
-        amountCents: parsedCents,
-        description: trimmedDesc,
-        shares,
-      },
-      {
-        onSuccess: () => {
-          onDismiss()
-          onSuccess?.()
-        },
-        onError: (cause) => {
-          showError(cause)
-        },
-      },
-    )
+    createExpense({
+      itemId,
+      paidByMemberId,
+      amountCents: parsedCents,
+      description: trimmedDesc,
+      shares,
+    })
+
+    onDismiss()
+    onSuccess?.()
   }
 
   return (
@@ -123,7 +112,6 @@ export function AddExpenseModal({
       onDismiss={onDismiss}
       confirmLabel={t('expenses.saveExpense')}
       onConfirm={handleConfirm}
-      confirmDisabled={isPending}
       cancelLabel={t('common.cancel')}
     >
       <View className="gap-4">
@@ -145,7 +133,6 @@ export function AddExpenseModal({
           keyboardType="numeric"
         />
 
-        {/* Quién pagó */}
         <View className="gap-2">
           <Text className="text-sm font-medium text-content dark:text-content-dark">
             {t('expenses.whoPaidLabel')}
@@ -178,7 +165,6 @@ export function AddExpenseModal({
           </View>
         </View>
 
-        {/* Entre quiénes se reparte */}
         <View className="gap-2">
           <Text className="text-sm font-medium text-content dark:text-content-dark">
             {t('expenses.splitAmongLabel')}

@@ -220,10 +220,19 @@
     "settleDebtModalTitle": "Saldar deuda",
     "confirmSettle": "Registrar pago",
     "settleDebtDescription": "¿Confirmar que {{from}} ha pagado {{amount}} a {{to}} para saldar la deuda?",
+    "loading": "Cargando los gastos…",
+    "loadError": "No se pudieron cargar los gastos.",
+    "noCachedExpenses": "No hay gastos guardados en este móvil.",
+    "deleted": "Gasto «{{description}}» borrado",
+    "settlementDeleted": "Liquidación borrada",
     "errors": {
       "descriptionRequired": "Indica un concepto para el gasto.",
       "invalidAmount": "Introduce un importe válido mayor que 0.",
-      "noParticipants": "Selecciona al menos un miembro para repartir el gasto."
+      "noParticipants": "Selecciona al menos un miembro para repartir el gasto.",
+      "addFailed": "No se pudo guardar el gasto. Inténtalo otra vez.",
+      "deleteFailed": "No se pudo borrar. Inténtalo otra vez.",
+      "settleFailed": "No se pudo registrar el pago. Inténtalo otra vez.",
+      "queuedFailed": "Un cambio que estaba pendiente no se pudo guardar. Revisa los gastos."
     }
   }
 }

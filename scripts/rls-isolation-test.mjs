@@ -369,9 +369,41 @@ async function main() {
     p_shares: [{ member_id: memberAId, share_cents: 1500 }],
   })
   check(
-    'Un miembro crea un gasto atómico con cuotas cuadradas',
+    'Un miembro crea un gasto atómico sin mandar id, como el APK ya instalado',
     expenseCreated.status === 200 && typeof expenseCreated.body === 'string',
     `HTTP ${expenseCreated.status}`,
+  )
+
+  const clientExpenseId = crypto.randomUUID()
+  const clientExpenseArgs = {
+    p_expense_id: clientExpenseId,
+    p_community_id: communityA,
+    p_item_id: null,
+    p_paid_by_member_id: memberAId,
+    p_amount_cents: 900,
+    p_description: 'Gasto con id del cliente',
+    p_shares: [{ member_id: memberAId, share_cents: 900 }],
+  }
+  const firstSend = await rpc(tokenA, 'create_expense_with_shares', clientExpenseArgs)
+  const resend = await rpc(tokenA, 'create_expense_with_shares', clientExpenseArgs)
+  const storedExpense = await select(tokenA, `expenses?select=id&id=eq.${clientExpenseId}`)
+  const storedShares = await select(
+    tokenA,
+    `expense_shares?select=id&expense_id=eq.${clientExpenseId}`,
+  )
+
+  check(
+    'El gasto se guarda con el id que genera el cliente',
+    firstSend.status === 200 && firstSend.body === clientExpenseId,
+    `HTTP ${firstSend.status} · ${firstSend.body}`,
+  )
+  check(
+    'Reenviar el mismo gasto no lo duplica ni duplica sus cuotas',
+    resend.status === 200 &&
+      resend.body === clientExpenseId &&
+      storedExpense.body?.length === 1 &&
+      storedShares.body?.length === 1,
+    `${storedExpense.body?.length ?? '?'} gasto(s) · ${storedShares.body?.length ?? '?'} cuota(s)`,
   )
 
   const crossExpenses = await select(tokenB, `expenses?select=id&community_id=eq.${communityA}`)

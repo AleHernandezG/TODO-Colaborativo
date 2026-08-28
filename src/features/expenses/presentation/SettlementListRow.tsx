@@ -8,7 +8,7 @@ import { formatCents } from '../domain/money'
 type Props = {
   settlement: Settlement
   members: CommunityMember[]
-  onDelete?: (settlementId: string) => void
+  onDelete?: (settlement: Settlement) => void
 }
 
 export function SettlementListRow({ settlement, members, onDelete }: Props) {
@@ -40,7 +40,7 @@ export function SettlementListRow({ settlement, members, onDelete }: Props) {
 
         {onDelete ? (
           <Pressable
-            onPress={() => onDelete(settlement.id)}
+            onPress={() => onDelete(settlement)}
             hitSlop={8}
             accessibilityLabel={t('expenses.deleteSettlement')}
             className="p-1 active:opacity-60"

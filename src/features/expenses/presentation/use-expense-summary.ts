@@ -15,7 +15,7 @@ export type ExpenseSummary = {
   isError: boolean
 }
 
-export function useExpenseSummary(communityId: string | null | undefined): ExpenseSummary {
+export function useExpenseSummary(communityId: string): ExpenseSummary {
   const {
     data: members = [],
     isLoading: loadingMembers,
