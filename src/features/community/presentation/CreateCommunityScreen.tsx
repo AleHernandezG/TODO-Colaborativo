@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { useSnackbar } from '../../../shared/hooks/use-snackbar'
-import { OfflineError } from '../../../shared/lib/network'
+import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
 import { Button } from '../../../shared/ui/Button'
 import { Input } from '../../../shared/ui/Input'
 import { communityNameMaxLength, usernameMaxLength } from '../domain/names'
@@ -16,7 +15,7 @@ import { useGoToList } from './use-go-to-list'
 export function CreateCommunityScreen() {
   const { t } = useTranslation()
   const router = useRouter()
-  const showSnackbar = useSnackbar()
+  const showError = useErrorSnackbar()
   const goToList = useGoToList()
   const { mutate, isPending } = useCreateCommunity()
 
@@ -50,8 +49,7 @@ export function CreateCommunityScreen() {
           }
           goToList()
         },
-        onError: (cause) =>
-          showSnackbar(cause instanceof OfflineError ? t('errors.offline') : t('errors.network')),
+        onError: (cause) => showError(cause),
       },
     )
   }

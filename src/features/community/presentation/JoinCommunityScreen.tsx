@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
 import { useSnackbar } from '../../../shared/hooks/use-snackbar'
-import { OfflineError } from '../../../shared/lib/network'
 import { Button } from '../../../shared/ui/Button'
 import { Input } from '../../../shared/ui/Input'
 import { normalizeJoinCode } from '../domain/join-code'
@@ -18,6 +18,7 @@ export function JoinCommunityScreen() {
   const { t } = useTranslation()
   const router = useRouter()
   const showSnackbar = useSnackbar()
+  const showError = useErrorSnackbar()
   const goToList = useGoToList()
   const { mutate, isPending } = useJoinCommunity()
 
@@ -67,8 +68,7 @@ export function JoinCommunityScreen() {
           }
           setJoinCodeError(t('community.errors.invalidJoinCode'))
         },
-        onError: (cause) =>
-          showSnackbar(cause instanceof OfflineError ? t('errors.offline') : t('errors.network')),
+        onError: (cause) => showError(cause),
       },
     )
   }

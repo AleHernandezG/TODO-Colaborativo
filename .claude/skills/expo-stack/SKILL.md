@@ -95,12 +95,66 @@ export type JoinCommunityResult =
 ```
 
 Las excepciones quedan para lo que no debería pasar nunca: se cayó la red, o el backend
-devolvió algo que no encaja con el contrato. Esas suben al `onError` de la mutación y acaban
-en un snackbar genérico.
+devolvió algo que no encaja con el contrato. Esas suben al `onError` de la mutación, se clasifican
+y acaban en un snackbar con su código (ver más abajo).
 
 Un estado que el adaptador no conoce **lanza**, no se ignora. Si una migración futura añade
 `community_full` y el adaptador lo deja pasar en silencio, la app dirá que entraste en una
 lista en la que no estás.
+
+## Errores: `data/` informa, `presentation/` traduce
+
+Razonado entero en [ADR-0016](../../../docs/adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-usuario.md).
+
+**Ningún fichero de `data/` escribe una frase para el usuario.** Todo `error` de Supabase se envuelve
+con `serverError(operation, error)`, de `src/shared/lib/errors.ts`:
+
+```ts
+const { data, error } = await supabase.rpc('join_community', { ... })
+if (error) {
+  throw serverError('join_community', error)
+}
+
+const result = data?.[0]
+if (!result) {
+  throw new ServerError('join_community', 'la RPC no devolvió ningún estado')
+}
+```
+
+`operation` es el nombre técnico de lo que falló (`join_community`, `items.insert`,
+`storage.upload`), y es lo que después aparece en el log. `serverError` saca el detalle del
+`message` o del `details` del error, y el código del `code`, del `statusCode` o del `status` HTTP, lo
+primero que exista.
+
+**Las pantallas no miran el error, lo pasan.**
+
+```ts
+const showError = useErrorSnackbar()
+
+mutate(input, {
+  onError: (cause) => showError(cause, t('items.errors.addFailed')),
+})
+```
+
+`useErrorSnackbar` clasifica con `describeFailure` en `offline`, `unreachable`, `timeout`, `rejected`
+o `unknown`, elige la clave de i18n, añade el código entre paréntesis si lo hay y lo saca por el
+snackbar. El segundo argumento es opcional y solo gana en `rejected` y `unknown`: cuando no hay red,
+«No se pudo añadir el artículo» tapa lo único que la persona puede arreglar.
+
+Para pintar el mensaje en línea en vez de en un snackbar, `useFailureMessage()` devuelve el texto.
+Ojo con llamarlo en el cuerpo del componente: clasifica **y registra**, así que va dentro de un
+`useMemo` guardado por `isError`, no suelto en cada render.
+
+```ts
+const failureMessage = useFailureMessage()
+const loadErrorMessage = useMemo(
+  () => (isError ? failureMessage(error, t('items.loadError')) : ''),
+  [isError, error, failureMessage, t],
+)
+```
+
+Lo que **no** pasa por aquí: los fallos de permisos y del selector de fotos
+(`use-pick-image.ts`). No vienen de un servidor y ya tienen sus propios mensajes.
 
 ## Dónde vive cada estado
 
@@ -696,9 +750,11 @@ Las pantallas no lo renderizan: piden un mensaje.
 
 ```ts
 const showSnackbar = useSnackbar()
-showSnackbar(t('errors.network'))
 showSnackbar(t('items.deleted'), { label: t('common.undo'), onPress: restore })
 ```
+
+Para un error no se usa directamente: se usa `useErrorSnackbar()`, que clasifica antes de elegir el
+texto.
 
 El estado vive en `src/shared/hooks/use-snackbar.ts` y el componente en
 `src/shared/ui/SnackbarHost.tsx`. Separados a propósito: así el único import de

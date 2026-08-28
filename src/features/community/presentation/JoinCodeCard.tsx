@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
+import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
 import { useSnackbar } from '../../../shared/hooks/use-snackbar'
-import { OfflineError } from '../../../shared/lib/network'
 import { copyToClipboard, shareText } from '../../../shared/lib/share'
 import { Button } from '../../../shared/ui/Button'
 import { Dialog } from '../../../shared/ui/Dialog'
@@ -19,6 +19,7 @@ type JoinCodeCardProps = {
 export function JoinCodeCard({ communityId, communityName }: JoinCodeCardProps) {
   const { t } = useTranslation()
   const showSnackbar = useSnackbar()
+  const showError = useErrorSnackbar()
   const { data, isLoading } = useJoinCode(communityId)
   const rotate = useRotateJoinCode(communityId)
   const [confirmingRotation, setConfirmingRotation] = useState(false)
@@ -43,8 +44,7 @@ export function JoinCodeCard({ communityId, communityName }: JoinCodeCardProps) 
     setConfirmingRotation(false)
     rotate.mutate(undefined, {
       onSuccess: () => showSnackbar(t('list.rotate.done')),
-      onError: (cause) =>
-        showSnackbar(cause instanceof OfflineError ? t('errors.offline') : t('list.rotate.failed')),
+      onError: (cause) => showError(cause, t('list.rotate.failed')),
     })
   }
 

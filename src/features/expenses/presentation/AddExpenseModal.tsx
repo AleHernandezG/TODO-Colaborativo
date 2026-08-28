@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
-import { useSnackbar } from '../../../shared/hooks/use-snackbar'
-import { OfflineError } from '../../../shared/lib/network'
+import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
 import { Checkbox } from '../../../shared/ui/Checkbox'
 import { Dialog } from '../../../shared/ui/Dialog'
 import { Input } from '../../../shared/ui/Input'
@@ -33,7 +32,7 @@ export function AddExpenseModal({
   onSuccess,
 }: Props) {
   const { t } = useTranslation()
-  const showSnackbar = useSnackbar()
+  const showError = useErrorSnackbar()
   const { mutate: createExpense, isPending } = useCreateExpense(communityId)
 
   const [description, setDescription] = useState(initialDescription)
@@ -41,7 +40,9 @@ export function AddExpenseModal({
     initialAmountCents ? (initialAmountCents / 100).toFixed(2).replace('.', ',') : '',
   )
   const selfMember = members.find((m) => m.isSelf)
-  const [paidByMemberId, setPaidByMemberId] = useState<string>(selfMember?.id ?? members[0]?.id ?? '')
+  const [paidByMemberId, setPaidByMemberId] = useState<string>(
+    selfMember?.id ?? members[0]?.id ?? '',
+  )
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(members.map((m) => m.id))
 
   const [descriptionError, setDescriptionError] = useState<string | null>(null)
@@ -109,7 +110,7 @@ export function AddExpenseModal({
           onSuccess?.()
         },
         onError: (cause) => {
-          showSnackbar(cause instanceof OfflineError ? t('errors.offline') : t('errors.network'))
+          showError(cause)
         },
       },
     )

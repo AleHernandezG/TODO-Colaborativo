@@ -414,21 +414,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_community:
-        | {
-            Args: { p_name: string; p_username: string }
-            Returns: {
-              community_id: string
-              join_code: string
-            }[]
-          }
-        | {
-            Args: { p_name: string; p_pin?: string; p_username: string }
-            Returns: {
-              community_id: string
-              join_code: string
-            }[]
-          }
+      create_community: {
+        Args: { p_name: string; p_pin?: string; p_username: string }
+        Returns: {
+          community_id: string
+          join_code: string
+        }[]
+      }
       create_expense_with_shares: {
         Args: {
           p_amount_cents: number
@@ -443,21 +435,13 @@ export type Database = {
       current_member_id: { Args: { p_community_id: string }; Returns: string }
       generate_join_code: { Args: never; Returns: string }
       join_code_lifetime: { Args: never; Returns: string }
-      join_community:
-        | {
-            Args: { p_join_code: string; p_username: string }
-            Returns: {
-              community_id: string
-              status: string
-            }[]
-          }
-        | {
-            Args: { p_join_code: string; p_pin?: string; p_username: string }
-            Returns: {
-              community_id: string
-              status: string
-            }[]
-          }
+      join_community: {
+        Args: { p_join_code: string; p_pin?: string; p_username: string }
+        Returns: {
+          community_id: string
+          status: string
+        }[]
+      }
       member_community_ids: { Args: never; Returns: string[] }
       ping: { Args: never; Returns: string }
       rotate_join_code: {

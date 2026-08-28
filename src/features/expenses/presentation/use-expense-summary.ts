@@ -16,12 +16,21 @@ export type ExpenseSummary = {
 }
 
 export function useExpenseSummary(communityId: string | null | undefined): ExpenseSummary {
-  const { data: members = [], isLoading: loadingMembers, isError: errorMembers } =
-    useCommunityMembers(communityId)
-  const { data: expenses = [], isLoading: loadingExpenses, isError: errorExpenses } =
-    useExpenses(communityId)
-  const { data: settlements = [], isLoading: loadingSettlements, isError: errorSettlements } =
-    useSettlements(communityId)
+  const {
+    data: members = [],
+    isLoading: loadingMembers,
+    isError: errorMembers,
+  } = useCommunityMembers(communityId)
+  const {
+    data: expenses = [],
+    isLoading: loadingExpenses,
+    isError: errorExpenses,
+  } = useExpenses(communityId)
+  const {
+    data: settlements = [],
+    isLoading: loadingSettlements,
+    isError: errorSettlements,
+  } = useSettlements(communityId)
 
   const isLoading = loadingMembers || loadingExpenses || loadingSettlements
   const isError = errorMembers || errorExpenses || errorSettlements

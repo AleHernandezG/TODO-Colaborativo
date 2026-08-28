@@ -110,7 +110,7 @@ describe('supabaseCatalogRepository.search', () => {
     rpc.mockResolvedValue({ data: null, error: { message: 'function does not exist' } })
 
     await expect(supabaseCatalogRepository.search(input)).rejects.toThrow(
-      'No se pudo buscar en el catálogo: function does not exist',
+      'search_catalog: function does not exist',
     )
   })
 
@@ -162,7 +162,7 @@ describe('supabaseCatalogRepository.byIds', () => {
     mockByIds(null, { message: 'permission denied' })
 
     await expect(supabaseCatalogRepository.byIds(['prod-1'])).rejects.toThrow(
-      'No se pudieron cargar los productos del catálogo: permission denied',
+      'catalog_products.select: permission denied',
     )
   })
 

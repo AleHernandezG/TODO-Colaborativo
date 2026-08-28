@@ -422,6 +422,28 @@ async function main() {
     `HTTP ${settlementA.status}`,
   )
 
+  const tokenLegacy = await signInAnonymously()
+  const legacyCreate = await rpc(tokenLegacy, 'create_community', {
+    p_name: `rls-test-legacy-${stamp}`,
+    p_username: 'legacy',
+  })
+  const communityLegacy = legacyCreate.body?.[0]?.community_id ?? null
+  check(
+    'create_community responde a un cliente antiguo que no manda p_pin',
+    legacyCreate.status === 200 && Boolean(communityLegacy),
+    communityLegacy ?? `HTTP ${legacyCreate.status} ${JSON.stringify(legacyCreate.body)}`,
+  )
+
+  const legacyJoin = await rpc(tokenLegacy, 'join_community', {
+    p_join_code: 'ZZZ-9999',
+    p_username: 'legacy',
+  })
+  check(
+    'join_community responde a un cliente antiguo que no manda p_pin',
+    legacyJoin.status === 200 && legacyJoin.body?.[0]?.status === 'invalid_join_code',
+    legacyJoin.body?.[0]?.status ?? `HTTP ${legacyJoin.status} ${JSON.stringify(legacyJoin.body)}`,
+  )
+
   const badCode = await rpc(tokenA, 'join_community', {
     p_join_code: 'ZZZ-9999',
     p_username: 'ana',
@@ -540,7 +562,10 @@ async function main() {
     console.log('Sin SUPABASE_SECRET_KEY: no se comprueba la caducidad del código.')
   }
 
-  await cleanup([communityA, communityB], [imagePathB, imagePathIntruso])
+  await cleanup([communityA, communityB, communityLegacy].filter(Boolean), [
+    imagePathB,
+    imagePathIntruso,
+  ])
 
   const failed = results.filter((r) => !r.passed)
   console.log(`\n${results.length - failed.length}/${results.length} comprobaciones correctas`)

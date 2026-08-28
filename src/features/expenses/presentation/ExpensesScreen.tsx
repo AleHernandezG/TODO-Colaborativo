@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { useSnackbar } from '../../../shared/hooks/use-snackbar'
-import { OfflineError } from '../../../shared/lib/network'
+import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
 import { Button } from '../../../shared/ui/Button'
 import { useActiveCommunityStore } from '../../community/presentation/active-community-store'
 import { useCommunityMembers } from '../../community/presentation/use-community-members'
@@ -24,7 +23,7 @@ import { useSettlements } from './use-settlements'
 export function ExpensesScreen() {
   const { t } = useTranslation()
   const router = useRouter()
-  const showSnackbar = useSnackbar()
+  const showError = useErrorSnackbar()
   const membership = useActiveCommunityStore((state) => state.membership)
   const communityId = membership?.community.id
 
@@ -42,7 +41,7 @@ export function ExpensesScreen() {
   const handleDeleteExpense = (expenseId: string) => {
     deleteExpense(expenseId, {
       onError: (cause) => {
-        showSnackbar(cause instanceof OfflineError ? t('errors.offline') : t('errors.network'))
+        showError(cause)
       },
     })
   }
@@ -50,7 +49,7 @@ export function ExpensesScreen() {
   const handleDeleteSettlement = (settlementId: string) => {
     deleteSettlement(settlementId, {
       onError: (cause) => {
-        showSnackbar(cause instanceof OfflineError ? t('errors.offline') : t('errors.network'))
+        showError(cause)
       },
     })
   }

@@ -173,10 +173,11 @@
   },
   "errors": {
     "offline": "No tienes conexión. Conéctate y vuelve a intentarlo.",
-    "network": "No se pudo conectar con el servidor. Revisa la conexión y vuelve a intentarlo.",
-    "syncFailed": "No se pudo guardar. Lo intentamos otra vez al recuperar la conexión.",
-    "invalidJoinCode": "Ese código no existe. Revísalo y vuelve a intentarlo.",
-    "usernameTaken": "Ese nombre ya está cogido en esta lista. Prueba con otro."
+    "unreachable": "No se pudo hablar con el servidor. Revisa la conexión y vuelve a intentarlo.",
+    "timeout": "El servidor ha tardado demasiado en responder. Vuelve a intentarlo.",
+    "rejected": "El servidor ha rechazado la operación. Vuelve a intentarlo.",
+    "unknown": "Algo ha ido mal. Vuelve a intentarlo.",
+    "withCode": "{{message}} ({{code}})"
   },
   "build": {
     "embedded": "v{{version}} · base",

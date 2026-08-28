@@ -169,7 +169,7 @@ Unirse tiene un problema de huevo y gallina. Para validar un `join_code` hay que
 función `security definer` que hace la comprobación por dentro y devuelve lo justo:
 
 ```sql
-create or replace function join_community(p_join_code text, p_username text)
+create or replace function join_community(p_join_code text, p_username text, p_pin text default null)
 returns table (status text, community_id uuid)
 language plpgsql security definer set search_path = public as $$
 #variable_conflict use_column
@@ -219,6 +219,46 @@ unicidad en la misma transacción que inserta. Generarlo en el cliente admite co
 Consecuencia de todo esto: **`communities` y `members` no tienen política de insert, update ni
 delete.** Si necesitas escribir en ellas, la respuesta casi siempre es una RPC nueva, no una
 política nueva. Ver `supabase/migrations/` para el SQL vigente.
+
+### Cambiar la firma de una función expuesta por PostgREST
+
+**`create or replace function` con un parámetro nuevo no reemplaza nada: crea otra función.** La
+firma forma parte de la identidad de la función en Postgres, así que `join_community(text, text)` y
+`join_community(text, text, text)` son dos funciones distintas y las dos quedan vivas.
+
+Un `default null` en el parámetro nuevo hace que la de tres argumentos pueda atender llamadas de dos,
+y ahí está la trampa: entonces hay **dos candidatas** para la misma llamada, PostgREST no elige y
+devuelve `PGRST203` con `Could not choose the best candidate function between...`. Todo cliente que no
+mande el parámetro nuevo deja de funcionar de golpe: la versión anterior de la app instalada en un
+móvil, un script, cualquier cosa.
+
+Pasó el 2026-08-24 con el PIN y estuvo cuatro días roto. Ni `db push` ni `gen types` ni la app dan
+ningún aviso; `gen types` incluso lo deja a la vista, con las dos firmas unidas en un tipo `|`, y
+compila igual.
+
+Así que **la migración que cambia la firma borra la anterior en el mismo fichero**:
+
+```sql
+create or replace function join_community(p_join_code text, p_username text, p_pin text default null)
+returns table (status text, community_id uuid)
+language plpgsql security definer set search_path = public as $$
+  ...
+$$;
+
+drop function if exists join_community(text, text);
+```
+
+Y con ella se revisan los `grant` y los `revoke`, que también van por firma: los de la función vieja
+se van con ella, los de la nueva hay que escribirlos.
+
+Dos formas de verlo antes de que lo vea el usuario:
+
+```sql
+select oid::regprocedure from pg_proc where proname = 'join_community';
+```
+
+y una comprobación en `scripts/rls-isolation-test.mjs` que llame a la RPC **sin** el parámetro nuevo y
+exija que resuelva. Las dos que hay (`create_community` y `join_community`) están ahí por esto.
 
 ## Permisos de las funciones
 
@@ -543,13 +583,17 @@ cruzada de artículos, de comunidad y de miembros, insert en comunidad ajena, up
 artículo ajeno, e intento de robarlo moviéndole el `community_id`. Todo debe dar cero filas o
 error.
 
-Tres de las 27 comprobaciones van al revés y son las del catálogo: ahí lo que se afirma es que un
+Tres de las 37 comprobaciones van al revés y son las del catálogo: ahí lo que se afirma es que un
 miembro **sí** lee una tabla que no es de su comunidad, que sin sesión no la lee nadie, y que con
 sesión de usuario no se puede escribir en ella.
 
 Se hace así, y no simulando un usuario con `set local request.jwt.claims` en el editor SQL,
 porque esa vía prueba las políticas pero se salta PostgREST. Puede dar verde mientras la app
 falla, que es exactamente el fallo que no quieres tener.
+
+Otras dos llaman a `create_community` y a `join_community` **sin `p_pin`**, imitando a un cliente
+anterior al PIN. No prueban RLS: prueban que la RPC sigue resolviendo para quien no ha actualizado la
+app. Están ahí desde el `PGRST203` del 2026-08-24.
 
 Ejecútalo después de **cualquier** cambio en políticas o RPCs, no solo al final de la fase.
 El resultado se registra en `docs/phases/fase-N.md`.
@@ -591,6 +635,14 @@ npx supabase gen types typescript --linked | Out-File -Encoding utf8 src/shared/
 ```
 
 Si sospechas, los dos primeros bytes lo cantan: `ff fe` es UTF-16LE.
+
+**`gen types` no sabe qué argumento de una RPC acepta `null`.** Declara `p_item_id: string` en
+`create_expense_with_shares` aunque `expenses.item_id` sea nullable, así que pasar `null` no compila.
+Se arregla en el sitio que llama, `(input.itemId ?? null) as unknown as string`, nunca editando
+`db.types.ts`, que se sobreescribe entero en la siguiente generación. Y el `?? null` importa: sin él
+el argumento sale como `undefined`, `JSON.stringify` lo quita del cuerpo y PostgREST responde que la
+función no existe. Es el mismo agujero que con `returns table`, donde jura que ninguna columna es
+nula y en `search_catalog` lo son cinco.
 
 Estos tipos son los de las filas de Postgres y se quedan en `data/`. El dominio tiene sus
 propias entidades; el adaptador traduce entre ambos. Si `Database['public']['Tables']`

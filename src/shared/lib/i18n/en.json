@@ -173,10 +173,11 @@
   },
   "errors": {
     "offline": "You have no connection. Get online and try again.",
-    "network": "Couldn't reach the server. Check your connection and try again.",
-    "syncFailed": "Couldn't save it. We'll try again once the connection is back.",
-    "invalidJoinCode": "That code doesn't exist. Check it and try again.",
-    "usernameTaken": "That name is already taken in this list. Try another one."
+    "unreachable": "Couldn't reach the server. Check your connection and try again.",
+    "timeout": "The server took too long to answer. Try again.",
+    "rejected": "The server refused the operation. Try again.",
+    "unknown": "Something went wrong. Try again.",
+    "withCode": "{{message}} ({{code}})"
   },
   "build": {
     "embedded": "v{{version}} · base",

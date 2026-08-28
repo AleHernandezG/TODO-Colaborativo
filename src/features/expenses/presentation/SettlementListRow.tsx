@@ -17,7 +17,9 @@ export function SettlementListRow({ settlement, members, onDelete }: Props) {
   const from = members.find((m) => m.id === settlement.fromMemberId)
   const to = members.find((m) => m.id === settlement.toMemberId)
 
-  const fromName = from?.isSelf ? t('expenses.you') : (from?.username ?? t('expenses.unknownMember'))
+  const fromName = from?.isSelf
+    ? t('expenses.you')
+    : (from?.username ?? t('expenses.unknownMember'))
   const toName = to?.isSelf ? t('expenses.you') : (to?.username ?? t('expenses.unknownMember'))
 
   return (

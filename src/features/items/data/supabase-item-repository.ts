@@ -1,3 +1,4 @@
+import { ServerError, serverError } from '../../../shared/lib/errors'
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
 import type { Item } from '../domain/item'
@@ -41,7 +42,7 @@ export const supabaseItemRepository: ItemRepository = {
       .order('created_at', { ascending: false })
 
     if (error) {
-      throw new Error(`No se pudieron cargar los artículos: ${error.message}`)
+      throw serverError('items.select', error)
     }
 
     return (data ?? []).map(toItem)
@@ -68,11 +69,14 @@ export const supabaseItemRepository: ItemRepository = {
       if (existing) {
         return toItem(existing)
       }
-      throw new Error(`El artículo ${id} ya se había añadido y ya no está en la lista`)
+      throw new ServerError(
+        'items.insert',
+        `el artículo ${id} ya se había añadido y ya no está en la lista`,
+      )
     }
 
     if (error) {
-      throw new Error(`No se pudo añadir el artículo: ${error.message}`)
+      throw serverError('items.insert', error)
     }
 
     return toItem(data)
@@ -89,7 +93,7 @@ export const supabaseItemRepository: ItemRepository = {
     const { error } = await supabase.from('items').update(patch).eq('id', itemId)
 
     if (error) {
-      throw new Error(`No se pudo editar el artículo: ${error.message}`)
+      throw serverError('items.update', error)
     }
   },
 
@@ -102,7 +106,7 @@ export const supabaseItemRepository: ItemRepository = {
       .eq('id', itemId)
 
     if (error) {
-      throw new Error(`No se pudo actualizar el artículo: ${error.message}`)
+      throw serverError('items.updatePurchased', error)
     }
   },
 
@@ -112,7 +116,7 @@ export const supabaseItemRepository: ItemRepository = {
     const { error } = await supabase.from('items').delete().eq('id', itemId)
 
     if (error) {
-      throw new Error(`No se pudo borrar el artículo: ${error.message}`)
+      throw serverError('items.delete', error)
     }
   },
 
@@ -127,7 +131,7 @@ export const supabaseItemRepository: ItemRepository = {
       .upload(path, body, { contentType: 'image/jpeg', upsert: true })
 
     if (error) {
-      throw new Error(`No se pudo subir la foto: ${error.message}`)
+      throw serverError('storage.upload', error)
     }
 
     return path
@@ -139,7 +143,7 @@ export const supabaseItemRepository: ItemRepository = {
     const { error } = await supabase.storage.from(imagesBucket).remove([path])
 
     if (error) {
-      throw new Error(`No se pudo borrar la foto: ${error.message}`)
+      throw serverError('storage.remove', error)
     }
   },
 
@@ -151,7 +155,9 @@ export const supabaseItemRepository: ItemRepository = {
       .createSignedUrl(path, imageUrlTtlSeconds)
 
     if (error || !data) {
-      throw new Error(`No se pudo abrir la foto: ${error?.message ?? 'sin respuesta'}`)
+      throw error
+        ? serverError('storage.sign', error)
+        : new ServerError('storage.sign', 'sin respuesta')
     }
 
     return data.signedUrl

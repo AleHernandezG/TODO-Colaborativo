@@ -108,6 +108,22 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
     puede adivinar (el `join_code` de `create_community`). Ahí el botón se queda en carga y se
     espera. Si dudas, la mutación sí puede ser optimista. Razonado en `docs/phases/fase-1.md`.
 
+## Reglas de errores
+
+- **`data/` no escribe mensajes para el usuario.** Todo error de Supabase se envuelve con
+  `serverError('<operacion>', error)` (`src/shared/lib/errors.ts`), que guarda la operación, el
+  detalle del servidor y el código. Lo que no viene de un error se lanza como
+  `new ServerError('<operacion>', '<qué faltaba>')`.
+- **`presentation/` no mira el error, lo pasa**: `showError(cause)` de `useErrorSnackbar()`, o
+  `useFailureMessage()` si el texto se pinta en línea. Ese hook clasifica en `offline`, `unreachable`,
+  `timeout`, `rejected` o `unknown` y elige la clave de i18n. **Nunca vuelvas a escribir
+  `cause instanceof OfflineError ? ... : t('errors.network')`**: esa clave ya no existe y ese ternario
+  es lo que disfrazó un error de esquema como un fallo de cobertura durante cuatro días.
+- **El código de error se le enseña al usuario**, entre paréntesis. Una captura de pantalla tiene que
+  valer como diagnóstico.
+
+Razonado en [ADR-0016](docs/adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-usuario.md).
+
 ## Reglas de UX y accesibilidad (no negociables)
 
 - Pensado para **usuario novato**: una acción principal grande y evidente por pantalla; feedback inmediato; **"deshacer"** tras borrar; valores por defecto sensatos (cantidad = 1).
@@ -143,6 +159,12 @@ el esquema cueste mucho más que equivocarse en una pantalla, así que el orden 
    - Lo que escribe varias tablas a la vez va en una RPC transaccional, no en tres llamadas
      desde el móvil.
    - Índice en toda columna por la que se filtre o se haga join.
+   - **Cambiar la firma de una función que expone PostgREST lleva el `drop function` de la firma
+     anterior en la misma migración.** Un `create or replace` que añade un parámetro no reemplaza:
+     crea otra sobrecarga, y con dos candidatas PostgREST devuelve `PGRST203` a todo cliente que no
+     mande el parámetro nuevo, incluida la versión de la app que ya está instalada en un móvil. Pasó
+     el 2026-08-24 con `p_pin` y tuvo la app cuatro días sin poder unirse a ninguna lista. Detalle en
+     la skill `supabase-data` y en `docs/phases/fase-6.md` (B.6).
    - La lógica de negocio vive en `domain/`, no en SQL. Postgres guarda e impone reglas de
      integridad; los algoritmos se prueban con Jest.
 3. **Documenta el porqué** donde toque: ADR nuevo si cambia el modelo de datos o la seguridad;
@@ -288,6 +310,12 @@ RF-8 (PDF), RF-9 (reparto de gastos) y RF-10 (catálogo de productos de supermer
 El requisito de entrada del reparto de gastos ([ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md), identidad no suplantable)
 quedó resuelto el 2026-08-24 con el PIN por miembro ([ADR-0015](docs/adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md)).
 
+**RF-9 está escrito, no terminado.** El bloque B de la Fase 6 tiene esquema, RPC transaccional,
+balances y liquidación mínima en `domain/` y su pantalla, pero **no cumple cuatro reglas duras de este
+fichero**: sus mutaciones no son optimistas, borrar un gasto no se puede deshacer, no hay suscripción
+a Realtime y no se puede encolar sin conexión. Está listado en `docs/phases/fase-6.md` (B.5) y es lo
+siguiente que hay que hacer en la fase. Tampoco se ha visto nunca en un móvil.
+
 El catálogo (RF-10, [ADR-0012](docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md)) es el
 bloque A de la Fase 6 y **está en Aceptado desde el 2026-08-07**: la fuente la eligió el usuario con
 la medición delante y es el dataset público de Mercadona en Hugging Face, un solo supermercado, con
@@ -300,7 +328,7 @@ La búsqueda funciona de punta a punta desde el 2026-08-16: el ranking en
 corrección aplicada, y el puerto y el adaptador en `src/features/catalog/`. **Las sugerencias salen
 bajo el campo de añadir y su foto llega al artículo** (`catalog/presentation/`), probado en Jest y
 **verificado en el Android real el 2026-08-24** con todos los flujos pasando limpios. El precio se guarda enlazado pero **no se
-pinta en la lista**; su consumidor es RF-9, que no ha empezado. Dos trampas de esa
+pinta en la lista**; su consumidor es RF-9, ya escrito. Dos trampas de esa
 búsqueda están contadas en el diario de la fase y conviene leerlas antes de tocarla: **el
 `word_similarity` de Postgres satura a 1** (sirve para filtrar, nunca para ordenar) y **`gen types`
 no sabe inferir la nulabilidad de un `returns table`**, así que jura que `brand`, `image_url`,
@@ -351,8 +379,8 @@ npx expo start
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
 # Aislamiento entre comunidades (RLS + Storage + rotación del código), y lectura y búsqueda del
-# catálogo, que es la única tabla compartida. Debe dar 29/29
-# (28/28 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
+# catálogo, que es la única tabla compartida. Debe dar 37/37
+# (36/37 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
 npm run test:rls
 
 # Realtime: eventos, filtro por comunidad, aislamiento y presencia. Debe dar 12/12

@@ -11,6 +11,7 @@ if (!url || !anonKey) {
 }
 
 const results = []
+const testPin = '1234'
 
 function check(name, passed, detail = '') {
   results.push({ name, passed, detail })
@@ -142,10 +143,12 @@ async function main() {
   const { data: createdA, error: errorA } = await clientA.rpc('create_community', {
     p_name: `rt-test-A-${stamp}`,
     p_username: 'ana',
+    p_pin: testPin,
   })
   const { data: createdB, error: errorB } = await clientB.rpc('create_community', {
     p_name: `rt-test-B-${stamp}`,
     p_username: 'bruno',
+    p_pin: testPin,
   })
 
   if (errorA || errorB) {
@@ -242,6 +245,7 @@ async function main() {
   const { data: joined, error: joinError } = await clientC.rpc('join_community', {
     p_join_code: createdA[0].join_code,
     p_username: 'carla',
+    p_pin: testPin,
   })
 
   if (joinError || joined[0].status !== 'ok') {

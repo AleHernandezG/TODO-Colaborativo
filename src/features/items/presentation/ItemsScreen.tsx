@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, RefreshControl, SectionList, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { useFailureMessage } from '../../../shared/hooks/use-failure-message'
 import { useSyncStatus } from '../../../shared/hooks/use-sync-status'
-import { OfflineError } from '../../../shared/lib/network'
 import { BuildTag } from '../../../shared/ui/BuildTag'
 import { Button } from '../../../shared/ui/Button'
 import type { CatalogProductsById } from '../../catalog/domain/catalog-products-by-id'
@@ -63,6 +63,7 @@ function ItemsView({ community, username }: { community: Community; username: st
     refetch,
   } = useItems(community.id)
   const { online, pendingChanges } = useSyncStatus()
+  const failureMessage = useFailureMessage()
   const addItem = useAddItem(community.id)
   const togglePurchased = useTogglePurchased(community.id)
   const editItem = useEditItem(community.id)
@@ -94,8 +95,10 @@ function ItemsView({ community, username }: { community: Community; username: st
     return { sections: result, allDone: all.length > 0 && pending.length === 0 }
   }, [items, t])
 
-  const loadErrorMessage =
-    error instanceof OfflineError ? t('errors.offline') : t('items.loadError')
+  const loadErrorMessage = useMemo(
+    () => (isError ? failureMessage(error, t('items.loadError')) : ''),
+    [isError, error, failureMessage, t],
+  )
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
@@ -141,7 +144,7 @@ function ItemsView({ community, username }: { community: Community; username: st
               </View>
               <Button
                 label={t('expenses.screenTitle')}
-                onPress={() => router.push('/expenses' as any)}
+                onPress={() => router.push('/expenses')}
                 variant="secondary"
                 size="sm"
               />

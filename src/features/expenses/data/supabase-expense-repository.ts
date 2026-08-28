@@ -1,3 +1,4 @@
+import { ServerError, serverError } from '../../../shared/lib/errors'
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
 import type { Expense, Settlement } from '../domain/expense'
@@ -75,7 +76,8 @@ export const supabaseExpenseRepository: ExpenseRepository = {
   async listExpenses(communityId: string): Promise<Expense[]> {
     await assertOnline()
 
-    const { data, error } = await (supabase.from as any)('expenses')
+    const { data, error } = await supabase
+      .from('expenses')
       .select(
         'id, community_id, item_id, paid_by_member_id, created_by_auth_user_id, amount_cents, currency, description, created_at, updated_at, shares:expense_shares(id, expense_id, member_id, share_cents)',
       )
@@ -83,18 +85,18 @@ export const supabaseExpenseRepository: ExpenseRepository = {
       .order('created_at', { ascending: false })
 
     if (error) {
-      throw new Error(`No se pudieron cargar los gastos: ${error.message}`)
+      throw serverError('expenses.select', error)
     }
 
-    return ((data as unknown as ExpenseRow[]) ?? []).map(mapExpenseRow)
+    return (data ?? []).map(mapExpenseRow)
   },
 
   async createExpense(input: CreateExpenseInput): Promise<Expense> {
     await assertOnline()
 
-    const { data, error } = await (supabase.rpc as any)('create_expense_with_shares', {
+    const { data, error } = await supabase.rpc('create_expense_with_shares', {
       p_community_id: input.communityId,
-      p_item_id: input.itemId ?? null,
+      p_item_id: (input.itemId ?? null) as unknown as string,
       p_paid_by_member_id: input.paidByMemberId,
       p_amount_cents: input.amountCents,
       p_description: input.description,
@@ -105,13 +107,13 @@ export const supabaseExpenseRepository: ExpenseRepository = {
     })
 
     if (error) {
-      throw new Error(`No se pudo registrar el gasto: ${error.message}`)
+      throw serverError('create_expense_with_shares', error)
     }
 
-    const expenseId = data as unknown as string
+    const expenseId = data
 
-    // Leer el gasto completo recién creado
-    const { data: createdRow, error: readError } = await (supabase.from as any)('expenses')
+    const { data: createdRow, error: readError } = await supabase
+      .from('expenses')
       .select(
         'id, community_id, item_id, paid_by_member_id, created_by_auth_user_id, amount_cents, currency, description, created_at, updated_at, shares:expense_shares(id, expense_id, member_id, share_cents)',
       )
@@ -119,28 +121,29 @@ export const supabaseExpenseRepository: ExpenseRepository = {
       .single()
 
     if (readError || !createdRow) {
-      throw new Error(
-        `El gasto se registró pero no se pudo leer: ${readError?.message ?? 'sin datos'}`,
-      )
+      throw readError
+        ? serverError('expenses.selectCreated', readError)
+        : new ServerError('expenses.selectCreated', 'sin datos')
     }
 
-    return mapExpenseRow(createdRow as unknown as ExpenseRow)
+    return mapExpenseRow(createdRow)
   },
 
   async deleteExpense(expenseId: string): Promise<void> {
     await assertOnline()
 
-    const { error } = await (supabase.from as any)('expenses').delete().eq('id', expenseId)
+    const { error } = await supabase.from('expenses').delete().eq('id', expenseId)
 
     if (error) {
-      throw new Error(`No se pudo eliminar el gasto: ${error.message}`)
+      throw serverError('expenses.delete', error)
     }
   },
 
   async listSettlements(communityId: string): Promise<Settlement[]> {
     await assertOnline()
 
-    const { data, error } = await (supabase.from as any)('settlements')
+    const { data, error } = await supabase
+      .from('settlements')
       .select(
         'id, community_id, from_member_id, to_member_id, amount_cents, currency, created_by_auth_user_id, created_at',
       )
@@ -148,16 +151,17 @@ export const supabaseExpenseRepository: ExpenseRepository = {
       .order('created_at', { ascending: false })
 
     if (error) {
-      throw new Error(`No se pudieron cargar las liquidaciones: ${error.message}`)
+      throw serverError('settlements.select', error)
     }
 
-    return ((data as unknown as SettlementRow[]) ?? []).map(mapSettlementRow)
+    return (data ?? []).map(mapSettlementRow)
   },
 
   async createSettlement(input: CreateSettlementInput): Promise<Settlement> {
     await assertOnline()
 
-    const { data, error } = await (supabase.from as any)('settlements')
+    const { data, error } = await supabase
+      .from('settlements')
       .insert({
         community_id: input.communityId,
         from_member_id: input.fromMemberId,
@@ -171,19 +175,21 @@ export const supabaseExpenseRepository: ExpenseRepository = {
       .single()
 
     if (error || !data) {
-      throw new Error(`No se pudo registrar la liquidación: ${error?.message ?? 'sin datos'}`)
+      throw error
+        ? serverError('settlements.insert', error)
+        : new ServerError('settlements.insert', 'sin datos')
     }
 
-    return mapSettlementRow(data as unknown as SettlementRow)
+    return mapSettlementRow(data)
   },
 
   async deleteSettlement(settlementId: string): Promise<void> {
     await assertOnline()
 
-    const { error } = await (supabase.from as any)('settlements').delete().eq('id', settlementId)
+    const { error } = await supabase.from('settlements').delete().eq('id', settlementId)
 
     if (error) {
-      throw new Error(`No se pudo eliminar la liquidación: ${error.message}`)
+      throw serverError('settlements.delete', error)
     }
   },
 }

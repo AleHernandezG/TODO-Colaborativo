@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
-import { useSnackbar } from '../../../shared/hooks/use-snackbar'
-import { OfflineError } from '../../../shared/lib/network'
+import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
 import { randomUuid } from '../../../shared/lib/uuid'
 import type { AddItemResult } from '../domain/add-item'
 import type { Item } from '../domain/item'
@@ -15,7 +14,7 @@ type MutationContext = { previous: Item[] | undefined }
 
 export function useAddItem(communityId: string) {
   const queryClient = useQueryClient()
-  const showSnackbar = useSnackbar()
+  const showError = useErrorSnackbar()
   const { t } = useTranslation()
   const key = itemsKey(communityId)
 
@@ -40,9 +39,7 @@ export function useAddItem(communityId: string) {
     },
     onError: (error, _input, context) => {
       queryClient.setQueryData<Item[]>(key, context?.previous ?? [])
-      showSnackbar(
-        error instanceof OfflineError ? t('errors.offline') : t('items.errors.addFailed'),
-      )
+      showError(error, t('items.errors.addFailed'))
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key })

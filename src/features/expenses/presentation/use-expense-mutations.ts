@@ -33,8 +33,7 @@ export function useCreateSettlement(communityId: string | null | undefined) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: CreateSettlementInput) =>
-      supabaseExpenseRepository.createSettlement(input),
+    mutationFn: (input: CreateSettlementInput) => supabaseExpenseRepository.createSettlement(input),
     onSuccess: () => {
       if (communityId) {
         queryClient.invalidateQueries({ queryKey: ['settlements', communityId] })

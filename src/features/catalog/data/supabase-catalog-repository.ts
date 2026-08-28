@@ -1,3 +1,4 @@
+import { serverError } from '../../../shared/lib/errors'
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
 import type { CatalogCandidate, CatalogProduct } from '../domain/catalog-product'
@@ -53,7 +54,7 @@ export const supabaseCatalogRepository: CatalogRepository = {
     })
 
     if (error) {
-      throw new Error(`No se pudo buscar en el catálogo: ${error.message}`)
+      throw serverError('search_catalog', error)
     }
 
     const rows: SearchRow[] = data ?? []
@@ -70,7 +71,7 @@ export const supabaseCatalogRepository: CatalogRepository = {
     const { data, error } = await supabase.from('catalog_products').select(columns).in('id', ids)
 
     if (error) {
-      throw new Error(`No se pudieron cargar los productos del catálogo: ${error.message}`)
+      throw serverError('catalog_products.select', error)
     }
 
     return (data ?? []).map(toProduct)

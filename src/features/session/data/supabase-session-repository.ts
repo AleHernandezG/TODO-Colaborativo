@@ -1,3 +1,4 @@
+import { ServerError, serverError } from '../../../shared/lib/errors'
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
 import { SessionError } from '../domain/session-error'
@@ -9,7 +10,7 @@ export const supabaseSessionRepository: SessionRepository = {
 
     const { data, error } = await supabase.auth.getSession()
     if (error) {
-      throw new Error(`No se pudo leer la sesión guardada: ${error.message}`)
+      throw serverError('auth.getSession', error)
     }
     const userId = data.session?.user.id
     return userId ? { userId } : null
@@ -26,10 +27,10 @@ export const supabaseSessionRepository: SessionRepository = {
           'Las sesiones anónimas están desactivadas en Supabase. Actívalas en Authentication > Sign In / Providers > User Signups.',
         )
       }
-      throw new Error(`No se pudo crear la sesión anónima: ${error.message}`)
+      throw serverError('auth.signInAnonymously', error)
     }
     if (!data.user) {
-      throw new Error('Supabase devolvió una sesión anónima sin usuario.')
+      throw new ServerError('auth.signInAnonymously', 'sesión anónima sin usuario')
     }
     return { userId: data.user.id }
   },

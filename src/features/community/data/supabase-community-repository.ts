@@ -1,3 +1,4 @@
+import { ServerError, serverError } from '../../../shared/lib/errors'
 import { assertOnline } from '../../../shared/lib/network'
 import { supabase } from '../../../shared/lib/supabase'
 import type { Community, JoinCodeInfo } from '../domain/community'
@@ -30,7 +31,7 @@ async function readCommunity(id: string): Promise<Community> {
     .single()
 
   if (error) {
-    throw new Error(`Entraste en la lista pero no se pudo leer: ${error.message}`)
+    throw serverError('communities.select', error)
   }
 
   return { id: data.id, name: data.name, joinCode: data.join_code }
@@ -47,12 +48,12 @@ export const supabaseCommunityRepository: CommunityRepository = {
     })
 
     if (error) {
-      throw new Error(`No se pudo crear la lista: ${error.message}`)
+      throw serverError('create_community', error)
     }
 
     const created = data?.[0]
     if (!created) {
-      throw new Error('create_community no devolvió la comunidad creada.')
+      throw new ServerError('create_community', 'la RPC no devolvió la comunidad creada')
     }
 
     return {
@@ -71,12 +72,12 @@ export const supabaseCommunityRepository: CommunityRepository = {
     })
 
     if (error) {
-      throw new Error(`No se pudo entrar en la lista: ${error.message}`)
+      throw serverError('join_community', error)
     }
 
     const result = data?.[0]
     if (!result) {
-      throw new Error('join_community no devolvió ningún estado.')
+      throw new ServerError('join_community', 'la RPC no devolvió ningún estado')
     }
 
     if (isFailedJoinStatus(result.status)) {
@@ -87,7 +88,7 @@ export const supabaseCommunityRepository: CommunityRepository = {
     }
 
     if (result.status !== 'ok' || !result.community_id) {
-      throw new Error(`join_community devolvió un estado desconocido: ${result.status}`)
+      throw new ServerError('join_community', `estado desconocido: ${result.status}`)
     }
 
     return {
@@ -106,7 +107,7 @@ export const supabaseCommunityRepository: CommunityRepository = {
       .single()
 
     if (error) {
-      throw new Error(`No se pudo leer el código de invitación: ${error.message}`)
+      throw serverError('communities.selectJoinCode', error)
     }
 
     return { code: data.join_code, expiresAt: data.join_code_expires_at }
@@ -120,12 +121,12 @@ export const supabaseCommunityRepository: CommunityRepository = {
     })
 
     if (error) {
-      throw new Error(`No se pudo cambiar el código de invitación: ${error.message}`)
+      throw serverError('rotate_join_code', error)
     }
 
     const rotated = data?.[0]
     if (!rotated) {
-      throw new Error('rotate_join_code no devolvió ningún código.')
+      throw new ServerError('rotate_join_code', 'la RPC no devolvió ningún código')
     }
 
     return { code: rotated.join_code, expiresAt: rotated.expires_at }
@@ -144,7 +145,7 @@ export const supabaseCommunityRepository: CommunityRepository = {
       .order('username', { ascending: true })
 
     if (error) {
-      throw new Error(`No se pudieron cargar los miembros: ${error.message}`)
+      throw serverError('members.select', error)
     }
 
     return (

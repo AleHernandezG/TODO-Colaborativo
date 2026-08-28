@@ -1,9 +1,10 @@
 # Fase 6 · Catálogo de productos y reparto de gastos
 
-- Estado: **abierta**, Bloque A (catálogo) y Bloque B (reparto de gastos) completados y verificados
+- Estado: **abierta**. Bloque A cerrado y verificado en dispositivo; bloque B escrito y con datos correctos, pero **sin Realtime, sin optimistic UI y sin cola offline** (ver B.5).
 - Inicio: 2026-08-07
 - Bloque A (catálogo, RF-10): 4.979 productos de Mercadona en la tabla, Action semanal verificada, sugerencias bajo el campo de texto y fotos vinculadas. Verificado en Android real el 2026-08-24.
-- Bloque B (reparto de gastos, RF-9): **Completado el 2026-08-24**. Esquema de `expenses`, `expense_shares` y `settlements` aplicado en Supabase, RPC atómica `create_expense_with_shares`, algoritmo de liquidación mínima en `domain/`, pantalla `ExpensesScreen` con balances e historial, y 35/35 comprobaciones de RLS en verde.
+- Bloque B (reparto de gastos, RF-9): escrito el 2026-08-24. Esquema de `expenses`, `expense_shares` y `settlements` aplicado en Supabase, RPC atómica `create_expense_with_shares`, algoritmo de liquidación mínima en `domain/`, pantalla `ExpensesScreen` con balances e historial. **No verificado en dispositivo** y le faltan cuatro reglas de `CLAUDE.md`, listadas en B.5.
+- El 2026-08-28 se arregló el fallo que impedía unirse a cualquier lista desde el 24 (B.6) y se rediseñó cómo se clasifican y se enseñan los errores ([ADR-0016](../adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-usuario.md)). `npm run test:rls` pasa a 37/37 y `npm run test:realtime` vuelve a 12/12.
 
 > **La Fase 5 se cerró el 2026-08-16**, con la pasada de TalkBack recorrida entera y limpia. Esta
 > fase se abrió antes de aquello y avanzó en paralelo, porque su primer trabajo era SQL y no competía
@@ -786,7 +787,7 @@ estás buscando otra cosa.
 
 Está guardado —el enlace lo trae— pero no sale en la fila del artículo. Decisión del usuario: en la
 lista de la compra la foto ayuda a reconocer el producto y el precio solo mete ruido. Su consumidor
-real es el bloque B (RF-9), que no ha empezado. La regla de ADR-0012 sigue intacta: un precio de
+real es el bloque B (RF-9), ya escrito. La regla de ADR-0012 sigue intacta: un precio de
 referencia no se convierte en gasto sin que una persona lo confirme.
 
 ##### Cómo probarlo
@@ -812,6 +813,180 @@ del guion de A.5.2:
 
 ---
 
+## Incrementos del bloque B
+
+El bloque B se escribió del tirón el 2026-08-24, en dos commits (`ffd3764` el PIN, `3d8ff11` los
+gastos). Lo que sigue es el diario a posteriori: lo que hay, lo que no hay y qué falló.
+
+### B.1 · El PIN por miembro — hecho el 2026-08-24
+
+El requisito de entrada de [ADR-0005](../adr/ADR-0005-reparto-de-gastos.md): sin identidad que no se
+pueda suplantar, un balance de deudas no significa nada. Diseñado y razonado entero en
+[ADR-0015](../adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md).
+
+Lo que se movió: `members.pin_hash` (bcrypt vía `pgcrypto`), `p_pin` en `create_community` y en
+`join_community`, `pin.ts` en el dominio de `community` con la validación de los cuatro dígitos, y el
+campo de PIN en las dos pantallas de entrada. El rate limit de `join_attempts` que ya existía para el
+`join_code` pasa a cubrir también los intentos de PIN: 10 fallos por `auth_user_id` en 15 minutos
+contra 10.000 combinaciones posibles.
+
+Lo bueno del diseño es el efecto secundario: un miembro se recupera desde otro móvil. Antes, cambiar
+de teléfono significaba `username_taken` y perder el historial; ahora el mismo nombre con el PIN
+correcto reasigna el `auth_user_id` a la fila que ya existía.
+
+**Los miembros anteriores al PIN se quedan sin `pin_hash`.** `join_community` los trata como
+"establece el PIN al reclamarlos": el primero que entre con ese nombre lo fija. Es una ventana de
+suplantación con nombre y precio, y se aceptó a cambio de no dejar tirados a los cuatro miembros que
+ya existían en «Casa Alejes».
+
+### B.2 · El esquema de gastos — aplicado en remoto el 2026-08-24
+
+`20260824140000_expenses_and_settlements.sql`, siguiendo el diseño de ADR-0005:
+
+- **`expenses`**: importe en `amount_cents` entero con `check (> 0)`, moneda explícita, `description`
+  obligatoria y no vacía, `item_id` opcional con `on delete set null` (borrar un artículo no borra el
+  gasto que documenta), `paid_by_member_id` con `on delete restrict` (no se borra un miembro que debe
+  o al que se le debe).
+- **`expense_shares`**: la tabla puente, con `unique (expense_id, member_id)` para que nadie tenga
+  dos cuotas del mismo gasto.
+- **`settlements`**: los pagos directos entre dos miembros, con
+  `check (from_member_id <> to_member_id)`.
+- Índices en las ocho columnas por las que se filtra o se hace join.
+- RLS en las tres tablas: leer, cualquier miembro de la comunidad; escribir y borrar, solo quien creó
+  la fila (`created_by_auth_user_id = auth.uid()`). Las cuotas heredan el permiso de su gasto por
+  `exists`.
+- **`create_expense_with_shares`**: la RPC transaccional. Comprueba pertenencia, valida que la suma
+  de las cuotas cuadra exactamente con el total (`23514` si no) y hace los dos `insert` en la misma
+  transacción. Es lo que evita el gasto huérfano sin cuotas que dejarían tres llamadas desde el móvil.
+
+Nada de totales guardados: los balances se calculan.
+
+### B.3 · El dominio: balances y liquidación mínima
+
+`calculate-balances.ts`, dos funciones puras con sus tests:
+
+- `calculateBalances` acumula, por miembro, lo pagado y lo debido, y saca el neto. Las liquidaciones
+  entran como un pago más de quien paga y una deuda más de quien recibe, así que la propiedad que
+  comprueban los tests sigue valiendo: **la suma de todos los netos es 0**, siempre.
+- `calculateMinTransfers` empareja deudores y acreedores de mayor a menor para saldar todo con el
+  menor número de transferencias. No es el óptimo teórico (eso es NP-difícil) sino el voraz de
+  siempre, que con cuatro personas da el mismo resultado y se lee.
+
+`money.ts` lleva el dinero: `parseCurrencyToCents` acepta «12,34», «12.34» y «12» y rechaza el resto;
+`splitEvenly` reparte el céntimo residual **ordenando los ids** antes, para que dos móviles que
+dividan 10 € entre 3 obtengan exactamente el mismo reparto. Nada de flotantes en ningún punto.
+
+### B.4 · La pantalla de gastos
+
+`src/app/expenses.tsx` cuelga de la lista, con el botón en la cabecera de `ItemsScreen`.
+`ExpensesScreen` enseña mi balance, el total gastado, las transferencias que saldarían las cuentas y
+el historial de gastos y de liquidaciones. `AddExpenseModal` da de alta un gasto eligiendo quién pagó
+y entre quiénes se reparte; `SettleDebtModal` registra un pago sobre una transferencia sugerida.
+
+Los balances no se piden al servidor: `use-expense-summary.ts` los calcula con las tres queries
+(miembros, gastos, liquidaciones) que ya están en caché.
+
+### B.5 · Lo que el bloque B no tiene todavía
+
+Esto no es una lista de mejoras: son cuatro reglas duras de `CLAUDE.md` que el bloque B **no
+cumple**, y hay que cerrarlas antes de dar la fase por buena.
+
+| Regla                                                   | Estado en gastos                                                     |
+| ------------------------------------------------------- | -------------------------------------------------------------------- |
+| Toda mutación con actualización optimista + rollback    | **No.** Las cuatro mutaciones hacen `invalidateQueries` al terminar. |
+| «Deshacer» tras borrar                                  | **No.** Borrar un gasto es inmediato y definitivo.                   |
+| Cada cliente se suscribe a Realtime de su comunidad     | **No.** El repositorio de gastos no tiene `subscribe`.               |
+| Una mutación encolable declara `mutationKey` y defaults | **No.** Sin conexión, un gasto se pierde.                            |
+
+La consecuencia práctica con dos móviles: quien añade un gasto lo ve; el otro no, hasta que cierre y
+vuelva a abrir la pantalla. Y el botón se queda en carga esperando al servidor en vez de responder al
+instante como el resto de la app.
+
+### B.6 · El fallo de las sobrecargas — del 2026-08-24 al 2026-08-28
+
+**Síntoma:** la app no dejaba unirse a ninguna lista. En pantalla, «No se pudo conectar con el
+servidor». El código `KY8-KXJU` era válido y no había caducado, la comunidad existía con sus 28
+artículos y sus cuatro miembros, y el servidor respondía.
+
+**Causa:** `20260824130000_member_pin.sql` escribió
+`create or replace function join_community(p_join_code text, p_username text, p_pin text default null)`.
+Un `create or replace` que **añade un parámetro no reemplaza nada**: crea otra función con otra firma
+y deja viva la de dos argumentos. Con las dos presentes, PostgREST no puede elegir y devuelve
+`PGRST203` a cualquier cliente que no mande `p_pin`, que es exactamente lo que hace el APK instalado
+en el móvil, anterior al PIN y sin ese campo en la pantalla. Lo mismo en `create_community`.
+
+**Arreglo:** `20260828120000_drop_stale_rpc_overloads.sql` borra las dos sobrecargas de dos
+argumentos. La de tres, con su `default null`, ya resuelve las llamadas de dos. Comprobado contra el
+servidor con la publishable key: `invalid_join_code`, `invalid_pin` y `ok` vuelven a responder sin
+mandar `p_pin`. **El APK antiguo vuelve a funcionar sin reinstalar nada.**
+
+**Lo que no falló y aun así costó cuatro días.** Tres cosas taparon el diagnóstico y las tres están
+arregladas:
+
+1. **El mensaje mentía.** Trece sitios de la app aplanaban cualquier fallo que no fuera
+   `OfflineError` en «no se pudo conectar con el servidor». Un error de esquema salía como un problema
+   de cobertura. Rediseñado en
+   [ADR-0016](../adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-usuario.md): ahora `data/` lanza
+   `ServerError` con operación, detalle y código, y `presentation/` clasifica en cinco tipos y enseña
+   el código entre paréntesis.
+2. **`npm run test:realtime` llevaba roto desde el mismo día** y nadie lo miró: su `create_community`
+   de dos argumentos se comía el mismo `PGRST203`. Ahora manda `p_pin` y vuelve a dar 12/12. Un
+   script de comprobación que falla y no bloquea nada no comprueba nada.
+3. **Ningún test cubría la llamada de dos argumentos.** `npm run test:rls` pasaba en verde porque
+   todas sus llamadas mandaban PIN, igual que la app nueva. Añadidas dos comprobaciones que llaman a
+   `create_community` y a `join_community` **sin `p_pin`** y exigen que resuelvan: son las dos que
+   habrían cantado el 24. El script pasa de 35 a 37.
+
+**La regla que sale de aquí:** una migración que añade un parámetro a una función expuesta por
+PostgREST lleva el `drop function` de la firma anterior en la misma migración. Anotado en la skill
+`supabase-data`.
+
+**Y un rastro que hay que limpiar a mano.** Diagnosticar esto dejó un miembro `DiagTest` con PIN 1234
+en «Casa Alejes». `members` no tiene política de `delete` a propósito, así que se borra desde el panel
+de Supabase. También quedaron tres o cuatro usuarios anónimos huérfanos:
+`npm run users -- --delete-orphans`.
+
+### B.7 · Limpieza que vino con el arreglo
+
+Con `db.types.ts` regenerado, el repositorio de gastos pierde los siete `(supabase.from as any)` y
+`(supabase.rpc as any)` que llevaba dentro. Estaban ahí porque los tipos generados eran anteriores al
+esquema de gastos; ya no hacen falta y ahora el compilador vuelve a mirar esas consultas.
+
+Queda **un** cast, y es la tercera aparición de la trampa de siempre: `gen types` declara
+`p_item_id: string` en `create_expense_with_shares` cuando la columna es nullable, así que pasar
+`null` (que es lo correcto para un gasto sin artículo) no compila. Se resuelve en el sitio,
+`(input.itemId ?? null) as unknown as string`, y no tocando el fichero generado, que se sobreescribe
+en cada `gen types`. El `?? null` **no es decorativo**: sin él el argumento viaja como `undefined`,
+`JSON.stringify` lo borra del cuerpo y PostgREST ya no encuentra la función. Lo cazó un test que
+comprobaba el cuerpo de la llamada.
+
+También desaparece el `as any` de `router.push('/expenses')`: estaba porque `.expo/types/router.d.ts`
+era del día 24 a las 13:18 y la ruta se creó a las 13:32. Lo regenera el dev server, no
+`expo export`, así que basta arrancar `npx expo start` una vez.
+
+### B.8 · Cómo probar el arreglo
+
+En el PC, todo en verde: `npm run lint`, `npm run typecheck`, `npm test` (304 en 40 suites),
+`npm run test:rls` (37/37) y `npm run test:realtime` (12/12).
+
+En el móvil, **con el APK que ya está instalado, sin reinstalar nada**:
+
+1. **Unirse con el código de siempre.** Landing → «Unirme a una lista», código `KY8-KXJU`, nombre y
+   PIN. Entra en «Casa Alejes» con sus artículos. Esto es lo que llevaba cuatro días fallando.
+2. **Que el mensaje de error diga algo.** Modo avión y vuelve a intentar unirte: «No tienes conexión.
+   Conéctate y vuelve a intentarlo.», sin paréntesis. Quita el modo avión, teclea un código
+   inexistente: sale el error del campo, no el de conexión.
+3. **Que el código de error llegue a la pantalla.** Un fallo que el servidor rechace sale como «El
+   servidor ha rechazado la operación. Vuelve a intentarlo. (42501)». El número entre paréntesis es
+   lo que hay que leerme si algo vuelve a fallar.
+4. **Que un artículo siga añadiéndose sin red.** Modo avión, añade dos artículos, cierra la app del
+   todo, quita el modo avión y ábrela: siguen ahí y se suben. La cola offline no se ha tocado, pero es
+   el camino que más errores toca.
+5. **Los gastos.** Botón de gastos en la cabecera de la lista, añade un gasto y una liquidación.
+   Funciona, pero recuerda B.5: el otro móvil no lo verá hasta que reabra la pantalla.
+
+---
+
 ## Decisiones sobre la marcha
 
 Aquí van las que se tomen durante la fase y no den para ADR.
@@ -832,3 +1007,19 @@ perpetuidad. El resultado se lee peor que lo que había —prettier junta la uni
 indentada en vez de dejar los `|` delante—, así que si algún día se prefiere la forma antigua, lo
 que hay que cambiar es la configuración, no el fichero: volver a escribirlo a mano lo deja marcado
 otra vez a la primera pasada del formateador.
+
+**El bloque B llegó con formato y comentarios que este repo no quiere.** Al arreglar el fallo del 28
+salieron tres cosas del commit del 24 que no son de esta tanda pero conviene tener anotadas:
+
+- `npx prettier --check "src/**"` marca cuatro ficheros que ya estaban marcados en `main`:
+  `community/domain/join-community.ts`, sus dos tests y `db.types.ts`. Los tres primeros son la misma
+  historia que `edit-item.ts` (ver más arriba) y van en su propio commit de solo formato. El cuarto
+  **no se toca nunca**: es salida cruda de `gen types` y formatearlo genera 130 líneas de ruido en cada
+  regeneración.
+- Cuatro ficheros de `expenses/presentation/` sí se reformatearon en esta tanda, sin ningún cambio de
+  código dentro (`git diff -w` los deja vacíos): los arrastró el `prettier --write` de la pasada de
+  errores.
+- **El código de gastos lleva comentarios en castellano y JSDoc**, en `calculate-balances.ts`,
+  `money.ts`, el repositorio y algún `{/* Header */}` en el JSX. `CLAUDE.md` los prohíbe
+  explícitamente y no se pidió ninguna excepción. Se dejan como están en esta tanda para no mezclar una
+  limpieza de estilo con un arreglo de producción, pero es deuda y se quita al cerrar B.5.

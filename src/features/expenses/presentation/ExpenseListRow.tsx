@@ -15,7 +15,9 @@ export function ExpenseListRow({ expense, members, onDelete }: Props) {
   const { t } = useTranslation()
 
   const payer = members.find((m) => m.id === expense.paidByMemberId)
-  const payerName = payer?.isSelf ? t('expenses.you') : (payer?.username ?? t('expenses.unknownMember'))
+  const payerName = payer?.isSelf
+    ? t('expenses.you')
+    : (payer?.username ?? t('expenses.unknownMember'))
 
   return (
     <View className="flex-row items-center justify-between rounded-lg border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark">
@@ -24,7 +26,8 @@ export function ExpenseListRow({ expense, members, onDelete }: Props) {
           {expense.description}
         </Text>
         <Text className="text-xs text-muted dark:text-muted-dark">
-          {t('expenses.paidBy', { name: payerName })} • {t('expenses.splitBetween', { count: expense.shares.length })}
+          {t('expenses.paidBy', { name: payerName })} •{' '}
+          {t('expenses.splitBetween', { count: expense.shares.length })}
         </Text>
       </View>
 
