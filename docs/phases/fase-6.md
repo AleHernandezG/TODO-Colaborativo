@@ -1163,6 +1163,134 @@ versión al pie de la pantalla de lista, para asegurarse de que el móvil está 
 
 ---
 
+## Tarea 2 · Estructura de ficheros — 2026-08-29
+
+Nada de esto cambia lo que hace la app. Cambia por dónde se entra a cada cosa, que es lo que estaba
+podrido: 639 imports y ni uno usaba el alias `@/` que `tsconfig.json` llevaba declarado desde la
+Fase 0, 129 subían dos o más niveles con `../../`, y 17 se metían en el interior de otra feature sin
+que nada lo impidiera. La carpeta decía "feature autocontenida" y el grafo de imports decía otra cosa.
+
+Se hicieron los incrementos E1 y E2. E3 (normalizar `presentation/`) y E4 (deshacer el cajón de
+`shared/lib`) quedan pendientes y no se tocaron.
+
+### E1 · Encender el alias `@/`
+
+**Primero se comprobó que Metro lo resuelve, antes de tocar un solo import.** No es paranoia: si el
+alias no llegara al bundler, el typecheck pasaría igual (TypeScript lee `paths` por su cuenta) y el
+fallo no aparecería hasta que alguien abriese la app en el móvil. `@expo/cli` arranca Metro con
+`isTsconfigPathsEnabled: exp.experiments?.tsconfigPaths ?? true`, y `app.json` solo declara
+`typedRoutes` y `reactCompiler`, así que está encendido por defecto. Comprobado además a mano: un
+import cambiado a `@/shared/ui/Button` y `npx expo export --platform android` en verde.
+
+**La regla del codemod: se reescribe el import que sale de su módulo de primer nivel**
+(`features/<x>`, `shared`, `theme`, `app`); dentro del mismo módulo se queda relativo. Son 135
+imports en 58 ficheros.
+
+Quedan 15 relativos con `../..`, y quedan a propósito. Son todos del tipo
+`presentation/components/AddItemBar.tsx` → `../../domain/quantity`: cruzan de capa, pero no de
+feature. Ahí el `../../` dice "subo a mi feature y bajo a su dominio", que es justo lo que pasa, y se
+lee mejor que `@/features/items/domain/quantity` repetido en un fichero que ya vive dentro de
+`items`. La alternativa era la regla simple por profundidad (todo `../..` al alias, 137 imports); se
+descartó porque convierte un movimiento interno en una ruta absoluta y hace más ruidoso mover una
+feature de sitio.
+
+Después del codemod, `eslint --fix`: `simple-import-sort` mete `@/` en el grupo de absolutos,
+separado de los relativos, y ordena solo.
+
+**Jest no necesitó nada.** El preset de `jest-expo` ya trae
+`moduleNameMapper: { '^@/(.*)$': '<rootDir>/./src/$1' }`, así que los nueve
+`jest.mock('../../../../shared/lib/supabase')` siguen resolviendo con el alias. El riesgo aquí era el
+contrario y conviene dejarlo escrito: **añadir un `moduleNameMapper` propio en `jest.config.js` pisa
+el del preset entero**, incluidos los de `react-native-vector-icons`. No se añadió.
+
+**Dos scripts sí importan de `src/`**, contra lo que se suponía al planificar:
+`scripts/catalog-ingest.mjs` y `scripts/catalog-source-benchmark.mjs` cargan
+`../src/features/catalog/domain/normalized-name.ts` con `--experimental-strip-types`, y **Node ahí no
+resuelve los `paths` de tsconfig**. Salió bien porque `normalized-name.ts` no importa nada y el
+codemod no lo tocó, pero es una mina: el día que ese fichero, o cualquier otro que consuma un script,
+necesite un import, tiene que ser relativo o el script revienta. `test:rls` y `test:realtime` sí son
+independientes de `src/`, como se pensaba.
+
+### E2 · Una puerta por feature
+
+Cada feature tiene ahora un `index.ts` con lo que el resto puede usar, y una regla de ESLint que
+prohíbe entrar por otro sitio. Referencia: la Public API de
+[Feature-Sliced Design](https://feature-sliced.design/docs/reference/public-api).
+
+La superficie real resultó pequeña, 19 símbolos:
+
+| Feature     | Expone                                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `catalog`   | `CatalogProduct`, `CatalogProductsById`, `CatalogSuggestions`, `useCatalogProducts`                                                                                                                |
+| `community` | `Community`, `CommunityMember`, `CreateCommunityScreen`, `JoinCommunityScreen`, `JoinCodeCard`, `ViewersLine`, `useActiveCommunityStore`, `useActiveCommunityHydrated`, `useCommunityMembers`, `useViewers` |
+| `expenses`  | `ExpensesScreen`, `registerExpenseMutationDefaults`                                                                                                                                               |
+| `items`     | `ItemsScreen`, `registerItemMutationDefaults`                                                                                                                                                     |
+| `session`   | `SessionGate`, `useSessionStore`                                                                                                                                                                  |
+
+Pasaron por la puerta 25 imports: los 17 cruzados y **los 8 de `src/app`**. Meter las rutas en la
+regla no era opcional: `src/app` importa pantallas de cuatro features, así que dejarlo fuera abre un
+agujero por el que cabe la app entera.
+
+**La trampa de flat config, que es lo que hay que recordar de este incremento.** En la configuración
+plana de ESLint, cuando dos bloques casan con el mismo fichero, **el último gana la regla entera; no
+se fusionan**. Añadir un bloque suelto de `no-restricted-imports` para `src/features/**` habría
+apagado en silencio la regla de pureza de `domain/` (react, react-native, Supabase) y la de
+`react-native-paper` en los `.tsx`. Y el lint habría seguido en verde, que es la peor forma de perder
+una regla.
+
+Así que en vez de un bloque nuevo, `eslint.config.js` **genera los bloques con un bucle**, uno por
+feature y capa, y cada uno repite los patrones que le tocan:
+
+- `features/<f>/domain/**/*.ts` → pureza de dominio **+** internos de las otras cuatro
+- `features/<f>/**/*.ts`, con `ignores` de `domain/` → internos de las otras cuatro
+- `features/<f>/**/*.tsx` → Paper **+** internos de las otras cuatro
+- `app`, `shared` y `theme` → internos de las cinco, con Paper donde ya aplicaba y respetando las
+  exenciones de `shared/ui/**` y `app/_layout.tsx`
+
+Los tres conjuntos de cada feature son disjuntos (`**/*.ts` con `ignores` de `domain`,
+`domain/**/*.ts`, `**/*.tsx`), así que ninguno pisa a otro.
+
+**Segunda trampa, encontrada probando y no leyendo.** Los patrones de `no-restricted-imports` casan
+contra **la cadena literal del import, no contra la ruta resuelta**. El primer intento usaba
+`**/features/<f>/presentation/**` y dejaba pasar limpiamente un
+`../../community/presentation/use-viewers` escrito a mano, que es justo el caso que la regla existe
+para impedir. El patrón bueno es `**/<f>/presentation/**`, sin el `features/`, que caza las dos
+formas. Se descubrió porque la sonda de esa forma relativa no dio error; sin probarla, la regla
+habría quedado con el agujero puesto.
+
+**Cómo se comprobó que la regla muerde.** Nueve ficheros sonda, seis que deben fallar y tres que no:
+import al interior de otra feature por alias y por ruta relativa, `src/app` entrando a una pantalla,
+`react` en `domain/`, Paper en un `.tsx` de feature y Paper en `src/app`; y del otro lado, import al
+interior de la _propia_ feature, Paper dentro de `shared/ui` y un import por la puerta. Salieron 6
+errores y 3 silencios. Las sondas se borraron después.
+
+### Cómo queda y cómo comprobarlo
+
+|                                        | Antes | Ahora                                        |
+| -------------------------------------- | ----- | -------------------------------------------- |
+| Imports con `@/`                       | 0     | 131                                          |
+| Imports que suben 3 o 4 niveles        | 102   | 0                                            |
+| Imports que suben 2 o más              | 129   | 15, todos de capa dentro de su propia feature |
+| Imports al interior de otra feature    | 17    | 0                                            |
+
+Verificado con `npm run lint`, `npm run typecheck`, `npm test` (43 suites, 327 tests),
+`npx expo export --platform android`, `npm run test:rls` (39/39) y `npm run test:realtime` (15/15).
+
+Para comprobar a mano que la puerta sigue cerrada, sin arrancar nada: escribe en cualquier fichero de
+`items` un `import { useViewers } from '@/features/community/presentation/use-viewers'` y corre
+`npm run lint`. Tiene que dar `no-restricted-imports`. Si no lo da, alguien ha añadido un bloque
+después en `eslint.config.js` y se ha llevado la regla por delante.
+
+Dos cosas que **no** cambiaron y conviene no confundir con esto:
+
+- `npx prettier --check "src/**"` sigue marcando 64 ficheros, los mismos antes y después. Es el
+  artefacto de finales de línea de siempre (`core.autocrlf=true`), y Prettier no está en
+  `npm run lint`.
+- `npm run catalog:ingest -- --dry-run` falla con `not a git repository`. Es un clon corrupto en
+  `%TEMP%\catalog-ingest`, comprobado fallando igual en el árbol limpio. Se arregla con `--fresh`.
+
+---
+
 ## Decisiones sobre la marcha
 
 Aquí van las que se tomen durante la fase y no den para ADR.

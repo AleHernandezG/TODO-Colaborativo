@@ -99,6 +99,21 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
 - **Repositorios como puertos + adaptador:** el dominio define una interfaz; `data/` la implementa para Supabase. Cambiar de proveedor = crear otro adaptador, sin tocar `domain/`.
 - La UI depende de **hooks/casos de uso**, nunca de Supabase directamente.
 - Componentes de `shared/ui` **presentacionales**: reciben props, no conocen la lógica de datos.
+- **Para salir de tu módulo, alias `@/`; dentro de él, relativo.** Módulo es `features/<x>`, `shared`,
+  `theme` o `app`. Un `../../domain/quantity` desde `items/presentation/components` está bien, porque
+  cruza de capa sin salir de `items`; un `../../../shared/lib/errors` no, porque sale. El alias lo
+  resuelven los tres: TypeScript por `paths`, Metro porque `experiments.tsconfigPaths` está en `true`
+  por defecto, y Jest por el `moduleNameMapper` del preset de `jest-expo` — **no añadas un
+  `moduleNameMapper` propio, pisa el del preset entero**.
+  - Excepción: lo que consuman los scripts de `scripts/` va en relativo. Node con
+    `--experimental-strip-types` no resuelve los `paths` de tsconfig y el script revienta al arrancar.
+- **Una feature se consume solo por su `index.ts`.** El interior (`domain/`, `data/`, `presentation/`)
+  es privado; si otra feature o una ruta necesita algo, se exporta en la puerta. Lo impone
+  `no-restricted-imports` en `eslint.config.js`, que **genera un bloque por feature y capa con un
+  bucle**: en flat config el último bloque que casa con un fichero gana la regla entera y no se
+  fusiona, así que **un bloque nuevo de `no-restricted-imports` apaga en silencio los de `domain/` y
+  los de Paper**. Si tocas esa regla, repite los patrones que ya llevaba el fichero y comprueba con
+  una sonda que los viejos siguen disparando. Razonado en `docs/phases/fase-6.md` (Tarea 2, E2).
 
 ## Reglas de estado
 
