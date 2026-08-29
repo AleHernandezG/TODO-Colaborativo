@@ -2,7 +2,8 @@ import { Image } from 'expo-image'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Text, View } from 'react-native'
 
-import { radius } from '../../../../theme'
+import { radius } from '@/theme'
+
 import { useItemImageUrl } from '../use-item-image-url'
 
 type ItemImageProps = {

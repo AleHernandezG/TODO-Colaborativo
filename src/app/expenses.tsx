@@ -1,3 +1,3 @@
-import { ExpensesScreen } from '../features/expenses/presentation/ExpensesScreen'
+import { ExpensesScreen } from '@/features/expenses'
 
 export default ExpensesScreen

@@ -1,3 +1,3 @@
-import { JoinCommunityScreen } from '../features/community/presentation/JoinCommunityScreen'
+import { JoinCommunityScreen } from '@/features/community'
 
 export default JoinCommunityScreen

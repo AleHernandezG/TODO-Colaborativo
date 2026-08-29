@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
-import { Button } from '../../../shared/ui/Button'
-import { Input } from '../../../shared/ui/Input'
+import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+import { Button } from '@/shared/ui/Button'
+import { Input } from '@/shared/ui/Input'
+
 import { communityNameMaxLength, usernameMaxLength } from '../domain/names'
 import { pinLength } from '../domain/pin'
 import { useCreateCommunity } from './use-create-community'

@@ -1,7 +1,8 @@
-import { supabase } from '../../../../shared/lib/supabase'
+import { supabase } from '@/shared/lib/supabase'
+
 import { supabasePresenceRepository } from '../supabase-presence-repository'
 
-jest.mock('../../../../shared/lib/supabase', () => ({
+jest.mock('@/shared/lib/supabase', () => ({
   supabase: {
     channel: jest.fn(),
     removeChannel: jest.fn(),

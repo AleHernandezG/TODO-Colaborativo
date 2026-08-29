@@ -1,4 +1,5 @@
-import { supabase } from '../../../shared/lib/supabase'
+import { supabase } from '@/shared/lib/supabase'
+
 import type { PresenceRepository } from '../domain/presence-repository'
 
 const settleMs = 2000

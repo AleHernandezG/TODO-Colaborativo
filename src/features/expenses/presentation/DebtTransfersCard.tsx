@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
-import { Button } from '../../../shared/ui/Button'
+import { Button } from '@/shared/ui/Button'
+
 import type { DebtTransfer } from '../domain/expense'
 import { formatCents } from '../domain/money'
 

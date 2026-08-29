@@ -4,18 +4,21 @@ import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, RefreshControl, SectionList, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { useFailureMessage } from '../../../shared/hooks/use-failure-message'
-import { useSyncStatus } from '../../../shared/hooks/use-sync-status'
-import { BuildTag } from '../../../shared/ui/BuildTag'
-import { Button } from '../../../shared/ui/Button'
-import { RealtimeStatus } from '../../../shared/ui/RealtimeStatus'
-import type { CatalogProductsById } from '../../catalog/domain/catalog-products-by-id'
-import { useCatalogProducts } from '../../catalog/presentation/use-catalog-products'
-import type { Community } from '../../community/domain/community'
-import { useActiveCommunityStore } from '../../community/presentation/active-community-store'
-import { JoinCodeCard } from '../../community/presentation/JoinCodeCard'
-import { useViewers } from '../../community/presentation/use-viewers'
-import { ViewersLine } from '../../community/presentation/ViewersLine'
+import type { CatalogProductsById } from '@/features/catalog'
+import { useCatalogProducts } from '@/features/catalog'
+import type { Community } from '@/features/community'
+import {
+  JoinCodeCard,
+  useActiveCommunityStore,
+  useViewers,
+  ViewersLine,
+} from '@/features/community'
+import { useFailureMessage } from '@/shared/hooks/use-failure-message'
+import { useSyncStatus } from '@/shared/hooks/use-sync-status'
+import { BuildTag } from '@/shared/ui/BuildTag'
+import { Button } from '@/shared/ui/Button'
+import { RealtimeStatus } from '@/shared/ui/RealtimeStatus'
+
 import type { Item } from '../domain/item'
 import { catalogImageProductIds, itemImageSource } from '../domain/item-image-source'
 import { AddItemBar } from './components/AddItemBar'

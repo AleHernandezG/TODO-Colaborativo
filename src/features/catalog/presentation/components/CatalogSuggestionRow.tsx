@@ -2,7 +2,8 @@ import { Image } from 'expo-image'
 import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
-import { minTouchTarget, radius } from '../../../../theme'
+import { minTouchTarget, radius } from '@/theme'
+
 import type { CatalogProduct } from '../../domain/catalog-product'
 import { currencySymbol, priceAge, priceAmount } from '../../domain/price'
 

@@ -1,6 +1,7 @@
-import { ServerError, serverError } from '../../../shared/lib/errors'
-import { assertOnline } from '../../../shared/lib/network'
-import { supabase } from '../../../shared/lib/supabase'
+import { ServerError, serverError } from '@/shared/lib/errors'
+import { assertOnline } from '@/shared/lib/network'
+import { supabase } from '@/shared/lib/supabase'
+
 import type { Item } from '../domain/item'
 import { imageUrlTtlSeconds } from '../domain/item-image'
 import type { ItemRepository } from '../domain/item-repository'

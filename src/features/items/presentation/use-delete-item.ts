@@ -2,8 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
-import { useSnackbar } from '../../../shared/hooks/use-snackbar'
+import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+import { useSnackbar } from '@/shared/hooks/use-snackbar'
+
 import type { Item } from '../domain/item'
 import { useDeletingItemsStore } from './deleting-items-store'
 import type { ItemMutationVariables } from './item-mutations'

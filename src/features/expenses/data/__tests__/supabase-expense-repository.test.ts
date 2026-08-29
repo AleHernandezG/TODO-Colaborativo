@@ -1,10 +1,11 @@
 import NetInfo from '@react-native-community/netinfo'
 
-import { OfflineError } from '../../../../shared/lib/network'
-import { supabase } from '../../../../shared/lib/supabase'
+import { OfflineError } from '@/shared/lib/network'
+import { supabase } from '@/shared/lib/supabase'
+
 import { supabaseExpenseRepository } from '../supabase-expense-repository'
 
-jest.mock('../../../../shared/lib/supabase', () => ({
+jest.mock('@/shared/lib/supabase', () => ({
   supabase: {
     from: jest.fn(),
     rpc: jest.fn(),

@@ -1,7 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query'
 
-import { useSnackbarStore } from '../../../shared/hooks/use-snackbar'
-import i18n from '../../../shared/lib/i18n'
+import { useSnackbarStore } from '@/shared/hooks/use-snackbar'
+import i18n from '@/shared/lib/i18n'
+
 import { supabaseExpenseRepository } from '../data/supabase-expense-repository'
 import { createExpense } from '../domain/create-expense'
 import { createSettlement } from '../domain/create-settlement'

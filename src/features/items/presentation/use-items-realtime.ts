@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { useAppForeground } from '../../../shared/hooks/use-app-foreground'
+import { useAppForeground } from '@/shared/hooks/use-app-foreground'
+
 import { supabaseItemRepository } from '../data/supabase-item-repository'
 import type { ItemsChannelStatus } from '../domain/item-repository'
 import { itemsKey } from './use-items'

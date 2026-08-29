@@ -1,7 +1,8 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
-import { useDebouncedValue } from '../../../shared/hooks/use-debounced-value'
-import { useSyncStatus } from '../../../shared/hooks/use-sync-status'
+import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
+import { useSyncStatus } from '@/shared/hooks/use-sync-status'
+
 import { supabaseCatalogRepository } from '../data/supabase-catalog-repository'
 import { type CatalogProduct, defaultSupermarketId } from '../domain/catalog-product'
 import { normalizeCatalogName } from '../domain/normalized-name'

@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
-import type { CommunityMember } from '../../community/domain/community-repository'
+import type { CommunityMember } from '@/features/community'
+
 import type { Settlement } from '../domain/expense'
 import { formatCents } from '../domain/money'
 

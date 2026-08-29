@@ -2,8 +2,8 @@ import * as ImagePicker from 'expo-image-picker'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { useSnackbar } from '../../../shared/hooks/use-snackbar'
-import { compressForUpload } from '../../../shared/lib/image'
+import { useSnackbar } from '@/shared/hooks/use-snackbar'
+import { compressForUpload } from '@/shared/lib/image'
 
 export type ImageSource = 'camera' | 'gallery'
 

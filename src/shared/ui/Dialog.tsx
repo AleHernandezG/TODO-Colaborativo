@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import { ScrollView, View } from 'react-native'
 import { Dialog as PaperDialog, Portal } from 'react-native-paper'
 
-import { radius, usePalette } from '../../theme'
+import { radius, usePalette } from '@/theme'
+
 import { Button } from './Button'
 
 type DialogProps = {

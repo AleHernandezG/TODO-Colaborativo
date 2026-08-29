@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { useAppForeground } from '../../../shared/hooks/use-app-foreground'
+import { useAppForeground } from '@/shared/hooks/use-app-foreground'
+
 import { supabaseExpenseRepository } from '../data/supabase-expense-repository'
 import type { ExpensesChannelStatus } from '../domain/expense-repository'
 import { expensesKey } from './use-expenses'

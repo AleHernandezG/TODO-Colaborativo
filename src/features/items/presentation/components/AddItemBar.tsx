@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { Button } from '../../../../shared/ui/Button'
-import { Input } from '../../../../shared/ui/Input'
-import { QuantityStepper } from '../../../../shared/ui/QuantityStepper'
-import type { CatalogProduct } from '../../../catalog/domain/catalog-product'
-import { CatalogSuggestions } from '../../../catalog/presentation/components/CatalogSuggestions'
+import type { CatalogProduct } from '@/features/catalog'
+import { CatalogSuggestions } from '@/features/catalog'
+import { Button } from '@/shared/ui/Button'
+import { Input } from '@/shared/ui/Input'
+import { QuantityStepper } from '@/shared/ui/QuantityStepper'
+
 import { isValidItemName, itemNameMaxLength, normalizeItemName } from '../../domain/item-name'
 import { minQuantity } from '../../domain/quantity'
 

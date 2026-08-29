@@ -1,6 +1,6 @@
 import { Text, TextInput, View } from 'react-native'
 
-import { minTouchTarget, usePalette } from '../../theme'
+import { minTouchTarget, usePalette } from '@/theme'
 
 type InputProps = {
   label: string

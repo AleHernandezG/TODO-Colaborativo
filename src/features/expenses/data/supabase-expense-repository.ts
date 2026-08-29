@@ -1,6 +1,7 @@
-import { serverError } from '../../../shared/lib/errors'
-import { assertOnline } from '../../../shared/lib/network'
-import { supabase } from '../../../shared/lib/supabase'
+import { serverError } from '@/shared/lib/errors'
+import { assertOnline } from '@/shared/lib/network'
+import { supabase } from '@/shared/lib/supabase'
+
 import type { Expense, Settlement } from '../domain/expense'
 import type {
   CreateExpenseInput,

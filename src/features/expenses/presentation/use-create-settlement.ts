@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
-import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
-import { randomUuid } from '../../../shared/lib/uuid'
-import { useSessionStore } from '../../session/presentation/session-store'
+import { useSessionStore } from '@/features/session'
+import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+import { randomUuid } from '@/shared/lib/uuid'
+
 import type { Settlement } from '../domain/expense'
 import type { CreateSettlementVariables } from './expense-mutations'
 import { expenseMutationKeys } from './expense-mutations'

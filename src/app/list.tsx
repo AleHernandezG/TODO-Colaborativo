@@ -1,3 +1,3 @@
-import { ItemsScreen } from '../features/items/presentation/ItemsScreen'
+import { ItemsScreen } from '@/features/items'
 
 export default ItemsScreen

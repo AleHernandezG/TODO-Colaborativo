@@ -1,11 +1,12 @@
 import NetInfo from '@react-native-community/netinfo'
 
-import { OfflineError } from '../../../../shared/lib/network'
-import { supabase } from '../../../../shared/lib/supabase'
+import { OfflineError } from '@/shared/lib/network'
+import { supabase } from '@/shared/lib/supabase'
+
 import { imageUrlTtlSeconds } from '../../domain/item-image'
 import { supabaseItemRepository } from '../supabase-item-repository'
 
-jest.mock('../../../../shared/lib/supabase', () => ({
+jest.mock('@/shared/lib/supabase', () => ({
   supabase: {
     from: jest.fn(),
     storage: { from: jest.fn() },

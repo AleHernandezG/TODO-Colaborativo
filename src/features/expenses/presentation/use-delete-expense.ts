@@ -2,8 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
-import { useSnackbar } from '../../../shared/hooks/use-snackbar'
+import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+import { useSnackbar } from '@/shared/hooks/use-snackbar'
+
 import type { Expense } from '../domain/expense'
 import { deleteUndoWindowMs, useDeletingRowsStore } from './deleting-rows-store'
 import type { DeleteExpenseVariables } from './expense-mutations'

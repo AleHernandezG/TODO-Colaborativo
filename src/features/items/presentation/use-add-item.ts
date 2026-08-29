@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
-import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
-import { randomUuid } from '../../../shared/lib/uuid'
+import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+import { randomUuid } from '@/shared/lib/uuid'
+
 import type { AddItemResult } from '../domain/add-item'
 import type { Item } from '../domain/item'
 import { normalizeItemName } from '../domain/item-name'

@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, Text } from 'react-native'
 
-import { minTouchTarget, usePalette } from '../../theme'
+import { minTouchTarget, usePalette } from '@/theme'
 
 type ButtonProps = {
   label: string

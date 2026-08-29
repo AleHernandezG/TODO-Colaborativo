@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Text, View } from 'react-native'
 
-import { Button } from '../../../shared/ui/Button'
+import { Button } from '@/shared/ui/Button'
+
 import type { SessionErrorReason } from '../domain/session-error'
 import { useSessionBootstrap } from './use-session-bootstrap'
 

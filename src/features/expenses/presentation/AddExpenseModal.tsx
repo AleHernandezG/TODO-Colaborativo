@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
-import { Checkbox } from '../../../shared/ui/Checkbox'
-import { Dialog } from '../../../shared/ui/Dialog'
-import { Input } from '../../../shared/ui/Input'
-import type { CommunityMember } from '../../community/domain/community-repository'
+import type { CommunityMember } from '@/features/community'
+import { Checkbox } from '@/shared/ui/Checkbox'
+import { Dialog } from '@/shared/ui/Dialog'
+import { Input } from '@/shared/ui/Input'
+
 import { formatCents, parseCurrencyToCents, splitEvenly } from '../domain/money'
 import { useCreateExpense } from './use-create-expense'
 

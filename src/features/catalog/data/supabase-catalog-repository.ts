@@ -1,6 +1,7 @@
-import { serverError } from '../../../shared/lib/errors'
-import { assertOnline } from '../../../shared/lib/network'
-import { supabase } from '../../../shared/lib/supabase'
+import { serverError } from '@/shared/lib/errors'
+import { assertOnline } from '@/shared/lib/network'
+import { supabase } from '@/shared/lib/supabase'
+
 import type { CatalogCandidate, CatalogProduct } from '../domain/catalog-product'
 import type { CatalogRepository } from '../domain/catalog-repository'
 

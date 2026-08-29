@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
-import { Dialog } from '../../../shared/ui/Dialog'
+import { Dialog } from '@/shared/ui/Dialog'
+
 import type { DebtTransfer } from '../domain/expense'
 import { formatCents } from '../domain/money'
 import { useCreateSettlement } from './use-create-settlement'

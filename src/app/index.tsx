@@ -6,8 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import {
   useActiveCommunityHydrated,
   useActiveCommunityStore,
-} from '../features/community/presentation/active-community-store'
-import { Button } from '../shared/ui/Button'
+} from '@/features/community'
+import { Button } from '@/shared/ui/Button'
 
 export default function Landing() {
   const { t } = useTranslation()

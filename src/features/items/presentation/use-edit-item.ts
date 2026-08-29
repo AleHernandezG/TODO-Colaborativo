@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
-import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
-import { useSnackbar } from '../../../shared/hooks/use-snackbar'
+import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+import { useSnackbar } from '@/shared/hooks/use-snackbar'
+
 import type { EditItemResult, ItemImageChange } from '../domain/edit-item'
 import type { Item } from '../domain/item'
 import { normalizeItemName } from '../domain/item-name'

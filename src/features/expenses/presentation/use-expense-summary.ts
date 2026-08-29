@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 
-import { useCommunityMembers } from '../../community/presentation/use-community-members'
+import { useCommunityMembers } from '@/features/community'
+
 import { calculateBalances, calculateMinTransfers } from '../domain/calculate-balances'
 import type { DebtTransfer, MemberBalance } from '../domain/expense'
 import { useExpenses } from './use-expenses'

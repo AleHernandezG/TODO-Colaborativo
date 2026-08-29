@@ -1,6 +1,7 @@
-import { ServerError, serverError } from '../../../shared/lib/errors'
-import { assertOnline } from '../../../shared/lib/network'
-import { supabase } from '../../../shared/lib/supabase'
+import { ServerError, serverError } from '@/shared/lib/errors'
+import { assertOnline } from '@/shared/lib/network'
+import { supabase } from '@/shared/lib/supabase'
+
 import { SessionError } from '../domain/session-error'
 import type { SessionRepository } from '../domain/session-repository'
 

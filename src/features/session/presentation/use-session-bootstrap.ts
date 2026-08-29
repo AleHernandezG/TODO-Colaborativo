@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react'
 
-import { OfflineError } from '../../../shared/lib/network'
+import { OfflineError } from '@/shared/lib/network'
+
 import { supabaseSessionRepository } from '../data/supabase-session-repository'
 import { ensureSession } from '../domain/ensure-session'
 import { SessionError, type SessionErrorReason } from '../domain/session-error'

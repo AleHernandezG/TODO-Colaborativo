@@ -1,6 +1,7 @@
-import { ServerError, serverError } from '../../../shared/lib/errors'
-import { assertOnline } from '../../../shared/lib/network'
-import { supabase } from '../../../shared/lib/supabase'
+import { ServerError, serverError } from '@/shared/lib/errors'
+import { assertOnline } from '@/shared/lib/network'
+import { supabase } from '@/shared/lib/supabase'
+
 import type { Community, JoinCodeInfo } from '../domain/community'
 import type {
   CommunityMember,

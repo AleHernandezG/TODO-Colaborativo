@@ -1,6 +1,7 @@
 import { dehydrate, hydrate, onlineManager, QueryClient } from '@tanstack/react-query'
 
-import { shouldPersistMutation } from '../../../../shared/lib/query-persister'
+import { shouldPersistMutation } from '@/shared/lib/query-persister'
+
 import { supabaseExpenseRepository } from '../../data/supabase-expense-repository'
 import { expenseMutationKeys, registerExpenseMutationDefaults } from '../expense-mutations'
 

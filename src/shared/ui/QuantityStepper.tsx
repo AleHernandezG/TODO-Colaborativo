@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native'
 
-import { minTouchTarget } from '../../theme'
+import { minTouchTarget } from '@/theme'
 
 type QuantityStepperProps = {
   value: number

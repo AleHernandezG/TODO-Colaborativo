@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
-import { useErrorSnackbar } from '../../../shared/hooks/use-error-snackbar'
+import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+
 import type { Item } from '../domain/item'
 import type { ItemMutationVariables } from './item-mutations'
 import { itemMutationKeys } from './item-mutations'

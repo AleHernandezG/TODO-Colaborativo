@@ -8,13 +8,13 @@ import { useColorScheme } from 'react-native'
 import { PaperProvider, Portal } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-import { registerExpenseMutationDefaults } from '../features/expenses/presentation/expense-mutations'
-import { registerItemMutationDefaults } from '../features/items/presentation/item-mutations'
-import { SessionGate } from '../features/session/presentation/SessionGate'
-import { queryClient } from '../shared/lib/query-client'
-import { persistOptions } from '../shared/lib/query-persister'
-import { SnackbarHost } from '../shared/ui/SnackbarHost'
-import { paperDarkTheme, paperLightTheme } from '../theme'
+import { registerExpenseMutationDefaults } from '@/features/expenses'
+import { registerItemMutationDefaults } from '@/features/items'
+import { SessionGate } from '@/features/session'
+import { queryClient } from '@/shared/lib/query-client'
+import { persistOptions } from '@/shared/lib/query-persister'
+import { SnackbarHost } from '@/shared/ui/SnackbarHost'
+import { paperDarkTheme, paperLightTheme } from '@/theme'
 
 registerExpenseMutationDefaults(queryClient)
 registerItemMutationDefaults(queryClient)

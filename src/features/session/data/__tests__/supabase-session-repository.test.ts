@@ -1,11 +1,12 @@
 import NetInfo from '@react-native-community/netinfo'
 
-import { OfflineError } from '../../../../shared/lib/network'
-import { supabase } from '../../../../shared/lib/supabase'
+import { OfflineError } from '@/shared/lib/network'
+import { supabase } from '@/shared/lib/supabase'
+
 import { SessionError } from '../../domain/session-error'
 import { supabaseSessionRepository } from '../supabase-session-repository'
 
-jest.mock('../../../../shared/lib/supabase', () => ({
+jest.mock('@/shared/lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: jest.fn(),
