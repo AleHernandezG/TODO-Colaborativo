@@ -130,10 +130,11 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 
 ---
 
-> **RF-8, RF-9 y RF-10 están fuera del MVP.** Los dos primeros salieron después de escribir esta
+> **De RF-8 a RF-12, todo está fuera del MVP.** RF-8 y RF-9 salieron después de escribir esta
 > especificación, de `docs/funcionalidades.txt`; RF-10 lo pidió el usuario el 2026-08-05, ya con la
-> beta cerrada. Se registran aquí para que no vivan solo en un `.txt` suelto ni en el chat, pero el
-> alcance de la beta sigue siendo RF-1…RF-7.
+> beta cerrada, y RF-11 y RF-12 el 2026-09-03, con el reparto de gastos ya en el móvil. Se registran
+> aquí para que no vivan solo en un `.txt` suelto ni en el chat, pero el alcance de la beta sigue
+> siendo RF-1…RF-7.
 
 ### RF-8 · Exportar la lista a PDF (post-MVP)
 
@@ -181,6 +182,44 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
   sí tiene abierto es de dónde salen los datos, que es una decisión con implicaciones legales.
   Diseño, esquema y alternativas en
   [ADR-0012](adr/ADR-0012-catalogo-de-productos-de-supermercado.md).
+
+### RF-11 · Gestión de miembros: quitar gente y rol de admin (post-MVP)
+
+- **Qué:** poder sacar a alguien de la lista, que es lo que hace falta cuando la misma persona ha
+  entrado dos veces con nombres distintos o cuando alguien deja el grupo. Y un rol de administrador
+  que diga quién puede hacerlo: **es admin quien crea la lista, y un admin puede hacer admin a
+  otro**, igual que en WhatsApp.
+- **Cómo:** `members` gana `is_admin` y `removed_at`. Quitar a alguien es una RPC transaccional que
+  **borra la fila de verdad si esa persona no aparece en ningún gasto ni liquidación** (el caso del
+  duplicado recién creado) y **marca `removed_at` si sí aparece**, porque las cuatro claves foráneas
+  que van de gastos a miembros son `on delete restrict` y borrar a secas devolvería `23503`. Un
+  miembro de baja desaparece del selector de reparto y de la lista de activos, pero sus gastos
+  siguen enteros y **su saldo sigue contando mientras no sea cero**: una deuda de 30 € no puede
+  evaporarse porque alguien pulse una ✕. El nombre único pasa a índice parcial sobre los activos,
+  para que el hueco quede libre.
+- **Aceptación:** un admin quita un duplicado sin historial y la fila desaparece de las dos
+  pantallas en menos de dos segundos, sin recargar; quita a alguien con gastos y esa persona sale
+  del selector pero sigue en el detalle de sus gastos viejos y en el balance hasta liquidar; quien
+  no es admin no ve la acción y, si la fuerza, la RPC la rechaza; nadie puede quitarse a sí mismo ni
+  dejar la lista sin ningún admin.
+- **Depende de:** nada nuevo. El PIN por miembro ([ADR-0015](adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md))
+  ya da la identidad que hace que «quitar a Ana» signifique algo.
+
+### RF-12 · Participantes invitados en los gastos (post-MVP)
+
+- **Qué:** poder meter en el reparto a alguien que estuvo en la cena pero no está en la lista y no
+  va a instalarse la app. Lo hace un admin, escribiendo el nombre.
+- **Cómo:** un invitado **es una fila de `members` con `auth_user_id` a nulo**, no una tabla aparte.
+  Como `member_community_ids()` y `current_member_id()` comparan con `=` y nulo nunca iguala, un
+  invitado no da acceso a nadie y la RLS no se toca. Todo lo que ya existe (balances, reparto a
+  partes iguales, avatares, el detalle del gasto) funciona sin cambiar una línea, porque habla de
+  `member_id` y no de quién ha iniciado sesión. La alternativa, una tabla `guest_participants`,
+  obligaría a duplicar cada clave foránea y a reescribir el dominio de balances entero.
+- **Aceptación:** un invitado se elige como pagador y como participante igual que cualquiera; su
+  balance sale en la pantalla de gastos con su etiqueta de invitado; **si esa persona acaba
+  instalando la app y entra con el código y ese mismo nombre, hereda su fila con su historial y su
+  saldo**, que es lo que ya hace `join_community` con un miembro sin PIN.
+- **Depende de:** RF-11, porque quien añade invitados es un admin y el rol nace ahí.
 
 ---
 
@@ -626,6 +665,42 @@ Dos bloques con dependencias distintas. El A puede empezar en cuanto cierre la F
 - Si el bloque A está hecho, el importe llega prerrellenado desde el catálogo **y lo confirma el usuario**, porque el precio de referencia caduca solo.
 - **Requisito de entrada:** el PIN por miembro que quedó fuera de la Fase 5. Sin identidad no suplantable, los balances no valen nada. Ver [ADR-0005](adr/ADR-0005-reparto-de-gastos.md).
 - **Entregable:** dos miembros ven el mismo balance y nadie puede tocar el gasto de otro.
+
+### Fase 7 · Gestión de miembros (RF-11 y RF-12)
+
+Pedida el 2026-09-03, con el reparto de gastos ya funcionando en los dos móviles. **Entra cuando
+cierre la Fase 6**, no antes: mezclar una migración nueva con la prueba de dispositivo de B.10 a
+medias es la forma de no saber luego qué rompió qué.
+
+Tres decisiones tomadas el 2026-09-03, antes de escribir una línea:
+
+- **El rol de admin entra ya, no «más adelante».** Es admin quien crea la lista y un admin puede
+  hacer admin a otro. Se descartó el modelo libre (cualquiera quita a cualquiera) porque significa
+  que desde otro móvil te sacan de la lista sin avisar, y porque la columna hay que crearla algún
+  día igual: hacerlo ahora se paga una vez, hacerlo después es una segunda migración sobre datos
+  vivos.
+- **Quitar a alguien borra la fila si está limpia y la archiva si no.** Sin gastos ni liquidaciones
+  detrás se borra de verdad, que es el caso del duplicado; con historial se marca `removed_at`. Se
+  descartó archivar siempre (la lista se llena de fantasmas) y se descartó bloquear el borrado
+  cuando hay historial (en la práctica es no poder quitar a casi nadie).
+- **Un invitado es un `members` con `auth_user_id` a nulo**, no una tabla nueva. Se descartó
+  `guest_participants` porque obligaría a duplicar cada clave foránea de gastos y a reescribir el
+  dominio de balances entero.
+
+Lo que hay que tener resuelto antes de la primera migración:
+
+- ADR nuevo con el modelo completo, porque esto cambia el modelo de datos **y** el de seguridad.
+- Las cuatro FK de gastos a `members` son `on delete restrict`, así que la RPC de quitar mira
+  primero si esa persona aparece en algo.
+- `unique (community_id, username)` pasa a índice parcial sobre los activos, y la búsqueda por
+  nombre de `join_community` gana un `and removed_at is null`. Misma firma, así que es
+  `create or replace` sin sobrecarga nueva, pero es tocar la función que dejó la app cuatro días sin
+  poder unirse a ninguna lista.
+- `members` no está en la publicación de Realtime. Sin añadirla, quitas un duplicado en un móvil y
+  el otro lo sigue viendo en el selector de reparto hasta que refresque.
+- **Entregable:** un admin quita un duplicado y desaparece en los dos móviles en menos de dos
+  segundos; quita a alguien con gastos y esa persona sale del selector pero sigue en sus gastos
+  viejos y en el balance; se añade un invitado por nombre y participa en un reparto como cualquiera.
 
 **Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 y 6 son posteriores a la beta y no entran en esa cuenta.
 

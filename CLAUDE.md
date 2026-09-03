@@ -336,7 +336,9 @@ bundle del APK, `v1.2.0 · <id>` si es un update por aire). Compruébala ahí an
 hecho que un cambio llegó al dispositivo.
 
 RF-8 (PDF), RF-9 (reparto de gastos) y RF-10 (catálogo de productos de supermercado) son
-**post-MVP**: están registrados en §3 y §12 del documento maestro.
+**post-MVP**: están registrados en §3 y §12 del documento maestro. **RF-11 (quitar miembros y rol de
+admin) y RF-12 (invitados en los gastos) los pidió el usuario el 2026-09-03** y son la Fase 7, que
+entra al cerrar la 6; las tres decisiones que se tomaron ese día están en §12 del maestro.
 El requisito de entrada del reparto de gastos ([ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md), identidad no suplantable)
 quedó resuelto el 2026-08-24 con el PIN por miembro ([ADR-0015](docs/adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md)).
 
