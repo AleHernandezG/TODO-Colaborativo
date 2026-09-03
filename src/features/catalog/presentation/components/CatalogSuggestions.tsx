@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
 import { type CatalogProduct, defaultSupermarketName } from '../../domain/catalog-product'
-import { useCatalogSearch } from '../use-catalog-search'
+import { useCatalogSearch } from '../hooks/use-catalog-search'
 import { CatalogSuggestionRow } from './CatalogSuggestionRow'
 
 export function CatalogSuggestions({

@@ -1,2 +1,2 @@
-export { useSessionStore } from './presentation/session-store'
-export { SessionGate } from './presentation/SessionGate'
+export { SessionGate } from './presentation/components/SessionGate'
+export { useSessionStore } from './presentation/stores/session-store'

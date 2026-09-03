@@ -4,7 +4,7 @@ import { ActivityIndicator, Text, View } from 'react-native'
 
 import { radius } from '@/theme'
 
-import { useItemImageUrl } from '../use-item-image-url'
+import { useItemImageUrl } from '../hooks/use-item-image-url'
 
 type ItemImageProps = {
   path: string | null

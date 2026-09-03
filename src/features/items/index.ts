@@ -1,2 +1,2 @@
-export { registerItemMutationDefaults } from './presentation/item-mutations'
-export { ItemsScreen } from './presentation/ItemsScreen'
+export { registerItemMutationDefaults } from './presentation/mutations/item-mutations'
+export { ItemsScreen } from './presentation/screens/ItemsScreen'

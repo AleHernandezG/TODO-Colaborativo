@@ -53,11 +53,11 @@ src/
 │   └── <feature>/
 │       ├── domain/           # Entidades + casos de uso. SIN React ni Supabase.
 │       ├── data/             # Repositorio: interfaz (puerto) + adaptador Supabase
-│       └── presentation/     # screens / components / hooks (TanStack Query aquí)
+│       └── presentation/     # screens/ components/ hooks/ stores/ mutations/ (TanStack Query aquí)
 ├── shared/
 │   ├── ui/                   # Design system desacoplado (Button, Input, Card...)
-│   ├── lib/                  # cliente Supabase, i18n, config
-│   ├── hooks/  └── utils/
+│   ├── hooks/                # Hooks de React sin nada de ninguna feature dentro
+│   └── lib/                  # El resto: clientes, i18n, tipos generados, envoltorios de módulo nativo
 └── theme/                    # tokens: color, spacing, tipografía, radios
 ```
 
@@ -99,6 +99,13 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
 - **Repositorios como puertos + adaptador:** el dominio define una interfaz; `data/` la implementa para Supabase. Cambiar de proveedor = crear otro adaptador, sin tocar `domain/`.
 - La UI depende de **hooks/casos de uso**, nunca de Supabase directamente.
 - Componentes de `shared/ui` **presentacionales**: reciben props, no conocen la lógica de datos.
+- **`shared/` tiene tres carpetas y no habrá una cuarta de "utilidades".** `ui/` lo presentacional,
+  `hooks/` los hooks de React, y `lib/` todo lo demás que se comparte. No hay `utils/` porque no hay
+  nada que meter dentro: **los diez ficheros de `lib/` importan un módulo de terceros**, incluidos los
+  que parecen helpers sueltos — `uuid.ts` envuelve `expo-modules-core`, `image.ts`
+  `expo-image-manipulator` y `share.ts` `expo-clipboard`. No son utilidades, son el único sitio del
+  código que toca ese módulo, que es el mismo trabajo que hace `supabase.ts`. Razonado en
+  `docs/phases/fase-6.md` (Tarea 2, E4).
 - **Para salir de tu módulo, alias `@/`; dentro de él, relativo.** Módulo es `features/<x>`, `shared`,
   `theme` o `app`. Un `../../domain/quantity` desde `items/presentation/components` está bien, porque
   cruza de capa sin salir de `items`; un `../../../shared/lib/errors` no, porque sale. El alias lo
@@ -114,6 +121,14 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
   fusiona, así que **un bloque nuevo de `no-restricted-imports` apaga en silencio los de `domain/` y
   los de Paper**. Si tocas esa regla, repite los patrones que ya llevaba el fichero y comprueba con
   una sonda que los viejos siguen disparando. Razonado en `docs/phases/fase-6.md` (Tarea 2, E2).
+- **En la raíz de `presentation/` no va ningún fichero suelto.** Todo cuelga de `screens/`,
+  `components/`, `hooks/`, `stores/` o `mutations/`, y **solo se crea la carpeta que tenga contenido**:
+  nada de directorios vacíos por simetría. `screens/` es el cuerpo de una ruta, lo que renderiza un
+  fichero de `src/app/`; un componente que envuelve el árbol, como `SessionGate`, es `components/`.
+  `mutations/` es el registro de `setMutationDefaults` de [ADR-0009](docs/adr/ADR-0009-cola-de-mutaciones-offline.md)
+  con su clave y sus tipos de `variables`, que no es un hook aunque los hooks lo importen. Los
+  `__tests__/` van dentro de la carpeta del fichero que prueban, como en `domain/` y `data/`.
+  Razonado en `docs/phases/fase-6.md` (Tarea 2, E3).
 
 ## Reglas de estado
 

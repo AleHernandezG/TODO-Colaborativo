@@ -1170,8 +1170,8 @@ podrido: 639 imports y ni uno usaba el alias `@/` que `tsconfig.json` llevaba de
 Fase 0, 129 subían dos o más niveles con `../../`, y 17 se metían en el interior de otra feature sin
 que nada lo impidiera. La carpeta decía "feature autocontenida" y el grafo de imports decía otra cosa.
 
-Se hicieron los incrementos E1 y E2. E3 (normalizar `presentation/`) y E4 (deshacer el cajón de
-`shared/lib`) quedan pendientes y no se tocaron.
+E1 y E2 se hicieron el 2026-08-29 y se commitearon por separado (`ad35955`, `a50044a`). E3
+(normalizar `presentation/`) salió el mismo día, en su propio incremento. E4 queda por debajo.
 
 ### E1 · Encender el alias `@/`
 
@@ -1264,7 +1264,7 @@ import al interior de otra feature por alias y por ruta relativa, `src/app` entr
 interior de la _propia_ feature, Paper dentro de `shared/ui` y un import por la puerta. Salieron 6
 errores y 3 silencios. Las sondas se borraron después.
 
-### Cómo queda y cómo comprobarlo
+### Cómo quedaron E1 y E2
 
 |                                        | Antes | Ahora                                        |
 | -------------------------------------- | ----- | -------------------------------------------- |
@@ -1287,7 +1287,126 @@ Dos cosas que **no** cambiaron y conviene no confundir con esto:
   artefacto de finales de línea de siempre (`core.autocrlf=true`), y Prettier no está en
   `npm run lint`.
 - `npm run catalog:ingest -- --dry-run` falla con `not a git repository`. Es un clon corrupto en
-  `%TEMP%\catalog-ingest`, comprobado fallando igual en el árbol limpio. Se arregla con `--fresh`.
+  `%TEMP%\catalog-ingest`, comprobado fallando igual en el árbol limpio. Se arregla con `--fresh`,
+  confirmado al verificar E3: con el flag vuelve a leer las 4.979 filas.
+
+### E3 · Normalizar `presentation/`
+
+Las cinco features tenían `presentation/` con cinco formas distintas: 47 ficheros sueltos en la raíz,
+`components/` solo en dos de ellas, y ninguna manera de saber dónde estaba el store de una feature sin
+listar la carpeta. Ahora hay cinco carpetas posibles —`screens`, `components`, `hooks`, `stores`,
+`mutations`— y **en la raíz de `presentation/` no queda ningún fichero suelto en ninguna feature**.
+
+| Feature     | Carpetas                                                             |
+| ----------- | -------------------------------------------------------------------- |
+| `catalog`   | `components` (2) · `hooks` (2)                                       |
+| `community` | `screens` (2) · `components` (2) · `hooks` (7) · `stores` (1)        |
+| `expenses`  | `screens` (1) · `components` (6) · `hooks` (8) · `stores` (1) · `mutations` (1 + test) |
+| `items`     | `screens` (1) · `components` (5) · `hooks` (8) · `stores` (1) · `mutations` (1 + test) |
+| `session`   | `components` (1) · `hooks` (1) · `stores` (1)                        |
+
+**Solo se crean las carpetas que tienen contenido.** La coherencia que se buscaba es "si una feature
+tiene store, está en `stores/`", no "todas las features tienen las mismas carpetas". La segunda
+lectura produce directorios vacíos de adorno que además git no versiona, así que la simetría ni
+siquiera sobreviviría a un clon. Por eso `catalog` sale con dos carpetas y `session` con tres de un
+fichero cada una, que no es lo mismo que una carpeta vacía.
+
+Cuatro casos no encajaban en el reparto obvio y se decidieron uno a uno:
+
+- **`item-mutations.ts` y `expense-mutations.ts` tienen carpeta propia, `mutations/`.** No son hooks:
+  no llaman a React, no empiezan por `use` y no devuelven nada a un componente; meterlos en `hooks/`
+  rompe lo único que hace esa carpeta escaneable de un vistazo. Y dejarlos sueltos reproducía el
+  problema que E3 venía a matar. Lo que hay dentro tiene nombre propio en el repo desde
+  [ADR-0009](../adr/ADR-0009-cola-de-mutaciones-offline.md): la clave de mutación, el tipo de las
+  `variables` y el registro de `setMutationDefaults`. Eso es **el contrato de la cola offline**, y de
+  hecho la dependencia va al revés de lo que sugeriría meterlo en `hooks/`: cuatro hooks de cada
+  feature importan `itemMutationKeys` / `expenseMutationKeys` de ahí.
+- **Los dos `__tests__/` bajan con el fichero que prueban**, a `mutations/__tests__/`. Es la
+  convención que ya seguían `domain/__tests__/`, `data/__tests__/` y `shared/lib/__tests__/`: el test
+  es hermano de su sujeto, no vive dos niveles por encima. Un `presentation/__tests__/` común habría
+  obligado a decidir esto otra vez con el primer test de un hook.
+- **`SessionGate.tsx` es un componente**, y va a `components/`. Recibe `{ children }`, devuelve JSX y
+  no lo renderiza ninguna ruta: lo monta `_layout.tsx` envolviendo el árbol entero. En este repo
+  `screens/` quiere decir *cuerpo de una ruta* —lo que un fichero de `src/app/` renderiza—, y si
+  entra ahí el gate de arranque, pasa a querer decir "pantalla grande", que no distingue nada.
+
+**Lo que costó, dicho en claro.** Los imports que cruzan de capa dentro de la propia feature bajan un
+nivel más: `hooks/use-items.ts` pasa de `../domain/item` a `../../domain/item`. Los que suben dos
+niveles van de 13 a 100, y aparecen los dos primeros de tres niveles, que son los `jest.mock` y los
+`import` de los tests de mutaciones hacia `data/`. **Ninguno sale de su feature** —los 100 apuntan a
+`domain/` (83) o `data/` (17) del propio módulo—, así que la regla de `CLAUDE.md` los deja relativos
+a propósito y no hay que convertirlos al alias. E1 dejó anotado que quedaban 15 de esos "a propósito";
+ahora son más y más hondos, y sigue siendo la misma decisión, no un descuido.
+
+Los imports con `@/` no se movieron (125 antes y después): E3 no cruza ninguna frontera de módulo.
+
+**Cómo se reescribieron los 169 imports.** No con búsqueda y reemplazo. Un script resuelve cada ruta
+relativa contra el directorio **viejo** del fichero, la mapea con la tabla de renombrados que da
+`git diff --cached --name-status -M`, y la recalcula desde el directorio **nuevo**. Así da igual que
+el fichero se haya movido, que se haya movido su destino, o las dos cosas: los tres casos salen bien
+sin enumerarlos. Después, `eslint --fix` para el orden. Los ficheros se movieron con `git mv`, así que
+el historial los sigue.
+
+Un detalle que hay que hacer bien y no avisa si se hace mal: en los tests de mutaciones, el `import` y
+el `jest.mock` del repositorio son **la misma cadena** y tienen que cambiar juntos. El script los trata
+igual porque su expresión regular casa las dos formas.
+
+**La regla de ESLint sigue mordiendo con el nivel extra**, que era el riesgo real de este incremento:
+los patrones son `**/<feature>/presentation/**` y `**` cruza directorios, pero eso se comprueba, no se
+supone. Nueve sondas como en E2, seis que deben fallar y tres que no: import al interior de otra
+feature por alias y por relativo (`../../../community/presentation/hooks/use-viewers`), `src/app`
+entrando a una pantalla, `react` en `domain/`, Paper en un `.tsx` de feature y Paper en `src/app`; y
+del otro lado, import dentro de la propia feature, Paper en `shared/ui` y un import por la puerta.
+Salieron 6 errores y 3 silencios. Borradas después.
+
+Verificado con `npm run lint`, `npm run typecheck`, `npm test` (43 suites, 327 tests),
+`npx expo export --platform android`, `npm run test:rls` (39/39), `npm run test:realtime` (15/15) y
+`npm run catalog:ingest -- --dry-run --fresh` (4.979 filas). E3 no toca `catalog/domain`, así que los
+dos scripts que importan de `src/` con `--experimental-strip-types` no se ven afectados.
+
+### E4 · `shared/` no se parte, y el árbol de `CLAUDE.md` deja de mentir
+
+E4 entraba con una premisa que resultó ser falsa, y por eso no movió ni un fichero. La premisa era que
+`shared/lib` mezclaba infraestructura (`supabase.ts`, `query-client.ts`, `db.types.ts`, `i18n/`) con
+helpers casi puros (`uuid.ts`, `image.ts`, `share.ts`), y que la carpeta `utils/` que el árbol de
+`CLAUDE.md` lleva dibujada desde la Fase 0 —y que nunca ha existido— era el sitio de los segundos.
+
+Se miraron los imports de los diez ficheros antes de proponer la línea de corte:
+
+```
+uuid.ts        → expo-modules-core
+image.ts       → expo-image-manipulator
+share.ts       → expo-clipboard + react-native
+network.ts     → @react-native-community/netinfo
+build-info.ts  → expo-constants + expo-updates
+supabase.ts    → @supabase/supabase-js + async-storage
+query-client.ts, query-persister.ts → tanstack + netinfo + async-storage
+errors.ts      → ./network
+```
+
+**No hay ni un helper puro.** Los tres candidatos son envoltorios de un módulo nativo de Expo, y
+existen exactamente por eso: para ser el único sitio del código que lo toca. Es literalmente lo que
+[ADR-0010](../adr/ADR-0010-id-del-articulo-generado-en-el-cliente.md) dice de `uuid.ts` — *"el único
+sitio que habría que tocar si algún día desaparece"*—, que es la descripción de un adaptador, no la de
+una utilidad. `uuid.ts` hace el mismo trabajo que `supabase.ts`, solo que envolviendo algo más
+pequeño.
+
+Con eso, ninguna línea de corte sobrevive: por "sin dependencias externas", `utils/` queda vacía
+(`errors.ts` solo importa `./network`, que importa NetInfo); por "no importa nada de Expo ni de RN",
+vacía otra vez; y por "pocas líneas" no es un criterio, es una coincidencia. Una carpeta cuyo criterio
+de admisión no se puede enunciar es una carpeta que se vuelve a llenar de cualquier cosa en seis meses.
+
+El precio de intentarlo tampoco era cero. `CLAUDE.md`, ADR-0010, ADR-0016 y seis diarios de fase citan
+`src/shared/lib/*.ts` por su ruta literal. Los diarios son un registro fechado: cambiar el de
+`fase-3.md` para que diga que ese día se creó `shared/utils/image.ts` falsea lo que pasó, y dejarlo
+sin tocar deja una ruta que ya no existe. Se pagan si el corte compra algo; aquí no compraba nada.
+
+Lo que sí era un problema real es que **el árbol de `CLAUDE.md` describía una carpeta inexistente**, y
+eso se arregla ahí mismo: fuera `utils/`, y una línea que diga qué va en cada una de las tres que sí
+hay. `lib/` con diez ficheros y una subcarpeta no es un cajón desastre; es la plomería de la app, y
+todos sus ficheros tienen nombre.
+
+E4 no toca código, así que no hay nada que verificar más allá de que la documentación sea cierta.
 
 ---
 

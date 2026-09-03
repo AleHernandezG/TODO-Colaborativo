@@ -10,7 +10,7 @@ import { QuantityStepper } from '@/shared/ui/QuantityStepper'
 import type { ItemImageChange } from '../../domain/edit-item'
 import type { Item } from '../../domain/item'
 import { isValidItemName, itemNameMaxLength, normalizeItemName } from '../../domain/item-name'
-import { usePickImage } from '../use-pick-image'
+import { usePickImage } from '../hooks/use-pick-image'
 import { ItemImage } from './ItemImage'
 
 type EditItemDialogProps = {

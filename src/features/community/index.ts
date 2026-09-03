@@ -1,12 +1,12 @@
 export type { Community } from './domain/community'
 export type { CommunityMember } from './domain/community-repository'
+export { JoinCodeCard } from './presentation/components/JoinCodeCard'
+export { ViewersLine } from './presentation/components/ViewersLine'
+export { useCommunityMembers } from './presentation/hooks/use-community-members'
+export { useViewers } from './presentation/hooks/use-viewers'
+export { CreateCommunityScreen } from './presentation/screens/CreateCommunityScreen'
+export { JoinCommunityScreen } from './presentation/screens/JoinCommunityScreen'
 export {
   useActiveCommunityHydrated,
   useActiveCommunityStore,
-} from './presentation/active-community-store'
-export { CreateCommunityScreen } from './presentation/CreateCommunityScreen'
-export { JoinCodeCard } from './presentation/JoinCodeCard'
-export { JoinCommunityScreen } from './presentation/JoinCommunityScreen'
-export { useCommunityMembers } from './presentation/use-community-members'
-export { useViewers } from './presentation/use-viewers'
-export { ViewersLine } from './presentation/ViewersLine'
+} from './presentation/stores/active-community-store'
