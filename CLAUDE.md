@@ -340,15 +340,22 @@ RF-8 (PDF), RF-9 (reparto de gastos) y RF-10 (catálogo de productos de supermer
 El requisito de entrada del reparto de gastos ([ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md), identidad no suplantable)
 quedó resuelto el 2026-08-24 con el PIN por miembro ([ADR-0015](docs/adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md)).
 
-**RF-9 cumple las reglas desde el 2026-08-28, y sigue sin verse en un móvil.** El bloque B de la
-Fase 6 tiene esquema, RPC transaccional, balances y liquidación mínima en `domain/` y su pantalla, y
-desde el cierre de B.5 también mutaciones optimistas, deshacer al borrar, suscripción a Realtime y
-cola offline con el id del gasto puesto por el cliente. Detalle en `docs/phases/fase-6.md` (B.9).
-**Lo que falta es la prueba en dispositivo**: la pantalla de gastos nunca se ha abierto en el Android
-real, y hasta que se recorra el guion de dos móviles de B.10 el bloque no está cerrado. Dos cosas se
-quedaron anotadas como deuda ahí: la X de borrar sale en gastos ajenos que la RLS no deja borrar, y
-`scope: { id: 'expenses' }` solo es correcto mientras el gasto no cuelgue de un artículo creado sin
-conexión.
+**RF-9 llegó al móvil el 2026-09-03**, con el update por aire `01a0682a` sobre el APK de la 1.2.0. El
+bloque B de la Fase 6 tiene esquema, RPC transaccional, balances y liquidación mínima en `domain/`,
+mutaciones optimistas, deshacer al borrar, suscripción a Realtime y cola offline con el id del gasto
+puesto por el cliente. Detalle en `docs/phases/fase-6.md` (B.9).
+
+**Su pantalla se vio por fin en un Android real y no valía**: cabecera rota, todo en un scroll, sin
+fechas, sin detalle y con el alta metida en un diálogo. Se rehizo entera el 2026-09-03 en cuatro
+rutas bajo `/expenses` (resumen, `new`, `history`, `[id]`), con el alta a pantalla completa y el
+borrado solo en el detalle y solo si el gasto es tuyo, que es exactamente lo que dice la RLS. Eso
+**cierra la primera de las dos deudas de B.9**; la segunda sigue viva: `scope: { id: 'expenses' }`
+solo es correcto mientras el gasto no cuelgue de un artículo creado sin conexión. Detalle en
+`docs/phases/fase-6.md` (Tarea 3), que también dice qué le pasa al paso 6 del guion de B.10.
+
+**Lo que falta ahora es probar la pantalla rehecha en dispositivo.** El guion de dos móviles de B.10
+se está recorriendo contra `01a0682a`, que todavía lleva la pantalla vieja; hasta que se publique la
+nueva y se vuelva a recorrer, el bloque no está cerrado.
 
 El catálogo (RF-10, [ADR-0012](docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md)) es el
 bloque A de la Fase 6 y **está en Aceptado desde el 2026-08-07**: la fuente la eligió el usuario con

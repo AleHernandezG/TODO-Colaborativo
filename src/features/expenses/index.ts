@@ -1,2 +1,5 @@
 export { registerExpenseMutationDefaults } from './presentation/mutations/expense-mutations'
+export { ExpenseDetailScreen } from './presentation/screens/ExpenseDetailScreen'
 export { ExpensesScreen } from './presentation/screens/ExpensesScreen'
+export { MovementsScreen } from './presentation/screens/MovementsScreen'
+export { NewExpenseScreen } from './presentation/screens/NewExpenseScreen'

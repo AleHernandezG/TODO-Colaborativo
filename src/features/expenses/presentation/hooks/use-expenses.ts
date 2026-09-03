@@ -16,10 +16,7 @@ export function useExpenses(communityId: string) {
   return useQuery({
     queryKey: expensesKey(communityId),
     queryFn: () => supabaseExpenseRepository.listExpenses(communityId),
-    select: useCallback(
-      (expenses: Expense[]) => visibleRows(expenses, deletingIds),
-      [deletingIds],
-    ),
+    select: useCallback((expenses: Expense[]) => visibleRows(expenses, deletingIds), [deletingIds]),
     meta: { persist: true },
   })
 }

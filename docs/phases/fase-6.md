@@ -1410,6 +1410,174 @@ E4 no toca código, así que no hay nada que verificar más allá de que la docu
 
 ---
 
+## Tarea 3 · La pantalla de gastos, rehecha — 2026-09-03
+
+### Antes de nada: el update que la puso en el móvil
+
+El APK instalado llevaba el JS del 2026-08-06. Todo el bloque A y todo el B estaban en el repo y
+aplicados en Supabase, pero en el móvil no existían: ni catálogo, ni PIN, ni gastos, ni los códigos
+de error de ADR-0016. Con el PIN ya en la base, un miembro con `pin_hash` puesto recibía
+`invalid_pin` desde una app que ni siquiera pintaba el campo.
+
+Se publicó por aire, sin recompilar, porque nada de eso toca nativo: `app.json` no se ha movido
+desde que se generó el APK (misma `version` 1.2.0, misma `runtimeVersion` por política `appVersion`)
+y en `package.json` solo entraron scripts. `eas update --branch preview` dejó el grupo
+`1c2955a1-2d99-45f3-82eb-5956c7631ce0`, id de Android `01a0682a`, commit `9b5a03c`. Los dos móviles
+enseñan `v1.2.0 · 01a0682a` al pie de la lista, que es la comprobación de que corren este código y
+no el bundle del APK.
+
+Al aplicarse el update **se vacía la caché persistida de TanStack Query**: `cacheBuster()` de
+`src/shared/lib/query-persister.ts` es la versión más el `updateId`, así que cambia con cada update.
+Es lo que se quiere, porque llegan estructuras de datos nuevas, pero conviene tenerlo presente antes
+de dar por roto el paso 8 de B.10: el primer arranque tras un update no tiene lista cacheada porque
+no puede tenerla.
+
+### Lo que estaba mal
+
+Con la pantalla ya en un Android real, el veredicto fue que el reparto de gastos «queda muy feo y
+poco organizado» y «está inutilizable». Mirando el código, no era una impresión:
+
+- **La cabecera se rompía sola.** `Button` de `shared/ui` era `w-full` siempre, y en una fila
+  `flex-row` de React Native `flexShrink` vale 0 por defecto: el botón «+ Gasto» pedía el ancho
+  entero y aplastaba el título.
+- **Todo en un `ScrollView` de cuatro bloques.** Balance, deudas, historial de gastos y
+  liquidaciones, uno detrás de otro, sin jerarquía y sin ningún sitio a donde ir.
+- **Los balances por miembro se calculaban y se tiraban.** `useExpenseSummary` ya devolvía
+  `balances` con lo que ha puesto cada uno; ninguna pantalla lo pintaba.
+- **Los gastos no tenían fecha ni detalle.** Una fila no se podía abrir, y el reparto por miembro,
+  que es el dato que justifica el importe, no se veía en ninguna parte.
+- **El alta vivía en un diálogo de Paper.** Un formulario de cinco campos dentro de un modal, con el
+  teclado encima.
+- **La ✕ salía en gastos ajenos** que la RLS no deja borrar (la deuda anotada en B.9), y con un área
+  táctil por debajo de los 44 pt.
+- **Sin banner de sin conexión.** La lista lo tenía; gastos no.
+
+### Las tres decisiones, y las tomó el usuario
+
+| Pregunta                 | Elegido                                            |
+| ------------------------ | -------------------------------------------------- |
+| ¿Una pantalla o varias?  | **Rutas separadas** bajo `/expenses`               |
+| ¿Cómo se añade un gasto? | **Pantalla completa**, fuera el diálogo            |
+| ¿Dónde se borra?         | **Solo en el detalle, y solo si el gasto es tuyo** |
+
+### Las rutas
+
+`src/app/expenses.tsx` se convierte en carpeta. Cuatro ficheros, cada uno una línea que reexporta la
+pantalla de la feature:
+
+```
+src/app/expenses/index.tsx     → ExpensesScreen       resumen
+src/app/expenses/new.tsx       → NewExpenseScreen     alta a pantalla completa
+src/app/expenses/history.tsx   → MovementsScreen      movimientos por día
+src/app/expenses/[id].tsx      → ExpenseDetailScreen  detalle y borrado
+```
+
+No hay `_layout.tsx` dentro: cuelgan del `Stack` de la raíz, que ya va con `headerShown: false`, así
+que cada pantalla dibuja su propia cabecera y el botón atrás del sistema funciona sin tocar nada.
+`router.push('/expenses')` desde la lista sigue resolviendo, ahora al `index`.
+
+**El resumen** enseña, en este orden: tu balance en grande con icono y texto (nunca solo color), las
+liquidaciones recomendadas con avatar de quién paga a quién, quién ha puesto qué con el balance de
+cada miembro, y los tres últimos movimientos con un botón para verlos todos. Abajo, fija, la acción
+principal: «Añadir gasto». Si no hay ni un movimiento no se pinta nada de eso, solo un vacío con 🧾
+que invita a apuntar el primero.
+
+**Los movimientos** son una `SectionList` con gastos y liquidaciones mezclados y agrupados por día,
+con «Hoy» y «Ayer» por nombre. Una fila de gasto se abre; una de liquidación no, porque no hay nada
+más que contar de ella.
+
+**El detalle** es el único sitio donde se borra. Enseña importe, quién pagó, fecha con hora y el
+reparto miembro a miembro. Si el gasto es tuyo, botón de borrar en rojo con el deshacer de siempre;
+si no lo es, una línea que dice por qué no se puede.
+
+### El borrado ahora dice lo mismo que la RLS
+
+La política `expenses_delete` exige `created_by_auth_user_id = auth.uid()`, y `settlements_delete`
+lo mismo. La pantalla mentía: ofrecía la ✕ en todas las filas y el servidor contestaba `42501` cinco
+segundos después, cuando la cola soltaba el borrado. La regla vive ahora en `domain/ownership.ts`
+(`isOwnExpense` / `isOwnSettlement`), con tests, y decide dos cosas: si el detalle enseña el botón de
+borrar, y si una liquidación lleva ✕ en la lista de movimientos.
+
+Se compara contra `session.userId`, no contra `members.isSelf`. No es lo mismo: `isSelf` dice quién
+eres en la comunidad y la RLS mira quién creó la fila, así que un gasto que pagó otro pero apuntaste
+tú es tuyo para borrar. Y un `authUserId` vacío no es dueño de nada, que es lo que evita que un gasto
+optimista creado sin sesión, con la cadena vacía por id, parezca borrable.
+
+**Esto cierra la primera deuda de B.9.** La segunda, la de que `scope: { id: 'expenses' }` solo vale
+mientras el gasto no cuelgue de un artículo creado sin conexión, sigue abierta; el alta nueva manda
+`itemId` a nulo, así que no empeora.
+
+### Dominio nuevo, con sus tests
+
+- **`domain/movements.ts`**: `toMovements` mezcla gastos y liquidaciones en una lista ordenada de más
+  nuevo a más viejo, y `groupMovementsByDay` la parte en días. Ordena por timestamp, no comparando
+  las cadenas ISO: de Postgres llegan con desfase `+00:00` y las optimistas se generan con
+  `toISOString()`, que acaba en `Z`, así que el orden lexicográfico se equivoca en cuanto se mezclan.
+  Una fecha ilegible cae al final y se agrupa aparte en vez de reventar el orden entero.
+- **`domain/ownership.ts`**: lo de arriba.
+- El día se calcula en la zona horaria del móvil (`getFullYear` / `getMonth` / `getDate`) y la hora se
+  formatea a mano. **Nada de `Intl` ni `toLocaleDateString`**: no había un solo uso en el repo y no
+  hace falta estrenar el soporte de Hermes para pintar `03/09/2026`.
+
+Nueve tests nuevos entre los dos ficheros, incluidos los casos de zona horaria y el de la fecha rota.
+
+### Lo que cambió fuera de la feature
+
+- **`Button` acepta `fullWidth`** (por defecto `true`, así que ninguna pantalla existente se mueve) y
+  una variante **`danger`**: borde rojo sobre superficie, con el texto en `danger`. En claro es
+  `#B91C1C` sobre `#F3F4F6`, 6,4:1, que pasa AA de sobra; en oscuro, `#F87171` sobre `#161B26`.
+- **`OfflineBanner` se muda a `src/shared/ui/`**, por lo mismo que se mudó `RealtimeStatus` en B.9:
+  ahora lo usan pantallas de dos features y una feature no importa del interior de otra.
+- El botón de gastos de la cabecera de la lista va con `fullWidth={false}` y tamaño pequeño. El
+  título largo se conserva como `accessibilityHint`.
+
+### i18n
+
+Veintiocho claves nuevas en los dos idiomas y tres borradas: `addExpenseModalTitle`,
+`expenseHistoryTitle` y `settlementsHistoryTitle` se quedaron sin pantalla. `addExpenseButton` deja
+de ser «+ Gasto» y pasa a «Añadir gasto», que es lo que dice el botón grande de abajo. El test que
+compara `es.json` con `en.json` sigue en verde.
+
+### Cómo se probó en el PC
+
+`npm run lint` y `npm run typecheck` limpios. `npm test`: **336 tests en 45 suites**, contra los 327
+en 43 de antes. `npx expo export --platform android` compila.
+
+Aviso de siempre, que volvió a morder: tras crear ficheros en `src/app/` hay que arrancar
+`npx expo start` una vez antes del typecheck, porque `.expo/types/router.d.ts` lo genera el dev
+server y no `expo export`. Sin eso, `tsc` no conoce `/expenses/new` ni `/expenses/[id]` y falla con
+`is not assignable to type RelativePathString`.
+
+### Lo que esto le hace a B.10
+
+El guion de B.10 se escribió contra la pantalla vieja, y **su paso 6 queda obsoleto en cuanto se
+publique esto**: ya no hay ✕ en un gasto ajeno, así que no hay nada que ver volver. Ese paso pasa a
+ser: en B, abre un gasto creado por A y comprueba que el detalle **no ofrece borrar** y enseña «Solo
+quien apuntó el gasto puede borrarlo». Los otros nueve siguen valiendo, con dos matices: el gasto se
+añade desde `/expenses/new`, a pantalla completa y no en un modal, y el borrado con deshacer de los
+pasos 3 y 4 se hace desde el detalle, que vuelve solo al resumen al borrar.
+
+El guion de arriba **no se ha tocado**, porque se está recorriendo ahora mismo contra el update
+`01a0682a`, que todavía lleva la pantalla vieja. Cuando esa pasada termine y esto se publique, se
+sustituye el paso 6.
+
+Sobre las pantallas nuevas hay que mirar, además:
+
+1. **Que la cabecera quepa.** El título no se parte ni se come el botón atrás, en las cuatro.
+2. **El ir y venir.** Resumen → «Ver los N movimientos» → una fila → atrás → atrás, y acabas en la
+   lista. El botón atrás del sistema hace lo mismo que la flecha, y entrar directo al detalle sin
+   historial detrás también sale al resumen.
+3. **El alta con el teclado abierto.** En `/expenses/new`, con el teclado subido, «Guardar gasto»
+   tiene que seguir siendo alcanzable y la lista de miembros scrollable.
+4. **Que el reparto cuadre.** Con tres miembros y 10,00 €, los importes por persona suman exactamente
+   10,00 € (`splitEvenly` reparte el céntimo suelto). Desmarcar a alguien recalcula al momento.
+5. **Los avatares.** Iniciales legibles, y el tuyo en color primario.
+6. **TalkBack.** Cada fila de movimiento se anuncia con concepto, importe y quién pagó. Los avatares
+   no se leen, que son decorativos y van ocultos al lector. En el detalle, el botón de borrar avisa
+   de que hay cinco segundos para deshacer.
+
+---
+
 ## Decisiones sobre la marcha
 
 Aquí van las que se tomen durante la fase y no den para ADR.

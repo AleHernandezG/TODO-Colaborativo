@@ -61,7 +61,8 @@ export function registerExpenseMutationDefaults(client: QueryClient) {
       scope: expenseMutationScope,
       mutationFn: (input) => createSettlement(supabaseExpenseRepository, input),
       onSuccess: (_result, input) => reconcileSettlements(input.communityId),
-      onError: (_error, input) => reportQueuedFailure(() => reconcileSettlements(input.communityId)),
+      onError: (_error, input) =>
+        reportQueuedFailure(() => reconcileSettlements(input.communityId)),
     },
   )
 
@@ -71,7 +72,8 @@ export function registerExpenseMutationDefaults(client: QueryClient) {
       scope: expenseMutationScope,
       mutationFn: (input) => supabaseExpenseRepository.deleteSettlement(input.settlementId),
       onSuccess: (_result, input) => reconcileSettlements(input.communityId),
-      onError: (_error, input) => reportQueuedFailure(() => reconcileSettlements(input.communityId)),
+      onError: (_error, input) =>
+        reportQueuedFailure(() => reconcileSettlements(input.communityId)),
     },
   )
 }

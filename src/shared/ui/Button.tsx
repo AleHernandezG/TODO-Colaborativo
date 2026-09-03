@@ -5,21 +5,24 @@ import { minTouchTarget, usePalette } from '@/theme'
 type ButtonProps = {
   label: string
   onPress: () => void
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'danger'
   size?: 'md' | 'sm'
   disabled?: boolean
   loading?: boolean
+  fullWidth?: boolean
   accessibilityHint?: string
 }
 
 const container = {
   primary: 'bg-primary dark:bg-primary-dark',
   secondary: 'bg-surface dark:bg-surface-dark border border-line dark:border-line-dark',
+  danger: 'bg-surface dark:bg-surface-dark border border-danger dark:border-danger-dark',
 }
 
 const label = {
   primary: 'text-on-primary dark:text-on-primary-dark',
   secondary: 'text-content dark:text-content-dark',
+  danger: 'text-danger dark:text-danger-dark',
 }
 
 const padding = {
@@ -39,6 +42,7 @@ export function Button({
   size = 'md',
   disabled = false,
   loading = false,
+  fullWidth = true,
   accessibilityHint,
 }: ButtonProps) {
   const palette = usePalette()
@@ -53,12 +57,20 @@ export function Button({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: blocked, busy: loading }}
       style={{ minHeight: minTouchTarget }}
-      className={`w-full items-center justify-center rounded-md ${padding[size]} ${
-        container[variant]
-      } ${blocked ? 'opacity-50' : 'active:opacity-80'}`}
+      className={`${fullWidth ? 'w-full' : 'self-start'} items-center justify-center rounded-md ${
+        padding[size]
+      } ${container[variant]} ${blocked ? 'opacity-50' : 'active:opacity-80'}`}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? palette.onPrimary : palette.text} />
+        <ActivityIndicator
+          color={
+            variant === 'primary'
+              ? palette.onPrimary
+              : variant === 'danger'
+                ? palette.danger
+                : palette.text
+          }
+        />
       ) : (
         <Text className={`${labelSize[size]} font-semibold ${label[variant]}`}>{text}</Text>
       )}

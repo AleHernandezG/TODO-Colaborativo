@@ -1,28 +1,31 @@
 import { Redirect, useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useActiveCommunityStore, useCommunityMembers } from '@/features/community'
 import { useFailureMessage } from '@/shared/hooks/use-failure-message'
 import { useSyncStatus } from '@/shared/hooks/use-sync-status'
 import { Button } from '@/shared/ui/Button'
+import { OfflineBanner } from '@/shared/ui/OfflineBanner'
 import { RealtimeStatus } from '@/shared/ui/RealtimeStatus'
 
 import type { DebtTransfer } from '../../domain/expense'
-import { AddExpenseModal } from '../components/AddExpenseModal'
+import { toMovements } from '../../domain/movements'
 import { BalanceSummaryCard } from '../components/BalanceSummaryCard'
 import { DebtTransfersCard } from '../components/DebtTransfersCard'
-import { ExpenseListRow } from '../components/ExpenseListRow'
+import { ExpensesHeader } from '../components/ExpensesHeader'
+import { MemberBalanceList } from '../components/MemberBalanceList'
+import { MovementRow } from '../components/MovementRow'
 import { SettleDebtModal } from '../components/SettleDebtModal'
-import { SettlementListRow } from '../components/SettlementListRow'
-import { useDeleteExpense } from '../hooks/use-delete-expense'
-import { useDeleteSettlement } from '../hooks/use-delete-settlement'
 import { useExpenseSummary } from '../hooks/use-expense-summary'
 import { useExpenses } from '../hooks/use-expenses'
 import { useExpensesRealtime } from '../hooks/use-expenses-realtime'
+import { useGoBack } from '../hooks/use-go-back'
 import { useSettlements } from '../hooks/use-settlements'
+
+const recentCount = 3
 
 export function ExpensesScreen() {
   const membership = useActiveCommunityStore((state) => state.membership)
@@ -31,12 +34,13 @@ export function ExpensesScreen() {
     return <Redirect href="/" />
   }
 
-  return <ExpensesView communityId={membership.community.id} />
+  return <ExpensesSummary communityId={membership.community.id} />
 }
 
-function ExpensesView({ communityId }: { communityId: string }) {
+function ExpensesSummary({ communityId }: { communityId: string }) {
   const { t } = useTranslation()
   const router = useRouter()
+  const goBack = useGoBack('/list')
 
   const { data: members = [] } = useCommunityMembers(communityId)
   const {
@@ -49,130 +53,139 @@ function ExpensesView({ communityId }: { communityId: string }) {
     refetch,
   } = useExpenses(communityId)
   const { data: settlements = [] } = useSettlements(communityId)
-  const { myBalance, totalSpentCents, transfers } = useExpenseSummary(communityId)
+  const { balances, myBalance, totalSpentCents, transfers } = useExpenseSummary(communityId)
 
-  const { online } = useSyncStatus()
+  const { online, pendingChanges } = useSyncStatus()
   const realtimeStatus = useExpensesRealtime(communityId)
   const failureMessage = useFailureMessage()
 
-  const removeExpense = useDeleteExpense(communityId)
-  const removeSettlement = useDeleteSettlement(communityId)
-
-  const [addModalVisible, setAddModalVisible] = useState(false)
   const [selectedTransfer, setSelectedTransfer] = useState<DebtTransfer | null>(null)
+
+  const movements = useMemo(() => toMovements(expenses, settlements), [expenses, settlements])
 
   const loadErrorMessage = useMemo(
     () => (isError ? failureMessage(error, t('expenses.loadError')) : ''),
     [isError, error, failureMessage, t],
   )
 
+  const nothingYet = movements.length === 0 && !isLoading && !isError && !isPaused
+
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="flex-row items-center justify-between border-b border-line px-4 py-3 dark:border-line-dark">
-        <Pressable
-          onPress={router.back}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={t('expenses.backToList')}
-          className="p-2 active:opacity-60"
-        >
-          <Text className="text-base font-semibold text-primary dark:text-primary-dark">
-            ← {t('expenses.backToList')}
-          </Text>
-        </Pressable>
-
-        <Text
-          accessibilityRole="header"
-          className="text-lg font-bold text-content dark:text-content-dark"
-        >
-          {t('expenses.screenTitle')}
-        </Text>
-
-        <Button
-          label={t('expenses.addExpenseButton')}
-          onPress={() => setAddModalVisible(true)}
-          size="sm"
-        />
-      </View>
+      <ExpensesHeader
+        title={t('expenses.screenTitle')}
+        backLabel={t('expenses.backToList')}
+        onBack={goBack}
+      />
 
       <ScrollView
-        contentContainerStyle={{ padding: 16, gap: 20 }}
-        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 16, flexGrow: 1 }}
         refreshControl={
           <RefreshControl refreshing={isFetching && !isLoading} onRefresh={() => void refetch()} />
         }
       >
-        {online ? <RealtimeStatus status={realtimeStatus} /> : null}
+        {online ? (
+          <RealtimeStatus status={realtimeStatus} />
+        ) : (
+          <OfflineBanner pendingChanges={pendingChanges} />
+        )}
 
-        <BalanceSummaryCard myBalance={myBalance} totalSpentCents={totalSpentCents} />
+        {isLoading ? (
+          <View
+            accessible
+            accessibilityLabel={t('expenses.loading')}
+            className="flex-1 items-center justify-center gap-3 py-10"
+          >
+            <ActivityIndicator size="large" />
+            <Text className="text-base text-muted dark:text-muted-dark">
+              {t('expenses.loading')}
+            </Text>
+          </View>
+        ) : isError && movements.length === 0 ? (
+          <View className="flex-1 items-center justify-center gap-4 py-10">
+            <Text
+              accessibilityLiveRegion="polite"
+              className="text-center text-base text-muted dark:text-muted-dark"
+            >
+              {loadErrorMessage}
+            </Text>
+            <Button
+              label={t('common.retry')}
+              onPress={() => void refetch()}
+              variant="secondary"
+              fullWidth={false}
+            />
+          </View>
+        ) : isPaused && movements.length === 0 ? (
+          <View accessible className="flex-1 items-center justify-center gap-2 py-10">
+            <Text className="text-5xl">☁</Text>
+            <Text className="text-center text-base text-muted dark:text-muted-dark">
+              {t('expenses.noCachedExpenses')}
+            </Text>
+          </View>
+        ) : nothingYet ? (
+          <View accessible className="flex-1 items-center justify-center gap-2 py-10">
+            <Text className="text-5xl">🧾</Text>
+            <Text
+              accessibilityRole="header"
+              className="text-center text-lg font-semibold text-content dark:text-content-dark"
+            >
+              {t('expenses.emptyTitle')}
+            </Text>
+            <Text className="text-center text-base text-muted dark:text-muted-dark">
+              {t('expenses.emptyHint')}
+            </Text>
+          </View>
+        ) : (
+          <>
+            <BalanceSummaryCard myBalance={myBalance} totalSpentCents={totalSpentCents} />
 
-        <DebtTransfersCard transfers={transfers} onSettle={(tr) => setSelectedTransfer(tr)} />
+            <DebtTransfersCard transfers={transfers} onSettle={setSelectedTransfer} />
 
-        <View className="gap-3">
-          <Text className="text-base font-bold text-content dark:text-content-dark">
-            {t('expenses.expenseHistoryTitle')} ({expenses.length})
-          </Text>
+            <MemberBalanceList balances={balances} members={members} />
 
-          {isLoading ? (
-            <View className="items-center gap-3 rounded-lg border border-line bg-surface p-6 dark:border-line-dark dark:bg-surface-dark">
-              <ActivityIndicator accessibilityLabel={t('expenses.loading')} />
-            </View>
-          ) : isPaused && expenses.length === 0 ? (
-            <Notice text={t('expenses.noCachedExpenses')} />
-          ) : isError && expenses.length === 0 ? (
-            <View className="gap-3 rounded-lg border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark">
-              <Text className="text-center text-sm text-muted dark:text-muted-dark">
-                {loadErrorMessage}
+            <View className="gap-2">
+              <Text
+                accessibilityRole="header"
+                className="text-sm font-semibold uppercase text-muted dark:text-muted-dark"
+              >
+                {t('expenses.recentMovementsTitle')}
               </Text>
+
+              {movements.slice(0, recentCount).map((movement) => (
+                <MovementRow
+                  key={movement.id}
+                  movement={movement}
+                  members={members}
+                  onOpen={
+                    movement.kind === 'expense'
+                      ? () =>
+                          router.push({
+                            pathname: '/expenses/[id]',
+                            params: { id: movement.id },
+                          })
+                      : undefined
+                  }
+                />
+              ))}
+
               <Button
-                label={t('common.retry')}
-                onPress={() => void refetch()}
+                label={t('expenses.seeAllMovements', { count: movements.length })}
+                onPress={() => router.push('/expenses/history')}
                 variant="secondary"
                 size="sm"
               />
             </View>
-          ) : expenses.length === 0 ? (
-            <Notice text={t('expenses.noExpensesYet')} />
-          ) : (
-            <View className="gap-2">
-              {expenses.map((expense) => (
-                <ExpenseListRow
-                  key={expense.id}
-                  expense={expense}
-                  members={members}
-                  onDelete={removeExpense}
-                />
-              ))}
-            </View>
-          )}
-        </View>
-
-        {settlements.length > 0 ? (
-          <View className="gap-3">
-            <Text className="text-base font-bold text-content dark:text-content-dark">
-              {t('expenses.settlementsHistoryTitle')} ({settlements.length})
-            </Text>
-
-            <View className="gap-2">
-              {settlements.map((settlement) => (
-                <SettlementListRow
-                  key={settlement.id}
-                  settlement={settlement}
-                  members={members}
-                  onDelete={removeSettlement}
-                />
-              ))}
-            </View>
-          </View>
-        ) : null}
+          </>
+        )}
       </ScrollView>
 
-      <AddExpenseModal
-        visible={addModalVisible}
-        onDismiss={() => setAddModalVisible(false)}
-        communityId={communityId}
-        members={members}
-      />
+      <View className="border-t border-line px-4 py-3 dark:border-line-dark">
+        <Button
+          label={t('expenses.addExpenseButton')}
+          onPress={() => router.push('/expenses/new')}
+        />
+      </View>
 
       <SettleDebtModal
         visible={Boolean(selectedTransfer)}
@@ -181,13 +194,5 @@ function ExpensesView({ communityId }: { communityId: string }) {
         transfer={selectedTransfer}
       />
     </SafeAreaView>
-  )
-}
-
-function Notice({ text }: { text: string }) {
-  return (
-    <View className="rounded-lg border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark">
-      <Text className="text-center text-sm text-muted dark:text-muted-dark">{text}</Text>
-    </View>
   )
 }

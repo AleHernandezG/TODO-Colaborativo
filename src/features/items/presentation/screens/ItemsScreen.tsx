@@ -17,6 +17,7 @@ import { useFailureMessage } from '@/shared/hooks/use-failure-message'
 import { useSyncStatus } from '@/shared/hooks/use-sync-status'
 import { BuildTag } from '@/shared/ui/BuildTag'
 import { Button } from '@/shared/ui/Button'
+import { OfflineBanner } from '@/shared/ui/OfflineBanner'
 import { RealtimeStatus } from '@/shared/ui/RealtimeStatus'
 
 import type { Item } from '../../domain/item'
@@ -24,7 +25,6 @@ import { catalogImageProductIds, itemImageSource } from '../../domain/item-image
 import { AddItemBar } from '../components/AddItemBar'
 import { EditItemDialog } from '../components/EditItemDialog'
 import { ItemRow } from '../components/ItemRow'
-import { OfflineBanner } from '../components/OfflineBanner'
 import { useAddItem } from '../hooks/use-add-item'
 import { useDeleteItem } from '../hooks/use-delete-item'
 import { useEditItem } from '../hooks/use-edit-item'
@@ -146,10 +146,12 @@ function ItemsView({ community, username }: { community: Community; username: st
                 </Text>
               </View>
               <Button
-                label={t('expenses.screenTitle')}
+                label={t('expenses.listButton')}
                 onPress={() => router.push('/expenses')}
                 variant="secondary"
                 size="sm"
+                fullWidth={false}
+                accessibilityHint={t('expenses.screenTitle')}
               />
             </View>
             <ViewersLine names={viewers} />
