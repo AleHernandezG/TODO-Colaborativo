@@ -149,6 +149,18 @@
       "updateFailed": "Couldn't update it. Try again.",
       "deleteFailed": "Couldn't delete it. Try again.",
       "queuedFailed": "A pending change couldn't be saved. Check the list."
+    },
+    "pdf": {
+      "button": "PDF",
+      "buttonHint": "Generates a PDF document of the shopping list and shares it",
+      "docTitle": "Shopping list",
+      "shareTitle": "Shopping list: {{name}}",
+      "generatedAt": "Generated",
+      "emptySection": "No items in this section",
+      "totalSummary": "Total items",
+      "emptyList": "No items in the list to export.",
+      "sharingUnavailable": "Sharing is not available on this device.",
+      "error": "Could not generate or share the PDF. Please try again."
     }
   },
   "catalog": {

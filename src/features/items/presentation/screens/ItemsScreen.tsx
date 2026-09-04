@@ -28,6 +28,7 @@ import { ItemRow } from '../components/ItemRow'
 import { useAddItem } from '../hooks/use-add-item'
 import { useDeleteItem } from '../hooks/use-delete-item'
 import { useEditItem } from '../hooks/use-edit-item'
+import { useExportListPdf } from '../hooks/use-export-list-pdf'
 import { useItems } from '../hooks/use-items'
 import { useItemsRealtime } from '../hooks/use-items-realtime'
 import { useTogglePurchased } from '../hooks/use-toggle-purchased'
@@ -80,6 +81,10 @@ function ItemsView({ community, username }: { community: Community; username: st
 
   const realtimeStatus = useItemsRealtime(community.id)
   const viewers = useViewers(community.id, username)
+  const { exportPdf, isExporting } = useExportListPdf({
+    communityName: community.name,
+    items,
+  })
 
   const catalogIds = useMemo(() => catalogImageProductIds(items ?? []), [items])
   const catalogProducts = useCatalogProducts(catalogIds)
@@ -145,14 +150,26 @@ function ItemsView({ community, username }: { community: Community; username: st
                   {t('list.signedInAs', { username })}
                 </Text>
               </View>
-              <Button
-                label={t('expenses.listButton')}
-                onPress={() => router.push('/expenses')}
-                variant="secondary"
-                size="sm"
-                fullWidth={false}
-                accessibilityHint={t('expenses.screenTitle')}
-              />
+              <View className="flex-row items-center gap-2">
+                <Button
+                  label={t('items.pdf.button')}
+                  onPress={() => void exportPdf()}
+                  variant="secondary"
+                  size="sm"
+                  fullWidth={false}
+                  loading={isExporting}
+                  disabled={isLoading || (items?.length ?? 0) === 0}
+                  accessibilityHint={t('items.pdf.buttonHint')}
+                />
+                <Button
+                  label={t('expenses.listButton')}
+                  onPress={() => router.push('/expenses')}
+                  variant="secondary"
+                  size="sm"
+                  fullWidth={false}
+                  accessibilityHint={t('expenses.screenTitle')}
+                />
+              </View>
             </View>
             <ViewersLine names={viewers} />
 

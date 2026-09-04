@@ -149,6 +149,18 @@
       "updateFailed": "No se pudo actualizar. Inténtalo otra vez.",
       "deleteFailed": "No se pudo borrar. Inténtalo otra vez.",
       "queuedFailed": "Un cambio que estaba pendiente no se pudo guardar. Revisa la lista."
+    },
+    "pdf": {
+      "button": "PDF",
+      "buttonHint": "Genera un documento PDF con la lista de la compra y lo comparte",
+      "docTitle": "Lista de la compra",
+      "shareTitle": "Lista de la compra: {{name}}",
+      "generatedAt": "Generado",
+      "emptySection": "Sin artículos en esta sección",
+      "totalSummary": "Total de artículos",
+      "emptyList": "No hay artículos en la lista para exportar.",
+      "sharingUnavailable": "La opción de compartir no está disponible en este dispositivo.",
+      "error": "No se pudo generar o compartir el PDF. Inténtalo otra vez."
     }
   },
   "catalog": {
