@@ -30,6 +30,9 @@ El criterio y sus motivos están en
 | [0011](./adr/ADR-0011-caducidad-y-rotacion-del-join-code.md)     | El `join_code` caduca y se puede rotar                   | Aceptado y **verificado** (24/24) |
 | [0012](./adr/ADR-0012-catalogo-de-productos-de-supermercado.md)  | Catálogo de productos para imagen y precio de referencia | Aceptado                          |
 | [0013](./adr/ADR-0013-fuente-del-catalogo-mercadona.md)          | El catálogo sale del dataset público de Mercadona        | Aceptado                          |
+| [0014](./adr/ADR-0014-origen-de-la-foto-del-articulo.md)         | Origen de la foto del artículo                           | Aceptado                          |
+| [0015](./adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md) | PIN de 4 dígitos por miembro para identidad              | Aceptado y **verificado**         |
+| [0016](./adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-usuario.md) | Clasificación de errores y mensaje al usuario            | Aceptado                          |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin
@@ -52,17 +55,10 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 3 · Imágenes y pulido UX](./phases/fase-3.md) — cerrada
 - [Fase 4 · Robustez y offline](./phases/fase-4.md) — cerrada
 - [Fase 5 · Endurecimiento antes de publicar](./phases/fase-5.md) — cerrada
-- [Fase 6 · Catálogo de productos y reparto de gastos](./phases/fase-6.md) — **abierta**, solo el
-  bloque A
+- [Fase 6 · Catálogo de productos y reparto de gastos](./phases/fase-6.md) — cerrada (bloque A verificado el 2026-08-24; bloque B verificado en dos móviles el 2026-09-04)
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
 [la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).
-
-La 5 y la 6 estuvieron abiertas a la vez a propósito y con límite: a la 5 solo le quedaba la pasada
-con TalkBack, que es prueba manual en el móvil, y el primer trabajo de la 6 era SQL. La condición
-era no publicar nada de la 6 antes de cerrar aquello, y la 5 se cerró el 2026-08-16. De los dos
-bloques de la 6 solo empieza el catálogo (RF-10); el reparto de gastos (RF-9) sigue parado por el
-requisito de entrada de [ADR-0005](./adr/ADR-0005-reparto-de-gastos.md).
 
 ## Guías
 

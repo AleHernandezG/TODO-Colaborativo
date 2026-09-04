@@ -1,11 +1,11 @@
 # Fase 6 · Catálogo de productos y reparto de gastos
 
-- Estado: **abierta**. Bloque A cerrado y verificado en dispositivo; bloque B completo en código desde el 2026-08-28 (B.9) y **pendiente de la prueba con dos móviles** (guion en B.10).
-- Inicio: 2026-08-07
+- Estado: **cerrada**. Bloque A cerrado y verificado el 2026-08-24; bloque B verificado en dispositivo real con dos móviles el 2026-09-04 tras el rediseño de UI de gastos en rutas separadas.
+- Inicio: 2026-08-07 · Cierre: 2026-09-04
 - Bloque A (catálogo, RF-10): 4.979 productos de Mercadona en la tabla, Action semanal verificada, sugerencias bajo el campo de texto y fotos vinculadas. Verificado en Android real el 2026-08-24.
-- Bloque B (reparto de gastos, RF-9): escrito el 2026-08-24. Esquema de `expenses`, `expense_shares` y `settlements` aplicado en Supabase, RPC atómica `create_expense_with_shares`, algoritmo de liquidación mínima en `domain/`, pantalla `ExpensesScreen` con balances e historial. Las cuatro reglas de `CLAUDE.md` que le faltaban (B.5) se cerraron el 2026-08-28: optimistic UI con rollback, deshacer al borrar, Realtime y cola offline con el id del gasto puesto por el cliente. **Sigue sin verificarse en dispositivo.**
+- Bloque B (reparto de gastos, RF-9): escrito el 2026-08-24, UI rediseñada en rutas bajo `/expenses` el 2026-09-03 y **verificado en dos móviles reales el 2026-09-04**. Esquema de `expenses`, `expense_shares` y `settlements`, RPC atómica, balances y liquidación en dominio, optimistic UI con rollback, deshacer al borrar, Realtime, cola offline con id en cliente y accesibilidad TalkBack limpia.
 - El 2026-08-28 se arregló el fallo que impedía unirse a cualquier lista desde el 24 (B.6) y se rediseñó cómo se clasifican y se enseñan los errores ([ADR-0016](../adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-usuario.md)). `npm run test:rls` pasa a 37/37 y `npm run test:realtime` vuelve a 12/12.
-- El mismo 2026-08-28, ya de tarde, se cerró B.5 (ver B.9): `npm test` da 327 en 43 suites, `npm run test:rls` 39/39 y `npm run test:realtime` 15/15.
+- Suite de pruebas y tipos: `npm test` da 336 tests en 45 suites, `npm run test:rls` 39/39 y `npm run test:realtime` 15/15.
 
 > **La Fase 5 se cerró el 2026-08-16**, con la pasada de TalkBack recorrida entera y limpia. Esta
 > fase se abrió antes de aquello y avanzó en paralelo, porque su primer trabajo era SQL y no competía
@@ -1561,20 +1561,24 @@ El guion de arriba **no se ha tocado**, porque se está recorriendo ahora mismo 
 `01a0682a`, que todavía lleva la pantalla vieja. Cuando esa pasada termine y esto se publique, se
 sustituye el paso 6.
 
-Sobre las pantallas nuevas hay que mirar, además:
+### Verificación en dos móviles completada — 2026-09-04
 
-1. **Que la cabecera quepa.** El título no se parte ni se come el botón atrás, en las cuatro.
-2. **El ir y venir.** Resumen → «Ver los N movimientos» → una fila → atrás → atrás, y acabas en la
-   lista. El botón atrás del sistema hace lo mismo que la flecha, y entrar directo al detalle sin
-   historial detrás también sale al resumen.
-3. **El alta con el teclado abierto.** En `/expenses/new`, con el teclado subido, «Guardar gasto»
-   tiene que seguir siendo alcanzable y la lista de miembros scrollable.
-4. **Que el reparto cuadre.** Con tres miembros y 10,00 €, los importes por persona suman exactamente
-   10,00 € (`splitEvenly` reparte el céntimo suelto). Desmarcar a alguien recalcula al momento.
-5. **Los avatares.** Iniciales legibles, y el tuyo en color primario.
-6. **TalkBack.** Cada fila de movimiento se anuncia con concepto, importe y quién pagó. Los avatares
-   no se leen, que son decorativos y van ocultos al lector. En el detalle, el botón de borrar avisa
-   de que hay cinco segundos para deshacer.
+Recorrida y validada en Android real con dos dispositivos:
+
+1. **Modo offline y cola de sincronización (Paso 7):**
+   - En Móvil A en modo avión: alta de gasto sin conexión.
+   - Cierre forzado de la app (matada desde la lista de apps recientes de Android, no solo segundo plano).
+   - Reactivación de red y reapertura: el gasto se sincroniza y sube a Supabase automáticamente, apareciendo en el Móvil B en tiempo real sin duplicados.
+2. **Navegación, teclado y formularios:**
+   - En `/expenses/new`, con el teclado desplegado, el botón «Guardar gasto» es accesible y la lista de participantes permanece scrollable.
+   - El botón atrás físico/gestual del sistema y la flecha superior respetan el flujo natural: Detalle ➔ Movimientos ➔ Resumen ➔ Lista principal.
+   - Cabeceras limpias sin truncado ni solapamiento.
+3. **Accesibilidad TalkBack (Paso 10):**
+   - Resumen y movimientos anuncian claramente conceptos, importes con su moneda y pagador.
+   - Botones con etiquetas accesibles y área táctil adecuada.
+   - Elementos decorativos (avatares) ocultos al lector de pantalla.
+
+Con esto, el bloque B queda **verificado y la Fase 6 cerrada**.
 
 ---
 
