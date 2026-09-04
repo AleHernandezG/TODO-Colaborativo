@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
@@ -19,6 +20,7 @@ type JoinCodeCardProps = {
 
 export function JoinCodeCard({ communityId, communityName }: JoinCodeCardProps) {
   const { t } = useTranslation()
+  const router = useRouter()
   const showSnackbar = useSnackbar()
   const showError = useErrorSnackbar()
   const { data, isLoading } = useJoinCode(communityId)
@@ -119,6 +121,14 @@ export function JoinCodeCard({ communityId, communityName }: JoinCodeCardProps) 
         variant={expired ? 'primary' : 'secondary'}
         size="sm"
         accessibilityHint={t('list.rotate.actionHint')}
+      />
+
+      <Button
+        label={t('members.manageButton')}
+        onPress={() => router.push('/members')}
+        variant="secondary"
+        size="sm"
+        accessibilityHint={t('members.manageHint')}
       />
 
       <Dialog

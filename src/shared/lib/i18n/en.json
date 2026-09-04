@@ -259,5 +259,35 @@
       "settleFailed": "Couldn't record the payment. Try again.",
       "queuedFailed": "A pending change couldn't be saved. Check the expenses."
     }
+  },
+  "members": {
+    "title": "List members",
+    "back": "Back",
+    "manageButton": "Manage members",
+    "manageHint": "View and manage who is part of this list",
+    "badgeYou": "You",
+    "badgeAdmin": "Admin",
+    "badgeGuest": "Guest",
+    "makeAdmin": "Make admin",
+    "removeAdmin": "Remove admin",
+    "removeMember": "Remove",
+    "addGuest": "Add guest",
+    "addGuestHint": "Add someone without the app to include them in expenses",
+    "addGuestTitle": "Add guest participant",
+    "guestNameLabel": "Participant name",
+    "guestNamePlaceholder": "E.g. Carlos",
+    "empty": "No other members in this list.",
+    "deleteTitle": "Remove {{name}}?",
+    "deleteConfirm": "Remove",
+    "deleteBodyClean": "This person has no expense or settlement history. They will be completely removed from the list.",
+    "deleteBodyArchived": "This person has recorded expenses or shares. They will be archived and cannot be selected for new expenses, but their history and balance will remain until settled.",
+    "cannotRemoveSelf": "You cannot remove yourself from the list.",
+    "cannotRemoveLastAdmin": "The list must have at least one administrator. Promote another admin first.",
+    "errors": {
+      "forbidden": "Only administrators can perform this action.",
+      "addGuestFailed": "Could not add guest participant.",
+      "removeFailed": "Could not remove member.",
+      "roleFailed": "Could not update member role."
+    }
   }
 }

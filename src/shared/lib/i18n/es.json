@@ -259,5 +259,35 @@
       "settleFailed": "No se pudo registrar el pago. Inténtalo otra vez.",
       "queuedFailed": "Un cambio que estaba pendiente no se pudo guardar. Revisa los gastos."
     }
+  },
+  "members": {
+    "title": "Miembros de la lista",
+    "back": "Volver",
+    "manageButton": "Gestionar miembros",
+    "manageHint": "Ver y gestionar quién forma parte de la lista",
+    "badgeYou": "Tú",
+    "badgeAdmin": "Admin",
+    "badgeGuest": "Invitado",
+    "makeAdmin": "Hacer admin",
+    "removeAdmin": "Quitar admin",
+    "removeMember": "Eliminar",
+    "addGuest": "Añadir invitado",
+    "addGuestHint": "Añade a alguien que no use la app para incluirle en los gastos",
+    "addGuestTitle": "Añadir participante invitado",
+    "guestNameLabel": "Nombre del participante",
+    "guestNamePlaceholder": "Ej. Carlos",
+    "empty": "No hay otros miembros en la lista.",
+    "deleteTitle": "¿Eliminar a {{name}}?",
+    "deleteConfirm": "Eliminar",
+    "deleteBodyClean": "Esta persona no ha participado en ningún gasto ni liquidación. Se eliminará de la lista por completo.",
+    "deleteBodyArchived": "Esta persona tiene gastos o cuotas registradas. Se dará de baja y no podrá seleccionarse para nuevos gastos, pero su historial y saldo se conservarán hasta que se salde la deuda.",
+    "cannotRemoveSelf": "No puedes expulsarte a ti mismo de la lista.",
+    "cannotRemoveLastAdmin": "La lista no puede quedarse sin administradores. Nombra a otro admin primero.",
+    "errors": {
+      "forbidden": "Solo los administradores pueden realizar esta acción.",
+      "addGuestFailed": "No se pudo añadir al participante invitado.",
+      "removeFailed": "No se pudo eliminar al miembro.",
+      "roleFailed": "No se pudo actualizar el rol del miembro."
+    }
   }
 }

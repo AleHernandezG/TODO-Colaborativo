@@ -13,6 +13,9 @@ export type CommunityMember = {
   id: string
   username: string
   isSelf: boolean
+  isAdmin: boolean
+  isGuest: boolean
+  removedAt?: string | null
 }
 
 export interface CommunityRepository {
@@ -20,5 +23,22 @@ export interface CommunityRepository {
   join(input: { joinCode: string; username: string; pin: string }): Promise<JoinOutcome>
   getJoinCode(communityId: string): Promise<JoinCodeInfo>
   rotateJoinCode(communityId: string): Promise<JoinCodeInfo>
-  listMembers(communityId: string): Promise<CommunityMember[]>
+  listMembers(
+    communityId: string,
+    options?: { includeArchived?: boolean },
+  ): Promise<CommunityMember[]>
+  removeMember(
+    communityId: string,
+    memberId: string,
+  ): Promise<{ status: 'deleted' | 'archived' }>
+  setMemberAdmin(
+    communityId: string,
+    memberId: string,
+    isAdmin: boolean,
+  ): Promise<void>
+  addGuestMember(
+    communityId: string,
+    username: string,
+  ): Promise<CommunityMember>
+  subscribeMembers(communityId: string, onChange: () => void): () => void
 }

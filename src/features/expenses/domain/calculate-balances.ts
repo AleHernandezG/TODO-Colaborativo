@@ -3,6 +3,7 @@ import type { DebtTransfer, Expense, MemberBalance, Settlement } from './expense
 export type MemberRef = {
   id: string
   username: string
+  removedAt?: string | null
 }
 
 export function calculateBalances(
@@ -10,10 +11,13 @@ export function calculateBalances(
   expenses: Expense[],
   settlements: Settlement[],
 ): MemberBalance[] {
-  const map = new Map<string, { username: string; paid: number; owed: number }>()
+  const map = new Map<
+    string,
+    { username: string; paid: number; owed: number; removedAt?: string | null }
+  >()
 
   for (const m of members) {
-    map.set(m.id, { username: m.username, paid: 0, owed: 0 })
+    map.set(m.id, { username: m.username, paid: 0, owed: 0, removedAt: m.removedAt })
   }
 
   for (const expense of expenses) {
@@ -44,12 +48,16 @@ export function calculateBalances(
 
   const result: MemberBalance[] = []
   for (const [memberId, data] of map.entries()) {
+    const netBalanceCents = data.paid - data.owed
+    if (data.removedAt && netBalanceCents === 0) {
+      continue
+    }
     result.push({
       memberId,
       username: data.username,
       paidCents: data.paid,
       owedCents: data.owed,
-      netBalanceCents: data.paid - data.owed,
+      netBalanceCents,
     })
   }
 

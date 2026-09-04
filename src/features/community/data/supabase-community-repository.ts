@@ -133,28 +133,134 @@ export const supabaseCommunityRepository: CommunityRepository = {
     return { code: rotated.join_code, expiresAt: rotated.expires_at }
   },
 
-  async listMembers(communityId: string): Promise<CommunityMember[]> {
+  async listMembers(
+    communityId: string,
+    options?: { includeArchived?: boolean },
+  ): Promise<CommunityMember[]> {
     await assertOnline()
 
     const { data: sessionData } = await supabase.auth.getSession()
     const currentAuthId = sessionData?.session?.user?.id
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('members')
-      .select('id, username, auth_user_id')
+      .select('id, username, auth_user_id, is_admin, removed_at')
       .eq('community_id', communityId)
       .order('username', { ascending: true })
+
+    if (!options?.includeArchived) {
+      query = query.is('removed_at', null)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       throw serverError('members.select', error)
     }
 
     return (
-      (data as unknown as { id: string; username: string; auth_user_id: string | null }[]) ?? []
+      (
+        data as unknown as {
+          id: string
+          username: string
+          auth_user_id: string | null
+          is_admin: boolean
+          removed_at: string | null
+        }[]
+      ) ?? []
     ).map((m) => ({
       id: m.id,
       username: m.username,
       isSelf: Boolean(currentAuthId && m.auth_user_id === currentAuthId),
+      isAdmin: Boolean(m.is_admin),
+      isGuest: m.auth_user_id === null,
+      removedAt: m.removed_at,
     }))
+  },
+
+  async removeMember(
+    communityId: string,
+    memberId: string,
+  ): Promise<{ status: 'deleted' | 'archived' }> {
+    await assertOnline()
+
+    const { data, error } = await supabase.rpc('remove_member', {
+      p_community_id: communityId,
+      p_member_id: memberId,
+    })
+
+    if (error) {
+      throw serverError('remove_member', error)
+    }
+
+    const result = data?.[0]
+    if (!result || (result.status !== 'deleted' && result.status !== 'archived')) {
+      throw new ServerError('remove_member', `respuesta inesperada de la RPC: ${result?.status}`)
+    }
+
+    return { status: result.status as 'deleted' | 'archived' }
+  },
+
+  async setMemberAdmin(communityId: string, memberId: string, isAdmin: boolean): Promise<void> {
+    await assertOnline()
+
+    const { error } = await supabase.rpc('set_member_admin', {
+      p_community_id: communityId,
+      p_member_id: memberId,
+      p_is_admin: isAdmin,
+    })
+
+    if (error) {
+      throw serverError('set_member_admin', error)
+    }
+  },
+
+  async addGuestMember(communityId: string, username: string): Promise<CommunityMember> {
+    await assertOnline()
+
+    const { data, error } = await supabase.rpc('add_guest_member', {
+      p_community_id: communityId,
+      p_username: username,
+    })
+
+    if (error) {
+      throw serverError('add_guest_member', error)
+    }
+
+    const created = data?.[0]
+    if (!created) {
+      throw new ServerError('add_guest_member', 'la RPC no devolvió el invitado creado')
+    }
+
+    return {
+      id: created.id,
+      username: created.username,
+      isSelf: false,
+      isAdmin: false,
+      isGuest: true,
+      removedAt: null,
+    }
+  },
+
+  subscribeMembers(communityId: string, onChange: () => void): () => void {
+    const channel = supabase
+      .channel(`members:${communityId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'members',
+          filter: `community_id=eq.${communityId}`,
+        },
+        () => {
+          onChange()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
   },
 }

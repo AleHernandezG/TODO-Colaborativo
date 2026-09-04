@@ -76,6 +76,16 @@ function ExpensesSummary({ communityId }: { communityId: string }) {
         title={t('expenses.screenTitle')}
         backLabel={t('expenses.backToList')}
         onBack={goBack}
+        right={
+          <Button
+            label={t('members.title')}
+            onPress={() => router.push('/members')}
+            variant="secondary"
+            size="sm"
+            fullWidth={false}
+            accessibilityHint={t('members.manageHint')}
+          />
+        }
       />
 
       <ScrollView

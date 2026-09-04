@@ -33,7 +33,7 @@ function ExpenseDetail({ communityId, expenseId }: { communityId: string; expens
   const { t } = useTranslation()
   const goBack = useGoBack('/expenses')
 
-  const { data: members = [] } = useCommunityMembers(communityId)
+  const { data: members = [] } = useCommunityMembers(communityId, { includeArchived: true })
   const { data: expenses = [], isLoading } = useExpenses(communityId)
   const authUserId = useSessionStore((state) => state.session?.userId ?? null)
   const removeExpense = useDeleteExpense(communityId)

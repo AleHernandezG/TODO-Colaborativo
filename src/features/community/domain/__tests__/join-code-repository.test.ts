@@ -13,6 +13,10 @@ function fakeRepository(): jest.Mocked<CommunityRepository> {
       .fn()
       .mockResolvedValue({ code: 'TRE-88MW', expiresAt: '2026-08-12T10:00:00Z' }),
     listMembers: jest.fn(),
+    removeMember: jest.fn(),
+    setMemberAdmin: jest.fn(),
+    addGuestMember: jest.fn(),
+    subscribeMembers: jest.fn(),
   }
 }
 

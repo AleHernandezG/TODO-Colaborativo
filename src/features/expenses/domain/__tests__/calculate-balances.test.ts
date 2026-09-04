@@ -80,6 +80,85 @@ describe('calculateBalances', () => {
       { memberId: 'm3', username: 'Carla', paidCents: 0, owedCents: 0, netBalanceCents: 0 },
     ])
   })
+
+  it('incluye miembros archivados si su saldo pendiente es distinto de cero', () => {
+    const membersWithArchived = [
+      { id: 'm1', username: 'Ana' },
+      { id: 'm2', username: 'Bruno', removedAt: '2026-09-04T12:00:00Z' },
+    ]
+
+    const expenses: Expense[] = [
+      {
+        id: 'e1',
+        communityId: 'c1',
+        itemId: null,
+        paidByMemberId: 'm1',
+        createdByAuthUserId: 'u1',
+        amountCents: 2000,
+        currency: 'EUR',
+        description: 'Compra compartida',
+        createdAt: '2026-08-24T10:00:00Z',
+        updatedAt: '2026-08-24T10:00:00Z',
+        shares: [
+          { id: 's1', expenseId: 'e1', memberId: 'm1', shareCents: 1000 },
+          { id: 's2', expenseId: 'e1', memberId: 'm2', shareCents: 1000 },
+        ],
+      },
+    ]
+
+    const balances = calculateBalances(membersWithArchived, expenses, [])
+
+    expect(balances).toEqual([
+      { memberId: 'm1', username: 'Ana', paidCents: 2000, owedCents: 1000, netBalanceCents: 1000 },
+      { memberId: 'm2', username: 'Bruno', paidCents: 0, owedCents: 1000, netBalanceCents: -1000 },
+    ])
+  })
+
+  it('omite miembros archivados cuyo saldo es exactamente cero', () => {
+    const membersWithArchived = [
+      { id: 'm1', username: 'Ana' },
+      { id: 'm2', username: 'Bruno', removedAt: '2026-09-04T12:00:00Z' },
+    ]
+
+    const expenses: Expense[] = [
+      {
+        id: 'e1',
+        communityId: 'c1',
+        itemId: null,
+        paidByMemberId: 'm1',
+        createdByAuthUserId: 'u1',
+        amountCents: 2000,
+        currency: 'EUR',
+        description: 'Compra compartida',
+        createdAt: '2026-08-24T10:00:00Z',
+        updatedAt: '2026-08-24T10:00:00Z',
+        shares: [
+          { id: 's1', expenseId: 'e1', memberId: 'm1', shareCents: 1000 },
+          { id: 's2', expenseId: 'e1', memberId: 'm2', shareCents: 1000 },
+        ],
+      },
+    ]
+
+    const settlements: Settlement[] = [
+      {
+        id: 'set1',
+        communityId: 'c1',
+        fromMemberId: 'm2',
+        toMemberId: 'm1',
+        amountCents: 1000,
+        currency: 'EUR',
+        createdByAuthUserId: 'u2',
+        createdAt: '2026-08-24T12:00:00Z',
+      },
+    ]
+
+    const balances = calculateBalances(membersWithArchived, expenses, settlements)
+
+    // Bruno está archivado y saldo = 0, por lo que no aparece en balances
+    expect(balances).toEqual([
+      { memberId: 'm1', username: 'Ana', paidCents: 2000, owedCents: 2000, netBalanceCents: 0 },
+    ])
+  })
 })
 
 describe('calculateMinTransfers', () => {

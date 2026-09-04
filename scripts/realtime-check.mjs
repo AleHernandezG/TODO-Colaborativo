@@ -38,15 +38,47 @@ function newClient() {
   })
 }
 
-async function signIn(client) {
-  const { data, error } = await client.auth.signInAnonymously()
-  if (error) {
+const createdUserIds = []
+
+async function signIn(client, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    const { data, error } = await client.auth.signInAnonymously()
+    if (!error && data?.session?.access_token) {
+      return data.session.access_token
+    }
+
+    if (secretKey) {
+      // Fallback: create confirmed user via admin API to bypass anonymous IP rate limits
+      const tempEmail = `rt-user-${Date.now()}-${Math.random().toString(36).slice(2)}@test.local`
+      const tempPassword = `Pass_${Date.now()}_!`
+      const res = await fetch(`${url}/auth/v1/admin/users`, {
+        method: 'POST',
+        headers: { apikey: secretKey, Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: tempEmail, password: tempPassword, email_confirm: true }),
+      })
+      if (res.ok) {
+        const userData = await res.json()
+        if (userData?.id) createdUserIds.push(userData.id)
+        const { data: signData, error: signError } = await client.auth.signInWithPassword({
+          email: tempEmail,
+          password: tempPassword,
+        })
+        if (!signError && signData?.session?.access_token) {
+          return signData.session.access_token
+        }
+      }
+    }
+
+    if (i < retries - 1 && error?.message?.includes('rate limit')) {
+      console.log(`Rate limit en signInAnonymously, esperando 10s... (intento ${i + 1}/${retries})`)
+      await wait(10000)
+      continue
+    }
     throw new Error(
-      `No se pudo crear la sesión anónima: ${error.message}\n` +
+      `No se pudo crear la sesión: ${error?.message}\n` +
         'Comprueba que "Allow anonymous sign-ins" está activado en Authentication > Sign In / Providers.',
     )
   }
-  return data.session.access_token
 }
 
 function watchItems(client, name, filter) {
@@ -156,7 +188,13 @@ async function cleanup(communityIds) {
       headers: { apikey: secretKey, Authorization: `Bearer ${secretKey}` },
     })
   }
-  console.log('\nComunidades de prueba borradas.')
+  for (const uid of createdUserIds) {
+    await fetch(`${url}/auth/v1/admin/users/${uid}`, {
+      method: 'DELETE',
+      headers: { apikey: secretKey, Authorization: `Bearer ${secretKey}` },
+    })
+  }
+  console.log('\nComunidades de prueba y usuarios de prueba borrados.')
 }
 
 async function main() {
@@ -388,6 +426,62 @@ async function main() {
     expensesB.events.length === 0
       ? 'ni gastos, ni liquidaciones'
       : `${expensesB.events.length} eventos: ${expensesB.events.map((e) => e.table).join(', ')}`,
+  )
+
+  // Realtime de members
+  const membersWatcherA = watchTables(
+    clientA,
+    `members:${communityA}`,
+    ['members'],
+    `community_id=eq.${communityA}`,
+  )
+  const membersWatcherB = watchTables(
+    clientB,
+    `members:${communityB}`,
+    ['members'],
+    `community_id=eq.${communityB}`,
+  )
+  await Promise.all([membersWatcherA.subscribed, membersWatcherB.subscribed])
+  await wait(1500)
+
+  const { data: guestData, error: guestErr } = await clientA.rpc('add_guest_member', {
+    p_community_id: communityA,
+    p_username: 'pepe_invitado',
+  })
+  if (guestErr) throw new Error(`No se pudo crear el invitado en realtime-check: ${guestErr.message}`)
+
+  await wait(2000)
+  const guestInsert = membersWatcherA.events.find(
+    (e) => e.eventType === 'INSERT' && e.new?.username === 'pepe_invitado',
+  )
+  check(
+    'El alta de un invitado emite un evento INSERT en el canal Realtime de members',
+    Boolean(guestInsert),
+    guestInsert ? `${guestInsert.eventType} ${guestInsert.new?.username}` : 'no llegó',
+  )
+
+  const guestId = guestData?.[0]?.id
+  const { error: removeErr } = await clientA.rpc('remove_member', {
+    p_community_id: communityA,
+    p_member_id: guestId,
+  })
+  if (removeErr) throw new Error(`No se pudo eliminar el invitado en realtime-check: ${removeErr.message}`)
+
+  await wait(2000)
+  const guestDelete = membersWatcherA.events.find(
+    (e) => e.eventType === 'DELETE' && (e.old?.id === guestId || e.old?.username === 'pepe_invitado'),
+  )
+  check(
+    'El borrado físico de un miembro sin historial emite un evento DELETE en Realtime',
+    Boolean(guestDelete),
+    guestDelete ? `${guestDelete.eventType} id=${guestId}` : 'no llegó',
+  )
+  check(
+    'El canal de miembros de B no recibe nada de la comunidad de A',
+    membersWatcherB.events.length === 0,
+    membersWatcherB.events.length === 0
+      ? '0 eventos ajenos'
+      : `${membersWatcherB.events.length} eventos ajenos`,
   )
 
   const presenceA = watchPresence(clientA, communityA, 'ana')

@@ -21,7 +21,7 @@ export function useExpenseSummary(communityId: string): ExpenseSummary {
     data: members = [],
     isLoading: loadingMembers,
     isError: errorMembers,
-  } = useCommunityMembers(communityId)
+  } = useCommunityMembers(communityId, { includeArchived: true })
   const {
     data: expenses = [],
     isLoading: loadingExpenses,

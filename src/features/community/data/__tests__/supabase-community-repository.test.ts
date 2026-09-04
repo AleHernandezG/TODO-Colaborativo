@@ -9,11 +9,18 @@ jest.mock('@/shared/lib/supabase', () => ({
   supabase: {
     rpc: jest.fn(),
     from: jest.fn(),
+    auth: {
+      getSession: jest.fn().mockResolvedValue({ data: { session: { user: { id: 'u1' } } } }),
+    },
+    channel: jest.fn(),
+    removeChannel: jest.fn(),
   },
 }))
 
 const rpc = supabase.rpc as jest.Mock
 const from = supabase.from as jest.Mock
+const channel = supabase.channel as jest.Mock
+const removeChannel = supabase.removeChannel as jest.Mock
 const netInfoFetch = NetInfo.fetch as jest.Mock
 
 function mockCommunityRow(row: unknown, error: unknown = null) {
@@ -216,3 +223,188 @@ describe('rotateJoinCode', () => {
     )
   })
 })
+
+describe('listMembers', () => {
+  it('filtra miembros activos por defecto y mapea campos', async () => {
+    const isMock = jest.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'm1',
+          username: 'Ana',
+          auth_user_id: 'u1',
+          is_admin: true,
+          removed_at: null,
+        },
+        {
+          id: 'm2',
+          username: 'Carlos',
+          auth_user_id: null,
+          is_admin: false,
+          removed_at: null,
+        },
+      ],
+      error: null,
+    })
+
+    from.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          order: () => ({
+            is: isMock,
+          }),
+        }),
+      }),
+    })
+
+    const members = await supabaseCommunityRepository.listMembers('c1')
+
+    expect(isMock).toHaveBeenCalledWith('removed_at', null)
+    expect(members).toEqual([
+      {
+        id: 'm1',
+        username: 'Ana',
+        isSelf: true,
+        isAdmin: true,
+        isGuest: false,
+        removedAt: null,
+      },
+      {
+        id: 'm2',
+        username: 'Carlos',
+        isSelf: false,
+        isAdmin: false,
+        isGuest: true,
+        removedAt: null,
+      },
+    ])
+  })
+
+  it('permite incluir archivados cuando se especifica', async () => {
+    const orderMock = jest.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'm1',
+          username: 'Ana',
+          auth_user_id: 'u1',
+          is_admin: true,
+          removed_at: null,
+        },
+        {
+          id: 'm2',
+          username: 'Bruno',
+          auth_user_id: 'u2',
+          is_admin: false,
+          removed_at: '2026-09-04T10:00:00Z',
+        },
+      ],
+      error: null,
+    })
+
+    from.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          order: orderMock,
+        }),
+      }),
+    })
+
+    const members = await supabaseCommunityRepository.listMembers('c1', { includeArchived: true })
+
+    expect(members).toHaveLength(2)
+    expect(members[1]?.removedAt).toBe('2026-09-04T10:00:00Z')
+  })
+})
+
+describe('removeMember', () => {
+  it('llama a la RPC remove_member y devuelve el estado', async () => {
+    rpc.mockResolvedValue({
+      data: [{ status: 'deleted' }],
+      error: null,
+    })
+
+    const result = await supabaseCommunityRepository.removeMember('c1', 'm2')
+
+    expect(rpc).toHaveBeenCalledWith('remove_member', {
+      p_community_id: 'c1',
+      p_member_id: 'm2',
+    })
+    expect(result).toEqual({ status: 'deleted' })
+  })
+
+  it('lanza error si la RPC falla', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { message: 'cannot_remove_self' },
+    })
+
+    await expect(supabaseCommunityRepository.removeMember('c1', 'm1')).rejects.toThrow(
+      'cannot_remove_self',
+    )
+  })
+})
+
+describe('setMemberAdmin', () => {
+  it('llama a la RPC set_member_admin con el valor booleano', async () => {
+    rpc.mockResolvedValue({ error: null })
+
+    await supabaseCommunityRepository.setMemberAdmin('c1', 'm2', true)
+
+    expect(rpc).toHaveBeenCalledWith('set_member_admin', {
+      p_community_id: 'c1',
+      p_member_id: 'm2',
+      p_is_admin: true,
+    })
+  })
+})
+
+describe('addGuestMember', () => {
+  it('llama a la RPC add_guest_member y devuelve el miembro invitado', async () => {
+    rpc.mockResolvedValue({
+      data: [{ id: 'g1', username: 'Marcos' }],
+      error: null,
+    })
+
+    const result = await supabaseCommunityRepository.addGuestMember('c1', 'Marcos')
+
+    expect(rpc).toHaveBeenCalledWith('add_guest_member', {
+      p_community_id: 'c1',
+      p_username: 'Marcos',
+    })
+    expect(result).toEqual({
+      id: 'g1',
+      username: 'Marcos',
+      isSelf: false,
+      isAdmin: false,
+      isGuest: true,
+      removedAt: null,
+    })
+  })
+})
+
+describe('subscribeMembers', () => {
+  it('crea un canal con filtro por comunidad y devuelve función para desuscribirse', () => {
+    const onMock = jest.fn().mockReturnThis()
+    const subscribeMock = jest.fn().mockReturnThis()
+    const channelMock = { on: onMock, subscribe: subscribeMock }
+    channel.mockReturnValue(channelMock)
+
+    const onChange = jest.fn()
+    const unsubscribe = supabaseCommunityRepository.subscribeMembers('c1', onChange)
+
+    expect(channel).toHaveBeenCalledWith('members:c1')
+    expect(onMock).toHaveBeenCalledWith(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'members',
+        filter: 'community_id=eq.c1',
+      },
+      expect.any(Function),
+    )
+
+    unsubscribe()
+    expect(removeChannel).toHaveBeenCalledWith(channelMock)
+  })
+})
+

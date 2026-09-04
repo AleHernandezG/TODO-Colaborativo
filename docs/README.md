@@ -33,6 +33,7 @@ El criterio y sus motivos están en
 | [0014](./adr/ADR-0014-origen-de-la-foto-del-articulo.md)         | Origen de la foto del artículo                           | Aceptado                          |
 | [0015](./adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md) | PIN de 4 dígitos por miembro para identidad              | Aceptado y **verificado**         |
 | [0016](./adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-usuario.md) | Clasificación de errores y mensaje al usuario            | Aceptado                          |
+| [0017](./adr/ADR-0017-gestion-de-miembros-y-roles.md)            | Gestión de miembros, roles y participantes invitados     | Aceptado                          |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin
@@ -56,6 +57,7 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 4 · Robustez y offline](./phases/fase-4.md) — cerrada
 - [Fase 5 · Endurecimiento antes de publicar](./phases/fase-5.md) — cerrada
 - [Fase 6 · Catálogo de productos y reparto de gastos](./phases/fase-6.md) — cerrada (bloque A verificado el 2026-08-24; bloque B verificado en dos móviles el 2026-09-04)
+- [Fase 7 · Gestión de miembros (RF-11 y RF-12)](./phases/fase-7.md) — en planificación
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
 [la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).

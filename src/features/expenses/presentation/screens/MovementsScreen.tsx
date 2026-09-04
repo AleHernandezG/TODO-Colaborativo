@@ -36,7 +36,7 @@ function MovementsList({ communityId }: { communityId: string }) {
   const goBack = useGoBack('/expenses')
   const dayLabel = useDayLabel()
 
-  const { data: members = [] } = useCommunityMembers(communityId)
+  const { data: members = [] } = useCommunityMembers(communityId, { includeArchived: true })
   const {
     data: expenses = [],
     isLoading,

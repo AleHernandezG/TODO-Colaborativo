@@ -594,6 +594,156 @@ async function main() {
     console.log('Sin SUPABASE_SECRET_KEY: no se comprueba la caducidad del código.')
   }
 
+  // --- RF-11 y RF-12: Roles, baja de miembros e invitados ---
+  const membersB = await select(tokenB, `members?select=id,username,is_admin,auth_user_id,removed_at&community_id=eq.${communityB}`)
+  const memberBruno = membersB.body?.find((m) => m.username === 'bruno')
+  const memberCarla = membersB.body?.find((m) => m.username === 'carla')
+
+  check(
+    'El creador de la comunidad nace como admin (is_admin = true)',
+    memberBruno?.is_admin === true,
+    memberBruno ? `is_admin=${memberBruno.is_admin}` : 'No encontrado',
+  )
+  check(
+    'Un miembro que se une no es admin por defecto',
+    memberCarla?.is_admin === false,
+    memberCarla ? `is_admin=${memberCarla.is_admin}` : 'No encontrado',
+  )
+
+  const nonAdminRemove = await rpc(tokenC, 'remove_member', {
+    p_community_id: communityB,
+    p_member_id: memberBruno?.id,
+  })
+  check(
+    'Un miembro no admin no puede expulsar a nadie',
+    nonAdminRemove.status >= 400,
+    `HTTP ${nonAdminRemove.status}`,
+  )
+
+  const nonAdminGuest = await rpc(tokenC, 'add_guest_member', {
+    p_community_id: communityB,
+    p_username: 'invitado-c',
+  })
+  check(
+    'Un miembro no admin no puede añadir participantes invitados',
+    nonAdminGuest.status >= 400,
+    `HTTP ${nonAdminGuest.status}`,
+  )
+
+  const nonAdminSetRole = await rpc(tokenC, 'set_member_admin', {
+    p_community_id: communityB,
+    p_member_id: memberCarla?.id,
+    p_is_admin: true,
+  })
+  check(
+    'Un miembro no admin no puede asignarse rol de admin',
+    nonAdminSetRole.status >= 400,
+    `HTTP ${nonAdminSetRole.status}`,
+  )
+
+  const selfRemove = await rpc(tokenB, 'remove_member', {
+    p_community_id: communityB,
+    p_member_id: memberBruno?.id,
+  })
+  check(
+    'Un admin no puede auto-expulsarse',
+    selfRemove.status >= 400,
+    `HTTP ${selfRemove.status}`,
+  )
+
+  const removeLastAdmin = await rpc(tokenB, 'set_member_admin', {
+    p_community_id: communityB,
+    p_member_id: memberBruno?.id,
+    p_is_admin: false,
+  })
+  check(
+    'No se puede dejar a la comunidad sin ningún administrador activo',
+    removeLastAdmin.status >= 400,
+    `HTTP ${removeLastAdmin.status}`,
+  )
+
+  // Rotar el código de communityB para reactivarlo tras expireJoinCode
+  const refreshedCode = await rpc(tokenB, 'rotate_join_code', { p_community_id: communityB })
+  const activeCodeB = refreshedCode.body?.[0]?.join_code
+
+  // Crear duplicado sin historial y verificar borrado físico (deleted)
+  const tokenDuplicado = tokenD
+  const joinDup = await rpc(tokenDuplicado, 'join_community', {
+    p_join_code: activeCodeB,
+    p_username: 'bruno_error',
+    p_pin: '1234',
+  })
+  const membersAfterDup = await select(tokenB, `members?select=id,username&community_id=eq.${communityB}&username=eq.bruno_error`)
+  const dupMemberId = membersAfterDup.body?.[0]?.id
+
+  const removeClean = await rpc(tokenB, 'remove_member', {
+    p_community_id: communityB,
+    p_member_id: dupMemberId,
+  })
+  const dupStillExists = await select(tokenB, `members?select=id&id=eq.${dupMemberId}`)
+  check(
+    'Un miembro sin historial se elimina con borrado físico (deleted)',
+    removeClean.body?.[0]?.status === 'deleted' && Array.isArray(dupStillExists.body) && dupStillExists.body.length === 0,
+    removeClean.body?.[0]?.status ?? `HTTP ${removeClean.status}`,
+  )
+
+  // Asignar gasto a Carla y verificar que al expulsarla se archiva (archived)
+  await rpc(tokenB, 'create_expense_with_shares', {
+    p_community_id: communityB,
+    p_description: 'Cena de grupo',
+    p_amount_cents: 2000,
+    p_paid_by_member_id: memberBruno.id,
+    p_item_id: null,
+    p_shares: [
+      { member_id: memberBruno.id, share_cents: 1000 },
+      { member_id: memberCarla.id, share_cents: 1000 },
+    ],
+  })
+
+  const removeWithHistory = await rpc(tokenB, 'remove_member', {
+    p_community_id: communityB,
+    p_member_id: memberCarla.id,
+  })
+  const carlaArchived = await select(tokenB, `members?select=id,removed_at&id=eq.${memberCarla.id}`)
+  check(
+    'Un miembro con historial de gastos se archiva con removed_at (archived)',
+    removeWithHistory.body?.[0]?.status === 'archived' && Boolean(carlaArchived.body?.[0]?.removed_at),
+    removeWithHistory.body?.[0]?.status ?? `HTTP ${removeWithHistory.status}`,
+  )
+
+  const carlaForbiddenRead = await select(tokenC, `items?community_id=eq.${communityB}`)
+  check(
+    'Un miembro archivado pierde de inmediato el acceso RLS a la comunidad',
+    Array.isArray(carlaForbiddenRead.body) && carlaForbiddenRead.body.length === 0,
+    `${carlaForbiddenRead.body?.length ?? '?'} filas devueltas`,
+  )
+
+  // RF-12: Creación de invitado y adopción posterior
+  const guestCreated = await rpc(tokenB, 'add_guest_member', {
+    p_community_id: communityB,
+    p_username: 'marcos_invitado',
+  })
+  const guestId = guestCreated.body?.[0]?.id
+  const guestRow = await select(tokenB, `members?select=id,auth_user_id,pin_hash&id=eq.${guestId}`)
+  check(
+    'Un admin puede añadir un participante invitado (auth_user_id = null)',
+    guestCreated.status === 200 && Boolean(guestId) && guestRow.body?.[0]?.auth_user_id === null,
+    guestCreated.body?.[0]?.username ?? `HTTP ${guestCreated.status}`,
+  )
+
+  const tokenMarcos = tokenLegacy
+  const marcosAdopts = await rpc(tokenMarcos, 'join_community', {
+    p_join_code: activeCodeB,
+    p_username: 'marcos_invitado',
+    p_pin: '9876',
+  })
+  const marcosRow = await select(tokenB, `members?select=id,auth_user_id,pin_hash&id=eq.${guestId}`)
+  check(
+    'Un invitado es adoptado al unirse con ese nombre y PIN (hereda la fila)',
+    marcosAdopts.body?.[0]?.status === 'ok' && marcosRow.body?.[0]?.auth_user_id !== null && Boolean(marcosRow.body?.[0]?.pin_hash),
+    marcosAdopts.body?.[0]?.status ?? `HTTP ${marcosAdopts.status}`,
+  )
+
   await cleanup([communityA, communityB, communityLegacy].filter(Boolean), [
     imagePathB,
     imagePathIntruso,
