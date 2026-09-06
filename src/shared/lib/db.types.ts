@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       catalog_products: {
@@ -300,6 +275,70 @@ export type Database = {
           succeeded?: boolean
         }
         Relationships: []
+      }
+      meal_plan_slots: {
+        Row: {
+          community_id: string
+          created_at: string
+          created_by_member_id: string | null
+          custom_dish_name: string | null
+          date: string
+          id: string
+          meal_type: string
+          notes: string | null
+          recipe_id: string | null
+          servings: number
+          updated_at: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          created_by_member_id?: string | null
+          custom_dish_name?: string | null
+          date: string
+          id?: string
+          meal_type: string
+          notes?: string | null
+          recipe_id?: string | null
+          servings?: number
+          updated_at?: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          created_by_member_id?: string | null
+          custom_dish_name?: string | null
+          date?: string
+          id?: string
+          meal_type?: string
+          notes?: string | null
+          recipe_id?: string | null
+          servings?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_slots_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_slots_created_by_member_id_fkey"
+            columns: ["created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_slots_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       member_push_tokens: {
         Row: {
@@ -578,6 +617,10 @@ export type Database = {
         Returns: string
       }
       current_member_id: { Args: { p_community_id: string }; Returns: string }
+      delete_meal_slot: {
+        Args: { p_community_id: string; p_date: string; p_meal_type: string }
+        Returns: undefined
+      }
       delete_recipe: { Args: { p_id: string }; Returns: undefined }
       generate_join_code: { Args: never; Returns: string }
       get_community_push_tokens: {
@@ -655,6 +698,18 @@ export type Database = {
       unregister_push_token: {
         Args: { p_expo_push_token: string }
         Returns: undefined
+      }
+      upsert_meal_slot: {
+        Args: {
+          p_community_id: string
+          p_custom_dish_name?: string
+          p_date: string
+          p_meal_type: string
+          p_notes?: string
+          p_recipe_id?: string
+          p_servings?: number
+        }
+        Returns: string
       }
     }
     Enums: {
@@ -784,9 +839,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

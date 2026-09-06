@@ -162,7 +162,15 @@ function ItemsView({ community, username }: { community: Community; username: st
                   {t('list.signedInAs', { username })}
                 </Text>
               </View>
-              <View className="flex-row items-center gap-2">
+              <View className="flex-row flex-wrap items-center justify-end gap-2">
+                <Button
+                  label={t('mealPlanner.menuButton')}
+                  onPress={() => router.push('/meal-planner' as never)}
+                  variant="secondary"
+                  size="sm"
+                  fullWidth={false}
+                  accessibilityHint={t('mealPlanner.title')}
+                />
                 <Button
                   label={t('recipes.screenTitle')}
                   onPress={() => router.push('/recipes' as never)}

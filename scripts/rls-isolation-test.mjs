@@ -892,6 +892,54 @@ async function main() {
     'borrada en cascada',
   )
 
+  // -------------------------------------------------------------------------
+  // FASE 12 · Planificador semanal de menús (RF-15)
+  // -------------------------------------------------------------------------
+  const upsertSlotA = await rpc(tokenA, 'upsert_meal_slot', {
+    p_community_id: communityA,
+    p_date: '2026-09-07',
+    p_meal_type: 'lunch',
+    p_custom_dish_name: 'Paella de marisco',
+    p_servings: 6,
+  })
+  check(
+    'A puede asignar un plato en el menú semanal con upsert_meal_slot',
+    upsertSlotA.status === 200 && Boolean(upsertSlotA.body),
+    upsertSlotA.body ?? `HTTP ${upsertSlotA.status}`,
+  )
+
+  const readMealSlotsB = await select(tokenB, `meal_plan_slots?community_id=eq.${communityA}`)
+  check(
+    'B no lee el planificador de menús de A',
+    readMealSlotsB.status === 200 && readMealSlotsB.body.length === 0,
+    `${readMealSlotsB.body?.length ?? 0} menús ajenos`,
+  )
+
+  const intruderSlot = await rpc(tokenB, 'upsert_meal_slot', {
+    p_community_id: communityA,
+    p_date: '2026-09-07',
+    p_meal_type: 'lunch',
+    p_custom_dish_name: 'Menú intruso',
+  })
+  check(
+    'B no puede insertar ni editar menús en la comunidad de A',
+    intruderSlot.status >= 400,
+    `HTTP ${intruderSlot.status}`,
+  )
+
+  const deleteSlotA = await rpc(tokenA, 'delete_meal_slot', {
+    p_community_id: communityA,
+    p_date: '2026-09-07',
+    p_meal_type: 'lunch',
+  })
+  const readAfterDeleteSlot = await select(tokenA, `meal_plan_slots?community_id=eq.${communityA}`)
+  check(
+    'A puede vaciar una comida con delete_meal_slot',
+    (deleteSlotA.status === 200 || deleteSlotA.status === 204) &&
+      readAfterDeleteSlot.body.length === 0,
+    'comida vaciada',
+  )
+
   await cleanup([communityA, communityB, communityLegacy].filter(Boolean), [
     imagePathB,
     imagePathIntruso,

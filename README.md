@@ -77,8 +77,8 @@ npx expo start --tunnel   # si el móvil y el PC no comparten Wi-Fi
 | ------------------------------------ | ------------------------------------------------------------------- |
 | `npm run lint`                       | ESLint sobre `src/`                                                 |
 | `npm run typecheck`                  | `tsc --noEmit`, TypeScript en modo estricto                         |
-| `npm test`                           | Jest. 56 suites, 399 tests verdes (cobertura > 96%)                 |
-| `npm run test:rls`                   | Aislamiento entre comunidades contra el proyecto real. Da **61/61** |
+| `npm test`                           | Jest. 58 suites, 408 tests verdes (cobertura > 96%)                 |
+| `npm run test:rls`                   | Aislamiento entre comunidades contra el proyecto real. Da **65/65** |
 | `npm run test:realtime`              | Eventos, filtro por comunidad y presencia. Da **18/18**             |
 | `npm run test:e2e`                   | Maestro sobre el APK instalado. Necesita `adb` y el CLI de Maestro  |
 | `npm run users`                      | Cuántos usuarios anónimos hay y cuáles quedaron huérfanos           |
@@ -127,8 +127,9 @@ Ninguna decisión vive solo en la cabeza de alguien. Estas son las que más cond
 | [0019](docs/adr/ADR-0019-observabilidad-y-crash-reporting-con-sentry.md) | Observabilidad y crash reporting con Sentry     | Captura desacoplada de errores y trazabilidad sin PII en producción       |
 | [0020](docs/adr/ADR-0020-notificaciones-push-con-expo.md)          | Notificaciones push colaborativas con Expo          | Avisos a miembros ante nuevos artículos/gastos sin auto-notificación     |
 | [0021](docs/adr/ADR-0021-modulo-de-recetas-y-volcado-a-lista.md)   | Módulo de recetas y volcado a lista de compra       | Planificación culinaria, catálogo y volcado en bloque con alerta push    |
+| [0022](docs/adr/ADR-0022-planificador-semanal-de-menus-y-consolidacion.md) | Planificador semanal de menús y consolidación | Menú semanal, suma de ingredientes acumulados y volcado por lotes       |
 
-Los 21 ADRs, con su estado, en [`docs/README.md`](docs/README.md). Un ADR no se edita para cambiar de
+Los 22 ADRs, con su estado, en [`docs/README.md`](docs/README.md). Un ADR no se edita para cambiar de
 opinión: se escribe uno nuevo que supersede al viejo.
 
 ## Accesibilidad
@@ -153,7 +154,7 @@ se comprueba a mano con TalkBack. La última pasada fue el 2026-08-16 y salió l
 
 ## Estado
 
-**Fases 0 a 11 completadas · Requisitos funcionales (RF-1 a RF-14), observabilidad y recetas.**
+**Fases 0 a 12 completadas · Requisitos funcionales (RF-1 a RF-15), observabilidad, recetas y menús.**
 
 - **MVP (Fases 0 a 4):** cerrado, probado con dos móviles reales y 100% operativo.
 - **Fase 5 (Endurecimiento):** sesión protegida, TalkBack verificado y expiración de códigos.
@@ -163,6 +164,7 @@ se comprueba a mano con TalkBack. La última pasada fue el 2026-08-16 y salió l
 - **Fase 9 (Observabilidad y Release):** Sentry integrado con sanitización estricta sin PII, fallback offline/dev y perfiles de EAS para APK (`preview`) y App Bundle AAB (`production`).
 - **Fase 10 (Notificaciones Push):** alertas push colaborativas con `expo-notifications`, RPCs con filtro anti auto-notificación y RLS.
 - **Fase 11 (Recetas Compartidas):** creación y edición de recetas con ingredientes de catálogo, escalador de comensales y volcado en bloque a la lista (RF-14).
+- **Fase 12 (Planificador Semanal de Menús):** comidas y cenas por día de la semana, consolidación agregada de ingredientes y volcado a lista en un toque (RF-15).
 - **Auditoría final (§11) y Checklist (§16):** 100% completado (arranque en frío < 3s, virtualización fluida con 200 ítems y 51 dependencias auditadas sin librerías obsoletas).
 
 Se distribuye como APK con EAS Build y se parchea por aire con `eas update`.

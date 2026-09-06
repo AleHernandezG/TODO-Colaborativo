@@ -364,5 +364,55 @@
       "deleteFailed": "Could not delete recipe.",
       "addToListFailed": "Could not add ingredients to list."
     }
+  },
+  "mealPlanner": {
+    "title": "Weekly menu",
+    "menuButton": "Menu",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "goToCurrentWeek": "Back to this week",
+    "today": "Today",
+    "assignTitle": "Plan meal",
+    "modes": {
+      "recipe": "Recipe",
+      "custom": "Custom dish"
+    },
+    "searchRecipesPlaceholder": "Search recipe...",
+    "noRecipesFound": "No recipes found with that name",
+    "ingredientsCount": "ingredients",
+    "servings": "Servings",
+    "servingsShort": "pers.",
+    "servingsHint": "Automatically scales ingredients",
+    "customDishLabel": "Dish or meal name",
+    "customDishPlaceholder": "E.g. Country salad, Pizza, Dining out...",
+    "notesLabel": "Notes (optional)",
+    "notesPlaceholder": "E.g. Cook extra for tupperware, low salt...",
+    "clearSlot": "Clear meal",
+    "addLunch": "Add lunch",
+    "addDinner": "Add dinner",
+    "mealTypes": {
+      "lunch": "Lunch",
+      "dinner": "Dinner"
+    },
+    "consolidatedBanner": {
+      "title": "{{count}} ingredients calculated",
+      "subtitle": "Consolidated across all planned recipes"
+    },
+    "addToListButton": "Add to list",
+    "consolidatedModal": {
+      "title": "Weekly ingredients",
+      "hint": "Review and uncheck ingredients you already have at home.",
+      "selectAll": "Select all",
+      "unselectAll": "Deselect all",
+      "empty": "No ingredients to add.",
+      "addCount": "Add {{count}} items to list"
+    },
+    "notifications": {
+      "menuAddedTitle": "Weekly menu added",
+      "menuAddedBody": "{{count}} menu ingredients added to the shopping list"
+    },
+    "errors": {
+      "addToListFailed": "Could not dump ingredients to the shopping list."
+    }
   }
 }

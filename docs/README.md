@@ -38,6 +38,7 @@ El criterio y sus motivos están en
 | [0019](./adr/ADR-0019-observabilidad-y-crash-reporting-con-sentry.md) | Observabilidad y crash reporting con Sentry        | Aceptado y **verificado**         |
 | [0020](./adr/ADR-0020-notificaciones-push-con-expo.md)          | Notificaciones push colaborativas con Expo               | Aceptado y **verificado** (56/56) |
 | [0021](./adr/ADR-0021-modulo-de-recetas-y-volcado-a-lista.md)   | Módulo de recetas y volcado a lista de compra            | Aceptado y **verificado** (61/61) |
+| [0022](./adr/ADR-0022-planificador-semanal-de-menus-y-consolidacion.md) | Planificador semanal de menús y consolidación    | Aceptado y **verificado** (65/65) |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin
@@ -66,6 +67,7 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 9 · Observabilidad y release Android (Sentry + EAS)](./phases/fase-9.md) — cerrada (código, tests, export y docs completados)
 - [Fase 10 · Notificaciones push colaborativas con Expo](./phases/fase-10.md) — cerrada (código, RLS 56/56, Realtime 18/18, tests y docs completados)
 - [Fase 11 · Módulo de Recetas Compartidas y volcado a lista](./phases/fase-11.md) — cerrada (código, RLS 61/61, Realtime, tests y docs completados)
+- [Fase 12 · Planificador Semanal de Menús y consolidación](./phases/fase-12.md) — cerrada (código, RLS 65/65, Realtime, tests y docs completados)
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
 [la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).

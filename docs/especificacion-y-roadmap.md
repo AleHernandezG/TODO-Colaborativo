@@ -235,6 +235,13 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 - **Aceptación:** cualquier miembro de la comunidad puede crear recetas, ver los ingredientes con sus cantidades escaladas al número de comensales seleccionado, y pulsar «Añadir a la lista de compra» para que los ingredientes aparezcan inmediatamente en la lista compartida de la compra.
 - **Depende de:** nada adicional; enlaza opcionalmente con el catálogo de supermercado (RF-10) y utiliza la lista de la compra (RF-1). Decidido en [ADR-0021](adr/ADR-0021-modulo-de-recetas-y-volcado-a-lista.md).
 
+### RF-15 · Planificador Semanal de Menús y consolidación de ingredientes (post-MVP)
+
+- **Qué:** organizar comidas y cenas por día de la semana (Lunes a Domingo) vinculando recetas guardadas o platos libres, y volcar los ingredientes consolidados a la lista de la compra de forma acumulativa y sin duplicados.
+- **Cómo:** tabla `meal_plan_slots` con restricción de unicidad por `(community_id, date, meal_type)`, RPC `upsert_meal_slot` y `delete_meal_slot`, función pura `consolidateMealPlanIngredients` que agrupa ingredientes repetidos y suma cantidades escaladas por comensales, y revisión interactiva antes de volcar por lotes a `items` con push notification.
+- **Aceptación:** cualquier miembro puede planificar platos en cualquier día de la semana; pulsar «Añadir a la lista» abre un checklist con las cantidades consolidadas ya sumadas; confirmar crea los artículos en la lista compartida y avisa al resto de la comunidad.
+- **Depende de:** Recetas (RF-14) y Lista de compra (RF-1). Decidido en [ADR-0022](adr/ADR-0022-planificador-semanal-de-menus-y-consolidacion.md).
+
 ---
 
 ## 4. Requisitos no funcionales
@@ -729,7 +736,25 @@ Lo que hay que tener resuelto antes de la primera migración:
 - Wrapper en `RootLayout` y reporte automático de fallos `rejected` y `unknown` en `logFailure`.
 - Perfiles de build validados en `eas.json` (`preview` APK y `production` AAB).
 
-**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 a 9 son posteriores a la beta y no entran en esa cuenta.
+### Fase 10 · Notificaciones push colaborativas (RF-13)
+
+- **Cerrada el 2026-09-06.** `expo-notifications` con registro de tokens en `member_push_tokens`.
+- Despacho colaborativo asíncrono al añadir artículos o registrar gastos, excluyendo al propio emisor.
+- Canal Android de alta prioridad y redirección al tocar la notificación.
+
+### Fase 11 · Módulo de Recetas Compartidas y volcado a lista (RF-14)
+
+- **Cerrada el 2026-09-06.** Entidades `recipes` y `recipe_ingredients` con RLS y Realtime.
+- Escalado proporcional de raciones en cliente y autocompletado con catálogo de Mercadona.
+- Volcado rápido a lista con inserción por lotes y alertas push a la comunidad.
+
+### Fase 12 · Planificador Semanal de Menús y consolidación (RF-15)
+
+- **Cerrada el 2026-09-06.** Tabla `meal_plan_slots` con unicidad por comunidad, fecha y comida/cena.
+- Consolidación pura de ingredientes de la semana sumando cantidades repetidas.
+- Modal de revisión de existencias y volcado masivo a la lista de compra en un toque.
+
+**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 a 12 son posteriores a la beta y no entran en esa cuenta.
 
 ---
 

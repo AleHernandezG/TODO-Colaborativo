@@ -364,5 +364,55 @@
       "deleteFailed": "No se pudo eliminar la receta.",
       "addToListFailed": "No se pudieron añadir los ingredientes a la lista."
     }
+  },
+  "mealPlanner": {
+    "title": "Menú semanal",
+    "menuButton": "Menú",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "goToCurrentWeek": "Volver a esta semana",
+    "today": "Hoy",
+    "assignTitle": "Planificar plato",
+    "modes": {
+      "recipe": "Receta",
+      "custom": "Plato libre"
+    },
+    "searchRecipesPlaceholder": "Buscar receta...",
+    "noRecipesFound": "No hay recetas con ese nombre",
+    "ingredientsCount": "ingredientes",
+    "servings": "Comensales",
+    "servingsShort": "pers.",
+    "servingsHint": "Escala los ingredientes automáticamente",
+    "customDishLabel": "Nombre del plato o comida",
+    "customDishPlaceholder": "Ej. Ensalada campera, Pizza, Salir a cenar...",
+    "notesLabel": "Notas (opcional)",
+    "notesPlaceholder": "Ej. Cocinar doble para tupper, sin sal...",
+    "clearSlot": "Quitar plato",
+    "addLunch": "Añadir comida",
+    "addDinner": "Añadir cena",
+    "mealTypes": {
+      "lunch": "Comida",
+      "dinner": "Cena"
+    },
+    "consolidatedBanner": {
+      "title": "{{count}} ingredientes calculados",
+      "subtitle": "Consolidados sumando las recetas planificadas"
+    },
+    "addToListButton": "Añadir a la lista",
+    "consolidatedModal": {
+      "title": "Ingredientes de la semana",
+      "hint": "Revisa y desmarca los ingredientes que ya tengas en casa.",
+      "selectAll": "Seleccionar todos",
+      "unselectAll": "Deseleccionar todos",
+      "empty": "No hay ingredientes para añadir.",
+      "addCount": "Añadir {{count}} artículos a la lista"
+    },
+    "notifications": {
+      "menuAddedTitle": "Menú semanal añadido",
+      "menuAddedBody": "Se han añadido {{count}} ingredientes del menú a la lista de compra"
+    },
+    "errors": {
+      "addToListFailed": "No se pudieron volcar los ingredientes a la lista."
+    }
   }
 }

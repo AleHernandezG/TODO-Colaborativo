@@ -84,12 +84,21 @@ export function RecipesScreen() {
             </Text>
           </View>
 
-          <Button
-            label={t('recipes.newButton')}
-            onPress={() => router.push('/recipes/new' as never)}
-            size="sm"
-            fullWidth={false}
-          />
+          <View className="flex-row items-center gap-2">
+            <Button
+              label={t('mealPlanner.menuButton')}
+              onPress={() => router.push('/meal-planner' as never)}
+              variant="secondary"
+              size="sm"
+              fullWidth={false}
+            />
+            <Button
+              label={t('recipes.newButton')}
+              onPress={() => router.push('/recipes/new' as never)}
+              size="sm"
+              fullWidth={false}
+            />
+          </View>
         </View>
 
         {/* Buscador */}
