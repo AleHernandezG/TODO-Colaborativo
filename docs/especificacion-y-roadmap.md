@@ -702,7 +702,20 @@ Lo que hay que tener resuelto antes de la primera migración:
   segundos; quita a alguien con gastos y esa persona sale del selector pero sigue en sus gastos
   viejos y en el balance; se añade un invitado por nombre y participa en un reparto como cualquiera.
 
-**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 y 6 son posteriores a la beta y no entran en esa cuenta.
+### Fase 8 · Exportar la lista a PDF (RF-8)
+
+- **Cerrada el 2026-09-05.** Generación 100% en cliente con `expo-print` y `expo-sharing`.
+- Maquetación desacoplada en `domain/` con escape HTML y estilos `@page` para A4.
+- Hoja de compartir nativa sin llamadas al backend y con soporte total offline.
+
+### Fase 9 · Observabilidad y preparación para release Android (Sentry + EAS)
+
+- **Cerrada el 2026-09-06.** SDK `@sentry/react-native` con plugin en `app.json`.
+- Capa desacoplada en `src/shared/lib/observability.ts` con sanitización recursiva de PINs y datos sensibles (`sanitizeData`).
+- Wrapper en `RootLayout` y reporte automático de fallos `rejected` y `unknown` en `logFailure`.
+- Perfiles de build validados en `eas.json` (`preview` APK y `production` AAB).
+
+**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 a 9 son posteriores a la beta y no entran en esa cuenta.
 
 ---
 

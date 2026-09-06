@@ -1,4 +1,5 @@
 import { OfflineError } from './network'
+import { captureError } from './observability'
 
 export type FailureKind = 'offline' | 'timeout' | 'unreachable' | 'rejected' | 'unknown'
 
@@ -111,5 +112,13 @@ export function failureLabel(failure: Failure): string {
 export function logFailure(failure: Failure): void {
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
     console.error(`[error] ${failureLabel(failure)}`)
+  }
+  if (failure.kind === 'rejected' || failure.kind === 'unknown') {
+    captureError(new Error(failureLabel(failure)), {
+      kind: failure.kind,
+      operation: failure.operation,
+      code: failure.code,
+      detail: failure.detail,
+    })
   }
 }

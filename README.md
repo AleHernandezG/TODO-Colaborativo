@@ -124,8 +124,9 @@ Ninguna decisión vive solo en la cabeza de alguien. Estas son las que más cond
 | [0015](docs/adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md) | PIN de 4 dígitos por miembro para identidad  | Base de identidad para reparto de gastos sin cuentas                     |
 | [0017](docs/adr/ADR-0017-gestion-de-miembros-y-roles.md)            | Roles de admin, borrado y participantes invitados   | Limpieza de duplicados y miembros sin alterar deudas históricas          |
 | [0018](docs/adr/ADR-0018-exportacion-de-lista-a-pdf.md)             | Exportación de lista a PDF 100% en cliente          | Lista imprimible y compartible sin red ni dependencias externas          |
+| [0019](docs/adr/ADR-0019-observabilidad-y-crash-reporting-con-sentry.md) | Observabilidad y crash reporting con Sentry     | Captura desacoplada de errores y trazabilidad sin PII en producción       |
 
-Los 18 ADRs, con su estado, en [`docs/README.md`](docs/README.md). Un ADR no se edita para cambiar de
+Los 19 ADRs, con su estado, en [`docs/README.md`](docs/README.md). Un ADR no se edita para cambiar de
 opinión: se escribe uno nuevo que supersede al viejo.
 
 ## Accesibilidad
@@ -150,18 +151,17 @@ se comprueba a mano con TalkBack. La última pasada fue el 2026-08-16 y salió l
 
 ## Estado
 
-**Fases 0 a 8 completadas · Todos los requisitos funcionales (RF-1 a RF-12) implementados.**
+**Fases 0 a 9 completadas · Requisitos funcionales (RF-1 a RF-12) y observabilidad en producción.**
 
 - **MVP (Fases 0 a 4):** cerrado, probado con dos móviles reales y 100% operativo.
 - **Fase 5 (Endurecimiento):** sesión protegida, TalkBack verificado y expiración de códigos.
 - **Fase 6 (Catálogo y Gastos):** catálogo de Mercadona (RF-10) y división de gastos estilo Tricount (RF-9).
 - **Fase 7 (Gestión de Miembros):** roles de admin, baja física/lógica y participantes invitados (RF-11 y RF-12).
 - **Fase 8 (Exportar a PDF):** generación y compartición offline de PDF (RF-8).
+- **Fase 9 (Observabilidad y Release):** Sentry integrado con sanitización estricta sin PII, fallback offline/dev y perfiles de EAS para APK (`preview`) y App Bundle AAB (`production`).
 - **Auditoría final (§11) y Checklist (§16):** 100% completado (arranque en frío < 3s, virtualización fluida con 200 ítems y 51 dependencias auditadas sin librerías obsoletas).
 
 Se distribuye como APK con EAS Build y se parchea por aire con `eas update`.
-
-Próximo hito: **Fase 9 · Preparación para producción (Sentry, release build y stores)**.
 
 ## Documentación
 

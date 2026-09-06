@@ -58,12 +58,15 @@ con `env:set`, que además vale para crear y para actualizar:
 ```powershell
 npx eas-cli@latest env:set --name EXPO_PUBLIC_SUPABASE_URL --value "https://TU-PROYECTO.supabase.co" --environment preview --visibility plaintext
 npx eas-cli@latest env:set --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "sb_publishable_..." --environment preview --visibility plaintext
+npx eas-cli@latest env:set --name EXPO_PUBLIC_SENTRY_DSN --value "https://TU-DSN@ingest.sentry.io/TU-PROYECTO" --environment preview --visibility plaintext
 ```
 
-Los valores salen de tu `.env`. El nombre del perfil de `eas.json` mapea al nombre del entorno:
-un build `--profile preview` lee el entorno **preview**, así que ahí es donde tienen que estar.
+Para el entorno de **producción** (`production`), se configuran de la misma forma cambiando `--environment production`.
 
-`plaintext` es correcto aquí: las dos son públicas por diseño y acaban dentro del APK de todas
+Los valores salen de tu `.env`. El nombre del perfil de `eas.json` mapea al nombre del entorno:
+un build `--profile preview` lee el entorno **preview**, y `--profile production` lee **production**.
+
+`plaintext` es correcto aquí: son públicas por diseño y acaban dentro del bundle de todas
 formas; la seguridad la da RLS, no esconderlas. Aun así no las metemos en `eas.json` ni en el
 repo, por la misma regla de higiene que mantiene `.env.example` sin valores.
 
@@ -74,10 +77,16 @@ Comprueba que quedaron subidas (y que el build las lee: al arrancar imprime
 npx eas-cli@latest env:list
 ```
 
-## 3. Construir el APK
+## 3. Construir el binario
 
+**Opción A · APK para pruebas y distribución directa (Recomendado para beta):**
 ```powershell
 npx eas-cli@latest build --platform android --profile preview
+```
+
+**Opción B · App Bundle (.aab) para Google Play Store:**
+```powershell
+npx eas-cli@latest build --platform android --profile production
 ```
 
 La primera vez pregunta si quieres que EAS genere y guarde el **keystore** de firma. Di que sí:

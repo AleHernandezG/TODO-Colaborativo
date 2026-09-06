@@ -149,6 +149,8 @@ function watchPresence(client, communityId, username) {
       .filter(Boolean)
       .sort()
 
+  let trackTimer
+
   const joined = new Promise((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error(`El canal de presencia de ${username} no llegó a SUBSCRIBED`)),
@@ -158,7 +160,7 @@ function watchPresence(client, communityId, username) {
       if (status === 'SUBSCRIBED') {
         clearTimeout(timer)
         await channel.track({ username })
-        setTimeout(() => void channel.track({ username }), 2000)
+        trackTimer = setTimeout(() => void channel.track({ username }), 2000)
         resolve()
       }
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -169,6 +171,7 @@ function watchPresence(client, communityId, username) {
   })
 
   const leave = () => {
+    clearTimeout(trackTimer)
     void channel.untrack()
     void client.removeChannel(channel)
   }

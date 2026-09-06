@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react'
 
 import { OfflineError } from '@/shared/lib/network'
+import { captureError, setObservabilityUser } from '@/shared/lib/observability'
 
 import { supabaseSessionRepository } from '../../data/supabase-session-repository'
 import { ensureSession } from '../../domain/ensure-session'
@@ -28,14 +29,21 @@ export function useSessionBootstrap() {
   const run = useCallback(async () => {
     start()
     try {
-      succeed(await ensureSession(supabaseSessionRepository))
+      const session = await ensureSession(supabaseSessionRepository)
+      succeed(session)
+      setObservabilityUser({ id: session.userId })
     } catch (cause) {
       const known = useSessionStore.getState().session
       if (cause instanceof OfflineError && known) {
         succeed(known)
+        setObservabilityUser({ id: known.userId })
         return
       }
-      fail(reasonOf(cause))
+      const reason = reasonOf(cause)
+      if (reason !== 'offline') {
+        captureError(cause, { reason })
+      }
+      fail(reason)
     }
   }, [start, succeed, fail])
 

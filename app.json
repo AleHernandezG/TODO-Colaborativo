@@ -3,7 +3,10 @@
     "name": "Lista de la compra",
     "slug": "agora",
     "version": "1.2.0",
-    "platforms": ["android", "ios"],
+    "platforms": [
+      "android",
+      "ios"
+    ],
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "listacompra",
@@ -38,7 +41,8 @@
           "photosPermission": "La app usa tus fotos para que puedas poner una imagen a un artículo de la lista.",
           "cameraPermission": "La app usa la cámara para que puedas hacer una foto de un artículo de la lista."
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true,
