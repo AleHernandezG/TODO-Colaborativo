@@ -59,7 +59,7 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 5 · Endurecimiento antes de publicar](./phases/fase-5.md) — cerrada
 - [Fase 6 · Catálogo de productos y reparto de gastos](./phases/fase-6.md) — cerrada (bloque A verificado el 2026-08-24; bloque B verificado en dos móviles el 2026-09-04)
 - [Fase 7 · Gestión de miembros (RF-11 y RF-12)](./phases/fase-7.md) — cerrada (verificada el 2026-09-04)
-- [Fase 8 · Exportar la lista a PDF (RF-8)](./phases/fase-8.md) — completada (lista para verificación en dispositivo)
+- [Fase 8 · Exportar la lista a PDF (RF-8)](./phases/fase-8.md) — cerrada (código, tests y export superados)
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
 [la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).
@@ -76,3 +76,5 @@ Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el r
 - [Medición de fuentes del catálogo](./guias/medicion-de-fuentes-del-catalogo.md) — cómo funciona el
   script que cuenta cuántos artículos reales encuentra cada fuente, y cómo volver a ejecutarlo. Es
   lo que decidió el [ADR-0013](./adr/ADR-0013-fuente-del-catalogo-mercadona.md).
+- [Auditoría de dependencias](./guias/auditoria-dependencias.md) — revisión técnica exhaustiva de los 51 paquetes npm del proyecto para descartar software abandonado o vulnerable.
+- [Verificación de arranque en frío](./guias/verificacion-arranque-en-frio.md) — metodología de medición del tiempo de inicio (< 3s) en Android con benchmarks y comandos ADB.

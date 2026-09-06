@@ -1,5 +1,5 @@
 import { Redirect, useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, RefreshControl, SectionList, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -103,6 +103,20 @@ function ItemsView({ community, username }: { community: Community; username: st
     return { sections: result, allDone: all.length > 0 && pending.length === 0 }
   }, [items, t])
 
+  const renderItem = useCallback(
+    ({ item }: { item: Item }) => (
+      <ItemRow
+        item={item}
+        uploadingImage={item.id === uploadingImageItemId}
+        catalogImageUrl={catalogImageUrl(item, catalogProducts)}
+        onToggle={() => togglePurchased.mutate(item)}
+        onEdit={() => setItemBeingEdited(item)}
+        onDelete={() => removeItem(item)}
+      />
+    ),
+    [uploadingImageItemId, catalogProducts, togglePurchased, removeItem],
+  )
+
   const loadErrorMessage = useMemo(
     () => (isError ? failureMessage(error, t('items.loadError')) : ''),
     [isError, error, failureMessage, t],
@@ -113,16 +127,12 @@ function ItemsView({ community, username }: { community: Community; username: st
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ItemRow
-            item={item}
-            uploadingImage={item.id === uploadingImageItemId}
-            catalogImageUrl={catalogImageUrl(item, catalogProducts)}
-            onToggle={() => togglePurchased.mutate(item)}
-            onEdit={() => setItemBeingEdited(item)}
-            onDelete={() => removeItem(item)}
-          />
-        )}
+        renderItem={renderItem}
+        initialNumToRender={14}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        removeClippedSubviews
+        updateCellsBatchingPeriod={50}
         renderSectionHeader={({ section }) => (
           <Text
             accessibilityRole="header"

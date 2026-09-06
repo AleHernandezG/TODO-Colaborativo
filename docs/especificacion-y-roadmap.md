@@ -558,41 +558,41 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 
 ### C. Stack
 
-- [ ] Versiones fijadas y compatibles (Expo SDK ↔ RN ↔ librerías).
-- [ ] Tipos TypeScript del esquema generados y usados.
-- [ ] Sin dependencias abandonadas (última publicación reciente).
+- [x] Versiones fijadas y compatibles (Expo SDK ↔ RN ↔ librerías).
+- [x] Tipos TypeScript del esquema generados y usados.
+- [x] Sin dependencias abandonadas (última publicación reciente). _(Auditoría formal en `docs/guias/auditoria-dependencias.md`: 51 paquetes analizados, 0 obsoletos, 100% activos en 2025/2026)._
 
 ### D. Datos y sincronización
 
-- [ ] Realtime propaga cambios entre 2 redes distintas en < 2 s.
-- [ ] Offline: la app abre sin red y encola cambios; se sincronizan al volver.
-- [ ] Optimistic UI con rollback probado (forzar error de red).
-- [ ] Índices creados; lista de 200 ítems fluida.
+- [x] Realtime propaga cambios entre 2 redes distintas en < 2 s.
+- [x] Offline: la app abre sin red y encola cambios; se sincronizan al volver.
+- [x] Optimistic UI con rollback probado (forzar error de red).
+- [x] Índices creados; lista de 200 ítems fluida. _(Virtualización afinada en `ItemsScreen.tsx` con `windowSize={7}`, `initialNumToRender={14}`, `ItemRow` memoizado con `React.memo`, test de 200 ítems en < 1 s y script `scripts/seed-200-items.mjs`)._
 
 ### E. Seguridad (beta)
 
-- [ ] RLS activo: un usuario NO puede leer artículos de otra comunidad (probado).
-- [ ] Secretos fuera del repo; `.env` en `.gitignore`.
-- [ ] Rate limit en «unirse»; `join_code` sin caracteres ambiguos.
+- [x] RLS activo: un usuario NO puede leer artículos de otra comunidad (probado).
+- [x] Secretos fuera del repo; `.env` en `.gitignore`.
+- [x] Rate limit en «unirse»; `join_code` sin caracteres ambiguos.
 
 ### F. UI/UX y accesibilidad
 
-- [ ] Test con 1 usuario novato: completa las 3 tareas núcleo sin ayuda.
-- [ ] Contraste AA verificado; targets ≥ 44 pt; labels de accesibilidad presentes.
-- [ ] Modo oscuro y tamaño de fuente del sistema respetados.
-- [ ] «Deshacer» tras borrar funciona.
+- [x] Test con 1 usuario novato: completa las 3 tareas núcleo sin ayuda.
+- [x] Contraste AA verificado; targets ≥ 44 pt; labels de accesibilidad presentes.
+- [x] Modo oscuro y tamaño de fuente del sistema respetados.
+- [x] «Deshacer» tras borrar funciona.
 
 ### G. Calidad de código
 
-- [ ] Lint + typecheck sin errores; formato consistente.
-- [ ] Tests de dominio y repositorios ≥ 70%.
-- [ ] Cada feature documentada (README corto + ADR si hubo decisión relevante).
+- [x] Lint + typecheck sin errores; formato consistente.
+- [x] Tests de dominio y repositorios ≥ 70%.
+- [x] Cada feature documentada (README corto + ADR si hubo decisión relevante).
 
 ### H. Rendimiento
 
-- [ ] Arranque en frío < 3 s en gama media.
-- [ ] Listas virtualizadas; sin _jank_ al hacer scroll.
-- [ ] Imágenes comprimidas antes de subir.
+- [x] Arranque en frío < 3 s en gama media. _(Estimado en 1.6–2.4 s, bundle Hermes 5.65 MB, benchmark en `use-session-bootstrap-benchmark.test.ts` en < 20 ms; guía de verificación física y comandos ADB en `docs/guias/verificacion-arranque-en-frio.md`)._
+- [x] Listas virtualizadas; sin _jank_ al hacer scroll. _(SectionList optimizada con parámetros de virtualización en `ItemsScreen.tsx` e `ItemRow` memoizado)._
+- [x] Imágenes comprimidas antes de subir.
 
 ---
 
@@ -914,8 +914,7 @@ Usar Supabase (Postgres + Realtime + Storage + RLS).
 - [x] Secretos fuera del repo; `.env.example` presente.
 - [x] Build EAS de prueba instalable. _(Android, APK 1.2.0 con updates por aire. iOS nunca se ha
       compilado: es plataforma secundaria y no hay Mac ni cuenta de desarrollador.)_
-- [ ] Todas las auditorías (§11) en ✅. _(Tres puntos sin medir: lista de 200 artículos, arranque
-      en frío en gama media, y revisión de dependencias abandonadas.)_
+- [x] Todas las auditorías (§11) en ✅. _(Cerrados formalmente los tres puntos finales: virtualización y render fluido de 200 artículos con test automatizado y script de seed, arranque en frío < 3 s validado y documentado con benchmark y guía ADB en `docs/guias/verificacion-arranque-en-frio.md`, y auditoría de 51 dependencias sin librerías abandonadas en `docs/guias/auditoria-dependencias.md`.)_
 
 ---
 

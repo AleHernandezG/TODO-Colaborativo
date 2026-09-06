@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated'
@@ -20,7 +21,15 @@ type ItemRowProps = {
 const appear = FadeIn.duration(180)
 const reflow = LinearTransition.duration(180)
 
-export function ItemRow({
+function arePropsEqual(prev: ItemRowProps, next: ItemRowProps): boolean {
+  return (
+    prev.item === next.item &&
+    prev.uploadingImage === next.uploadingImage &&
+    prev.catalogImageUrl === next.catalogImageUrl
+  )
+}
+
+export const ItemRow = memo(function ItemRow({
   item,
   uploadingImage,
   catalogImageUrl,
@@ -96,4 +105,4 @@ export function ItemRow({
       </View>
     </Animated.View>
   )
-}
+}, arePropsEqual)
