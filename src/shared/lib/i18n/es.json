@@ -307,5 +307,62 @@
     "itemAddedBody": "{{quantity}}x {{name}} añadido a la lista",
     "expenseAddedTitle": "Nuevo gasto registrado",
     "expenseAddedBody": "{{amount}} en {{description}}"
+  },
+  "recipes": {
+    "screenTitle": "Recetas",
+    "newButton": "+ Nueva",
+    "newTitle": "Nueva receta",
+    "editTitle": "Editar receta",
+    "editButton": "Editar",
+    "deleteButton": "Eliminar",
+    "deleteConfirmTitle": "¿Eliminar receta?",
+    "deleteConfirmBody": "Esta acción no se puede deshacer.",
+    "save": "Guardar",
+    "loading": "Cargando receta...",
+    "notFound": "No se encontró la receta.",
+    "searchPlaceholder": "Buscar por nombre o ingrediente...",
+    "emptyTitle": "No hay recetas todavía",
+    "emptySubtitle": "Añade recetas para planificar comidas y volcar ingredientes a la lista en un toque.",
+    "emptySearch": "Sin resultados",
+    "emptySearchHint": "Prueba con otro término de búsqueda.",
+    "createFirst": "Crear primera receta",
+    "titleLabel": "Nombre de la receta",
+    "titlePlaceholder": "Ej. Tortilla de patatas",
+    "servingsLabel": "Número de raciones / comensales",
+    "servingsCount_one": "{{count}} ración",
+    "servingsCount_other": "{{count}} raciones",
+    "servingsHint": "Las cantidades se ajustarán si cambias comensales",
+    "servingsDecrement": "Reducir raciones",
+    "servingsIncrement": "Aumentar raciones",
+    "servingsAdjustLabel": "Ajustar raciones para cocinar",
+    "scaledFromOriginal": "Escalado desde {{count}} raciones originales",
+    "ingredientsLabel": "Ingredientes",
+    "addIngredient": "Añadir ingrediente",
+    "selectAll": "Seleccionar todos",
+    "unselectAll": "Deseleccionar todos",
+    "addSelectedToList_one": "Añadir {{count}} ingrediente a la lista",
+    "addSelectedToList_other": "Añadir {{count}} ingredientes a la lista",
+    "instructionsLabel": "Instrucciones de preparación",
+    "instructionsPlaceholder": "Pasos para cocinar la receta (opcional)...",
+    "ingredientsCount_one": "{{count}} ingrediente",
+    "ingredientsCount_other": "{{count}} ingredientes",
+    "ingredients": {
+      "quantity": "Cant.",
+      "unit": "Unidad",
+      "unitPlaceholder": "g, ml, uds...",
+      "name": "Ingrediente",
+      "namePlaceholder": "Ej. Patatas",
+      "remove": "Quitar ingrediente",
+      "linkedToCatalog": "Enlazado con catálogo"
+    },
+    "notifications": {
+      "ingredientsAddedTitle": "Ingredientes añadidos",
+      "ingredientsAddedBody": "Se han añadido ingredientes de «{{recipeTitle}}» a la lista"
+    },
+    "errors": {
+      "saveFailed": "No se pudo guardar la receta. Revisa los datos.",
+      "deleteFailed": "No se pudo eliminar la receta.",
+      "addToListFailed": "No se pudieron añadir los ingredientes a la lista."
+    }
   }
 }

@@ -307,5 +307,62 @@
     "itemAddedBody": "{{quantity}}x {{name}} added to the list",
     "expenseAddedTitle": "New expense recorded",
     "expenseAddedBody": "{{amount}} for {{description}}"
+  },
+  "recipes": {
+    "screenTitle": "Recipes",
+    "newButton": "+ New",
+    "newTitle": "New recipe",
+    "editTitle": "Edit recipe",
+    "editButton": "Edit",
+    "deleteButton": "Delete",
+    "deleteConfirmTitle": "Delete recipe?",
+    "deleteConfirmBody": "This action cannot be undone.",
+    "save": "Save",
+    "loading": "Loading recipe...",
+    "notFound": "Recipe not found.",
+    "searchPlaceholder": "Search by name or ingredient...",
+    "emptyTitle": "No recipes yet",
+    "emptySubtitle": "Add recipes to plan meals and dump ingredients into the list with one tap.",
+    "emptySearch": "No results",
+    "emptySearchHint": "Try searching for a different term.",
+    "createFirst": "Create first recipe",
+    "titleLabel": "Recipe name",
+    "titlePlaceholder": "E.g. Potato omelette",
+    "servingsLabel": "Servings",
+    "servingsCount_one": "{{count}} serving",
+    "servingsCount_other": "{{count}} servings",
+    "servingsHint": "Quantities will adjust when scaling servings",
+    "servingsDecrement": "Decrease servings",
+    "servingsIncrement": "Increase servings",
+    "servingsAdjustLabel": "Adjust servings for cooking",
+    "scaledFromOriginal": "Scaled from {{count}} original servings",
+    "ingredientsLabel": "Ingredients",
+    "addIngredient": "Add ingredient",
+    "selectAll": "Select all",
+    "unselectAll": "Deselect all",
+    "addSelectedToList_one": "Add {{count}} ingredient to list",
+    "addSelectedToList_other": "Add {{count}} ingredients to list",
+    "instructionsLabel": "Preparation instructions",
+    "instructionsPlaceholder": "Steps to cook the recipe (optional)...",
+    "ingredientsCount_one": "{{count}} ingredient",
+    "ingredientsCount_other": "{{count}} ingredients",
+    "ingredients": {
+      "quantity": "Qty",
+      "unit": "Unit",
+      "unitPlaceholder": "g, ml, pcs...",
+      "name": "Ingredient",
+      "namePlaceholder": "E.g. Potatoes",
+      "remove": "Remove ingredient",
+      "linkedToCatalog": "Linked to catalog"
+    },
+    "notifications": {
+      "ingredientsAddedTitle": "Ingredients added",
+      "ingredientsAddedBody": "Ingredients from \"{{recipeTitle}}\" were added to the list"
+    },
+    "errors": {
+      "saveFailed": "Could not save recipe. Check details.",
+      "deleteFailed": "Could not delete recipe.",
+      "addToListFailed": "Could not add ingredients to list."
+    }
   }
 }

@@ -228,6 +228,13 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 - **Aceptación:** al añadir un artículo o gasto, todos los demás miembros activos de la lista reciben la notificación en su dispositivo; el autor no recibe alerta sobre su propia acción; pulsar la notificación abre la lista o la pantalla de gastos correspondiente.
 - **Depende de:** nada adicional; utiliza la pertenencia a la comunidad ya existente en `community_members`. Decidido en [ADR-0020](adr/ADR-0020-notificaciones-push-con-expo.md).
 
+### RF-14 · Módulo de Recetas Compartidas y volcado a lista (post-MVP)
+
+- **Qué:** crear, editar y compartir recetas culinarias dentro de la comunidad, vincular ingredientes con productos del catálogo de Mercadona, ajustar comensales con cálculo dinámico de cantidades y volcar ingredientes a la lista de compra en un solo toque.
+- **Cómo:** tablas `recipes` y `recipe_ingredients` con RLS, procedimiento almacenado atómico `save_recipe`, suscripción Realtime en `useRecipesRealtime`, e inserción en bloque `addMany` en `items` con IDs de cliente (ADR-0010) y alertas push colaborativas (ADR-0020).
+- **Aceptación:** cualquier miembro de la comunidad puede crear recetas, ver los ingredientes con sus cantidades escaladas al número de comensales seleccionado, y pulsar «Añadir a la lista de compra» para que los ingredientes aparezcan inmediatamente en la lista compartida de la compra.
+- **Depende de:** nada adicional; enlaza opcionalmente con el catálogo de supermercado (RF-10) y utiliza la lista de la compra (RF-1). Decidido en [ADR-0021](adr/ADR-0021-modulo-de-recetas-y-volcado-a-lista.md).
+
 ---
 
 ## 4. Requisitos no funcionales

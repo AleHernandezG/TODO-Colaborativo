@@ -7,6 +7,7 @@ export function fakeItemRepository(
   return {
     list: jest.fn(),
     add: jest.fn(),
+    addMany: jest.fn().mockResolvedValue(undefined),
     edit: jest.fn().mockResolvedValue(undefined),
     setPurchased: jest.fn().mockResolvedValue(undefined),
     remove: jest.fn().mockResolvedValue(undefined),

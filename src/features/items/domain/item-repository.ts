@@ -16,6 +16,15 @@ export interface ItemRepository {
     quantity: number
     catalogProductId: string | null
   }): Promise<Item>
+  addMany(
+    items: {
+      id: string
+      communityId: string
+      name: string
+      quantity: number
+      catalogProductId: string | null
+    }[],
+  ): Promise<void>
   edit(
     itemId: string,
     input: { name: string; quantity: number; imagePath?: string | null },

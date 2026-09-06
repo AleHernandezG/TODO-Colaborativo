@@ -23,13 +23,39 @@ async function signInAnonymously() {
     body: JSON.stringify({ data: {}, gotrue_meta_security: {} }),
   })
   const body = await res.json()
-  if (!res.ok || !body.access_token) {
-    throw new Error(
-      `No se pudo crear la sesión anónima (${res.status}): ${JSON.stringify(body)}\n` +
-        'Comprueba que "Allow anonymous sign-ins" está activado en Authentication > Sign In / Providers.',
-    )
+
+  if (body.access_token) {
+    return body.access_token
   }
-  return body.access_token
+
+  // Fallback si la API anónima pública sufre rate limit (429) y disponemos de secretKey en testing
+  if (res.status === 429 && secretKey) {
+    const email = `test-${Date.now()}-${Math.random().toString(36).slice(2)}@test.local`
+    const password = 'Test_Password_123!'
+    await fetch(`${url}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: {
+        apikey: secretKey,
+        Authorization: `Bearer ${secretKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password, email_confirm: true }),
+    })
+    const tokenRes = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    const tokenBody = await tokenRes.json()
+    if (tokenBody.access_token) {
+      return tokenBody.access_token
+    }
+  }
+
+  throw new Error(
+    `No se pudo crear la sesión (${res.status}): ${JSON.stringify(body)}\n` +
+      'Comprueba que "Allow anonymous sign-ins" está activado en Authentication > Sign In / Providers.',
+  )
 }
 
 function authHeaders(token, extra = {}) {
@@ -806,6 +832,64 @@ async function main() {
     'Al desregistrar el token desaparece de la lista de destinatarios',
     tokensForClaraAfter.status === 200 && !claraSeesAAfter,
     'desregistrado',
+  )
+
+  // --- Fase 11: Aislamiento de Recetas y sus ingredientes ---
+  const recipeIdA = crypto.randomUUID()
+  const saveRecipeA = await rpc(tokenA, 'save_recipe', {
+    p_id: recipeIdA,
+    p_community_id: communityA,
+    p_title: 'Tortilla de patatas',
+    p_servings: 4,
+    p_instructions: 'Batir huevos y freír patatas',
+    p_ingredients: [
+      { name: 'Huevos', quantity: 6, unit: 'unidades' },
+      { name: 'Patatas', quantity: 1, unit: 'kg' },
+    ],
+  })
+  check(
+    'A puede crear una receta con ingredientes en su comunidad con save_recipe',
+    saveRecipeA.status === 200 && saveRecipeA.body === recipeIdA,
+    saveRecipeA.body ?? `HTTP ${saveRecipeA.status}`,
+  )
+
+  const readRecipesB = await select(tokenB, `recipes?community_id=eq.${communityA}`)
+  check(
+    'B no lee las recetas de A',
+    readRecipesB.status === 200 && readRecipesB.body.length === 0,
+    `${readRecipesB.body?.length ?? 0} recetas ajenas`,
+  )
+
+  const intruderRecipe = await rpc(tokenB, 'save_recipe', {
+    p_id: crypto.randomUUID(),
+    p_community_id: communityA,
+    p_title: 'Receta intrusa',
+    p_servings: 2,
+    p_instructions: 'Hack',
+    p_ingredients: [],
+  })
+  check(
+    'B no puede insertar recetas en la comunidad de A',
+    intruderRecipe.status >= 400,
+    `HTTP ${intruderRecipe.status}`,
+  )
+
+  const readIngredientsB = await select(tokenB, `recipe_ingredients?recipe_id=eq.${recipeIdA}`)
+  check(
+    'B no lee los ingredientes de la receta de A',
+    readIngredientsB.status === 200 && readIngredientsB.body.length === 0,
+    `${readIngredientsB.body?.length ?? 0} ingredientes ajenos`,
+  )
+
+  const deleteRecipeA = await rpc(tokenA, 'delete_recipe', { p_id: recipeIdA })
+  const readAfterDelete = await select(tokenA, `recipes?id=eq.${recipeIdA}`)
+  const readIngredientsAfterDelete = await select(tokenA, `recipe_ingredients?recipe_id=eq.${recipeIdA}`)
+  check(
+    'Al borrar una receta se eliminan la receta y sus ingredientes en cascada',
+    (deleteRecipeA.status === 200 || deleteRecipeA.status === 204) &&
+      readAfterDelete.body.length === 0 &&
+      readIngredientsAfterDelete.body.length === 0,
+    'borrada en cascada',
   )
 
   await cleanup([communityA, communityB, communityLegacy].filter(Boolean), [

@@ -80,7 +80,29 @@ export const supabaseItemRepository: ItemRepository = {
       throw serverError('items.insert', error)
     }
 
+    if (!data) {
+      throw new ServerError('items.insert', 'sin respuesta')
+    }
+
     return toItem(data)
+  },
+
+  async addMany(items) {
+    if (items.length === 0) return
+    await assertOnline()
+
+    const payload = items.map((item) => ({
+      id: item.id,
+      community_id: item.communityId,
+      name: item.name,
+      quantity: item.quantity,
+      catalog_product_id: item.catalogProductId,
+    }))
+
+    const { error } = await supabase.from('items').insert(payload)
+    if (error) {
+      throw serverError('items.insert_many', error)
+    }
   },
 
   async edit(itemId, { name, quantity, imagePath }) {

@@ -164,6 +164,14 @@ function ItemsView({ community, username }: { community: Community; username: st
               </View>
               <View className="flex-row items-center gap-2">
                 <Button
+                  label={t('recipes.screenTitle')}
+                  onPress={() => router.push('/recipes' as never)}
+                  variant="secondary"
+                  size="sm"
+                  fullWidth={false}
+                  accessibilityHint={t('recipes.screenTitle')}
+                />
+                <Button
                   label={t('items.pdf.button')}
                   onPress={() => void exportPdf()}
                   variant="secondary"

@@ -377,6 +377,102 @@ export type Database = {
           },
         ]
       }
+      recipe_ingredients: {
+        Row: {
+          catalog_product_id: string | null
+          created_at: string
+          id: string
+          name: string
+          quantity: number
+          recipe_id: string
+          sort_order: number
+          unit: string | null
+        }
+        Insert: {
+          catalog_product_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          quantity?: number
+          recipe_id: string
+          sort_order?: number
+          unit?: string | null
+        }
+        Update: {
+          catalog_product_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          quantity?: number
+          recipe_id?: string
+          sort_order?: number
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          community_id: string
+          created_at: string
+          created_by_member_id: string | null
+          id: string
+          instructions: string
+          servings: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          created_by_member_id?: string | null
+          id?: string
+          instructions?: string
+          servings?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          created_by_member_id?: string | null
+          id?: string
+          instructions?: string
+          servings?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_created_by_member_id_fkey"
+            columns: ["created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settlements: {
         Row: {
           amount_cents: number
@@ -482,6 +578,7 @@ export type Database = {
         Returns: string
       }
       current_member_id: { Args: { p_community_id: string }; Returns: string }
+      delete_recipe: { Args: { p_id: string }; Returns: undefined }
       generate_join_code: { Args: never; Returns: string }
       get_community_push_tokens: {
         Args: { p_community_id: string }
@@ -519,6 +616,17 @@ export type Database = {
           expires_at: string
           join_code: string
         }[]
+      }
+      save_recipe: {
+        Args: {
+          p_community_id: string
+          p_id: string
+          p_ingredients: Json
+          p_instructions: string
+          p_servings: number
+          p_title: string
+        }
+        Returns: string
       }
       search_catalog: {
         Args: { p_limit?: number; p_query: string; p_supermarket_id?: string }
