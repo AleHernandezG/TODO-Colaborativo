@@ -301,6 +301,41 @@ export type Database = {
         }
         Relationships: []
       }
+      member_push_tokens: {
+        Row: {
+          created_at: string
+          device_name: string | null
+          expo_push_token: string
+          id: string
+          member_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_name?: string | null
+          expo_push_token: string
+          id?: string
+          member_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string | null
+          expo_push_token?: string
+          id?: string
+          member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_push_tokens_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           auth_user_id: string | null
@@ -448,6 +483,12 @@ export type Database = {
       }
       current_member_id: { Args: { p_community_id: string }; Returns: string }
       generate_join_code: { Args: never; Returns: string }
+      get_community_push_tokens: {
+        Args: { p_community_id: string }
+        Returns: {
+          expo_push_token: string
+        }[]
+      }
       join_code_lifetime: { Args: never; Returns: string }
       join_community: {
         Args: { p_join_code: string; p_pin?: string; p_username: string }
@@ -458,6 +499,14 @@ export type Database = {
       }
       member_community_ids: { Args: never; Returns: string[] }
       ping: { Args: never; Returns: string }
+      register_push_token: {
+        Args: {
+          p_community_id: string
+          p_device_name?: string
+          p_expo_push_token: string
+        }
+        Returns: undefined
+      }
       remove_member: {
         Args: { p_community_id: string; p_member_id: string }
         Returns: {
@@ -493,6 +542,10 @@ export type Database = {
           p_is_admin: boolean
           p_member_id: string
         }
+        Returns: undefined
+      }
+      unregister_push_token: {
+        Args: { p_expo_push_token: string }
         Returns: undefined
       }
     }

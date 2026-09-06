@@ -21,4 +21,22 @@ jest.mock('@sentry/react-native', () => ({
   setExtra: jest.fn(),
 }))
 
+jest.mock('expo-device', () => ({
+  isDevice: true,
+  modelName: 'Pixel 8',
+}))
+
+jest.mock('expo-notifications', () => ({
+  setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
+  getPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  getExpoPushTokenAsync: jest.fn().mockResolvedValue({ data: 'ExponentPushToken[mock-token-123]' }),
+  addNotificationReceivedListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
+  addNotificationResponseReceivedListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
+  AndroidImportance: {
+    MAX: 5,
+  },
+}))
+
 globalThis.expo = { ...globalThis.expo, uuidv4: () => require('node:crypto').randomUUID() }

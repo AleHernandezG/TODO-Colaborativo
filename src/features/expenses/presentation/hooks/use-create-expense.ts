@@ -1,11 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
+import { supabaseNotificationsRepository } from '@/features/notifications'
 import { useSessionStore } from '@/features/session'
 import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+import { captureError } from '@/shared/lib/observability'
 import { randomUuid } from '@/shared/lib/uuid'
 
 import type { Expense } from '../../domain/expense'
+import { formatCents } from '../../domain/money'
 import type { CreateExpenseVariables } from '../mutations/expense-mutations'
 import { expenseMutationKeys } from '../mutations/expense-mutations'
 import { expensesKey } from './use-expenses'
@@ -53,8 +56,21 @@ export function useCreateExpense(communityId: string) {
       queryClient.setQueryData<Expense[]>(key, context?.previous ?? [])
       showError(error, t('expenses.errors.addFailed'))
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: key })
+      void supabaseNotificationsRepository
+        .notifyCommunity({
+          communityId,
+          title: t('notifications.expenseAddedTitle'),
+          body: t('notifications.expenseAddedBody', {
+            amount: formatCents(variables.amountCents, variables.currency ?? 'EUR'),
+            description: variables.description,
+          }),
+          data: { url: '/expenses' },
+        })
+        .catch((err) => {
+          captureError(err, { tags: { area: 'push-notifications' } })
+        })
     },
   })
 

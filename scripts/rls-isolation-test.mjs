@@ -744,6 +744,70 @@ async function main() {
     marcosAdopts.body?.[0]?.status ?? `HTTP ${marcosAdopts.status}`,
   )
 
+  // Fase 10: Notificaciones push y aislamiento de tokens
+  const tokenPushC = await signInAnonymously()
+  const joinCodeA = createdA.body[0].join_code
+  await rpc(tokenPushC, 'join_community', {
+    p_join_code: joinCodeA,
+    p_username: 'clara_push',
+    p_pin: '1234',
+  })
+
+  const regA = await rpc(tokenA, 'register_push_token', {
+    p_community_id: communityA,
+    p_expo_push_token: 'ExponentPushToken[userA-device1]',
+    p_device_name: 'Pixel 8',
+  })
+  check(
+    'Un miembro puede registrar su push token',
+    regA.status === 200 || regA.status === 204,
+    `HTTP ${regA.status}`,
+  )
+
+  const regBInA = await rpc(tokenB, 'register_push_token', {
+    p_community_id: communityA,
+    p_expo_push_token: 'ExponentPushToken[intruder]',
+    p_device_name: 'Hacker Phone',
+  })
+  check(
+    'Un usuario de otra comunidad no puede registrar token en comunidad ajena',
+    regBInA.status !== 200,
+    `HTTP ${regBInA.status}`,
+  )
+
+  const tokensForA = await rpc(tokenA, 'get_community_push_tokens', {
+    p_community_id: communityA,
+  })
+  const hasSelfToken = tokensForA.body?.some((t) => t.expo_push_token === 'ExponentPushToken[userA-device1]')
+  check(
+    'get_community_push_tokens no incluye el propio token del emisor',
+    tokensForA.status === 200 && !hasSelfToken,
+    `${tokensForA.body?.length ?? 0} tokens ajenos`,
+  )
+
+  const tokensForClara = await rpc(tokenPushC, 'get_community_push_tokens', {
+    p_community_id: communityA,
+  })
+  const claraSeesA = tokensForClara.body?.some((t) => t.expo_push_token === 'ExponentPushToken[userA-device1]')
+  check(
+    'Otro miembro de la misma lista sí recibe el push token para notificarle',
+    tokensForClara.status === 200 && Boolean(claraSeesA),
+    claraSeesA ? 'token recibido' : 'no encontrado',
+  )
+
+  await rpc(tokenA, 'unregister_push_token', {
+    p_expo_push_token: 'ExponentPushToken[userA-device1]',
+  })
+  const tokensForClaraAfter = await rpc(tokenPushC, 'get_community_push_tokens', {
+    p_community_id: communityA,
+  })
+  const claraSeesAAfter = tokensForClaraAfter.body?.some((t) => t.expo_push_token === 'ExponentPushToken[userA-device1]')
+  check(
+    'Al desregistrar el token desaparece de la lista de destinatarios',
+    tokensForClaraAfter.status === 200 && !claraSeesAAfter,
+    'desregistrado',
+  )
+
   await cleanup([communityA, communityB, communityLegacy].filter(Boolean), [
     imagePathB,
     imagePathIntruso,

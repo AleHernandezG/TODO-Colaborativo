@@ -42,6 +42,13 @@
           "cameraPermission": "La app usa la cámara para que puedas hacer una foto de un artículo de la lista."
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/splash-icon.png",
+          "color": "#208AEF"
+        }
+      ],
       "@sentry/react-native"
     ],
     "experiments": {

@@ -13,6 +13,7 @@ import {
   useViewers,
   ViewersLine,
 } from '@/features/community'
+import { usePushNotifications } from '@/features/notifications'
 import { useFailureMessage } from '@/shared/hooks/use-failure-message'
 import { useSyncStatus } from '@/shared/hooks/use-sync-status'
 import { BuildTag } from '@/shared/ui/BuildTag'
@@ -56,6 +57,7 @@ export function ItemsScreen() {
 function ItemsView({ community, username }: { community: Community; username: string }) {
   const { t } = useTranslation()
   const router = useRouter()
+  usePushNotifications(community.id)
   const leave = useActiveCommunityStore((state) => state.leave)
   const {
     data: items,

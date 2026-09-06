@@ -301,5 +301,11 @@
       "removeFailed": "No se pudo eliminar al miembro.",
       "roleFailed": "No se pudo actualizar el rol del miembro."
     }
+  },
+  "notifications": {
+    "itemAddedTitle": "Nuevo artículo en la lista",
+    "itemAddedBody": "{{quantity}}x {{name}} añadido a la lista",
+    "expenseAddedTitle": "Nuevo gasto registrado",
+    "expenseAddedBody": "{{amount}} en {{description}}"
   }
 }

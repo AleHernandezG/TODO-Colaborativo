@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
+import { supabaseNotificationsRepository } from '@/features/notifications'
 import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+import { captureError } from '@/shared/lib/observability'
 import { randomUuid } from '@/shared/lib/uuid'
 
 import type { AddItemResult } from '../../domain/add-item'
@@ -42,8 +44,21 @@ export function useAddItem(communityId: string) {
       queryClient.setQueryData<Item[]>(key, context?.previous ?? [])
       showError(error, t('items.errors.addFailed'))
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: key })
+      void supabaseNotificationsRepository
+        .notifyCommunity({
+          communityId,
+          title: t('notifications.itemAddedTitle'),
+          body: t('notifications.itemAddedBody', {
+            quantity: variables.quantity,
+            name: variables.name,
+          }),
+          data: { url: '/list' },
+        })
+        .catch((err) => {
+          captureError(err, { tags: { area: 'push-notifications' } })
+        })
     },
   })
 

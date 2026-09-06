@@ -221,6 +221,13 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
   saldo**, que es lo que ya hace `join_community` con un miembro sin PIN.
 - **Depende de:** RF-11, porque quien añade invitados es un admin y el rol nace ahí.
 
+### RF-13 · Notificaciones push colaborativas (post-MVP)
+
+- **Qué:** avisar mediante notificaciones push del sistema cuando otro miembro de la lista añade nuevos artículos a la compra o registra un nuevo gasto.
+- **Cómo:** `expo-notifications` con registro seguro de tokens en la tabla `member_push_tokens`, canal de alta prioridad en Android (`default`), y RPC `get_community_push_tokens` con exclusión de auto-notificación (`auth.uid() != auth_user_id`). Despacho asíncrono no bloqueante vía API de Expo Push con manejo silencioso de errores hacia Sentry.
+- **Aceptación:** al añadir un artículo o gasto, todos los demás miembros activos de la lista reciben la notificación en su dispositivo; el autor no recibe alerta sobre su propia acción; pulsar la notificación abre la lista o la pantalla de gastos correspondiente.
+- **Depende de:** nada adicional; utiliza la pertenencia a la comunidad ya existente en `community_members`. Decidido en [ADR-0020](adr/ADR-0020-notificaciones-push-con-expo.md).
+
 ---
 
 ## 4. Requisitos no funcionales
