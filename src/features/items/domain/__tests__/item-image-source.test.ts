@@ -9,6 +9,7 @@ function item(overrides: Partial<Item> = {}): Item {
     isPurchased: false,
     imagePath: null,
     catalogProductId: null,
+    category: 'other',
     createdAt: '2026-08-16T10:00:00Z',
     ...overrides,
   }

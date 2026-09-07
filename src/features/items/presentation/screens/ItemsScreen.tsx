@@ -1,7 +1,7 @@
 import { Redirect, useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, RefreshControl, SectionList, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, RefreshControl, SectionList, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import type { CatalogProductsById } from '@/features/catalog'
@@ -20,8 +20,10 @@ import { BuildTag } from '@/shared/ui/BuildTag'
 import { Button } from '@/shared/ui/Button'
 import { OfflineBanner } from '@/shared/ui/OfflineBanner'
 import { RealtimeStatus } from '@/shared/ui/RealtimeStatus'
+import { usePalette } from '@/theme'
 
 import type { Item } from '../../domain/item'
+import { groupItemsByAisle } from '../../domain/item-category'
 import { catalogImageProductIds, itemImageSource } from '../../domain/item-image-source'
 import { AddItemBar } from '../components/AddItemBar'
 import { EditItemDialog } from '../components/EditItemDialog'
@@ -57,6 +59,7 @@ export function ItemsScreen() {
 function ItemsView({ community, username }: { community: Community; username: string }) {
   const { t } = useTranslation()
   const router = useRouter()
+  const palette = usePalette()
   usePushNotifications(community.id)
   const leave = useActiveCommunityStore((state) => state.leave)
   const {
@@ -75,6 +78,7 @@ function ItemsView({ community, username }: { community: Community; username: st
   const editItem = useEditItem(community.id)
   const removeItem = useDeleteItem(community.id)
   const [itemBeingEdited, setItemBeingEdited] = useState<Item | null>(null)
+  const [groupByAisle, setGroupByAisle] = useState(false)
 
   const uploadingImageItemId =
     editItem.isPending && editItem.variables?.image.kind === 'replace'
@@ -96,14 +100,28 @@ function ItemsView({ community, username }: { community: Community; username: st
     const pending = all.filter((item) => !item.isPurchased)
     const purchased = all.filter((item) => item.isPurchased)
     const result: Section[] = []
-    if (pending.length > 0) {
+
+    if (groupByAisle) {
+      const aisleGroups = groupItemsByAisle(pending)
+      for (const group of aisleGroups) {
+        result.push({
+          title: `${group.metadata.icon} ${t(group.metadata.translationKey)} (${group.items.length})`,
+          data: group.items,
+        })
+      }
+    } else if (pending.length > 0) {
       result.push({ title: t('items.sections.pending'), data: pending })
     }
+
     if (purchased.length > 0) {
-      result.push({ title: t('items.sections.purchased'), data: purchased })
+      result.push({
+        title: `${t('items.sections.purchased')} (${purchased.length})`,
+        data: purchased,
+      })
     }
+
     return { sections: result, allDone: all.length > 0 && pending.length === 0 }
-  }, [items, t])
+  }, [items, groupByAisle, t])
 
   const renderItem = useCallback(
     ({ item }: { item: Item }) => (
@@ -164,6 +182,13 @@ function ItemsView({ community, username }: { community: Community; username: st
               </View>
               <View className="flex-row flex-wrap items-center justify-end gap-2">
                 <Button
+                  label={t('items.shoppingMode.button')}
+                  onPress={() => router.push('/shopping-mode' as never)}
+                  size="sm"
+                  fullWidth={false}
+                  accessibilityHint={t('items.shoppingMode.buttonHint')}
+                />
+                <Button
                   label={t('mealPlanner.menuButton')}
                   onPress={() => router.push('/meal-planner' as never)}
                   variant="secondary"
@@ -208,6 +233,59 @@ function ItemsView({ community, username }: { community: Community; username: st
             )}
 
             <AddItemBar onAdd={(input) => addItem.mutate(input)} />
+
+            {/* Selector de agrupación por pasillos o vista estándar */}
+            {(items?.length ?? 0) > 0 && (
+              <View className="flex-row items-center justify-between pt-1">
+                <Text className="text-xs font-semibold uppercase tracking-wider text-muted dark:text-muted-dark">
+                  {t('items.grouping.label')}
+                </Text>
+                <View className="flex-row items-center rounded-lg border border-line bg-surface p-0.5 dark:border-line-dark dark:bg-surface-dark">
+                  <Pressable
+                    onPress={() => setGroupByAisle(false)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: !groupByAisle }}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 6,
+                      backgroundColor: !groupByAisle ? palette.primary : 'transparent',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: '600',
+                        color: !groupByAisle ? '#FFFFFF' : palette.textMuted,
+                      }}
+                    >
+                      {t('items.grouping.standard')}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setGroupByAisle(true)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: groupByAisle }}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 6,
+                      backgroundColor: groupByAisle ? palette.primary : 'transparent',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: '600',
+                        color: groupByAisle ? '#FFFFFF' : palette.textMuted,
+                      }}
+                    >
+                      {t('items.grouping.byAisle')}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
 
             {allDone ? <AllDoneBanner /> : null}
           </View>

@@ -19,6 +19,7 @@ const mockItems: Item[] = Array.from({ length: 200 }, (_, index) => {
     isPurchased,
     imagePath: index % 7 === 0 ? `photos/comm-1/item-${index + 1}.jpg` : null,
     catalogProductId: index % 9 === 0 ? `cat-${index + 1}` : null,
+    category: 'other',
     createdAt: new Date(Date.now() - index * 60000).toISOString(),
   }
 })

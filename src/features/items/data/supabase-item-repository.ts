@@ -3,10 +3,12 @@ import { assertOnline } from '@/shared/lib/network'
 import { supabase } from '@/shared/lib/supabase'
 
 import type { Item } from '../domain/item'
+import type { ItemCategory } from '../domain/item-category'
 import { imageUrlTtlSeconds } from '../domain/item-image'
 import type { ItemRepository } from '../domain/item-repository'
 
-const columns = 'id, name, quantity, is_purchased, image_path, catalog_product_id, created_at'
+const columns =
+  'id, name, quantity, is_purchased, image_path, catalog_product_id, category, created_at'
 const imagesBucket = 'item-images'
 const duplicateKey = '23505'
 
@@ -17,6 +19,7 @@ type ItemRow = {
   is_purchased: boolean
   image_path: string | null
   catalog_product_id: string | null
+  category: string | null
   created_at: string
 }
 
@@ -28,6 +31,7 @@ function toItem(row: ItemRow): Item {
     isPurchased: row.is_purchased,
     imagePath: row.image_path,
     catalogProductId: row.catalog_product_id,
+    category: (row.category as ItemCategory) ?? 'other',
     createdAt: row.created_at,
   }
 }
@@ -49,7 +53,7 @@ export const supabaseItemRepository: ItemRepository = {
     return (data ?? []).map(toItem)
   },
 
-  async add({ id, communityId, name, quantity, catalogProductId, imagePath }) {
+  async add({ id, communityId, name, quantity, catalogProductId, imagePath, category }) {
     await assertOnline()
 
     const { data, error } = await supabase
@@ -61,6 +65,7 @@ export const supabaseItemRepository: ItemRepository = {
         quantity,
         catalog_product_id: catalogProductId,
         image_path: imagePath ?? null,
+        category: category ?? 'other',
       })
       .select(columns)
       .single()
@@ -98,6 +103,7 @@ export const supabaseItemRepository: ItemRepository = {
       name: item.name,
       quantity: item.quantity,
       catalog_product_id: item.catalogProductId,
+      category: item.category ?? 'other',
     }))
 
     const { error } = await supabase.from('items').insert(payload)
@@ -106,12 +112,20 @@ export const supabaseItemRepository: ItemRepository = {
     }
   },
 
-  async edit(itemId, { name, quantity, imagePath }) {
+  async edit(itemId, { name, quantity, imagePath, category }) {
     await assertOnline()
 
-    const patch: { name: string; quantity: number; image_path?: string | null } = { name, quantity }
+    const patch: {
+      name: string
+      quantity: number
+      image_path?: string | null
+      category?: ItemCategory
+    } = { name, quantity }
     if (imagePath !== undefined) {
       patch.image_path = imagePath
+    }
+    if (category !== undefined) {
+      patch.category = category
     }
 
     const { error } = await supabase.from('items').update(patch).eq('id', itemId)

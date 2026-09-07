@@ -25,6 +25,7 @@ describe('useExportListPdf', () => {
       isPurchased: false,
       imagePath: null,
       catalogProductId: null,
+      category: 'fruits_vegetables',
       createdAt: '2026-09-01T10:00:00Z',
     },
   ]

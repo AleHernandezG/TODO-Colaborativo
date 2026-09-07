@@ -25,6 +25,7 @@ it('normaliza el nombre y usa cantidad 1 por defecto', async () => {
     quantity: 1,
     catalogProductId: null,
     imagePath: null,
+    category: 'bakery',
   })
 })
 
@@ -40,6 +41,7 @@ it('pasa la cantidad indicada al repositorio', async () => {
     quantity: 12,
     catalogProductId: null,
     imagePath: null,
+    category: 'dairy_eggs',
   })
 })
 
@@ -54,7 +56,22 @@ it('enlaza el producto del catálogo cuando el alta viene de una sugerencia', as
   })
 
   expect(repository.add).toHaveBeenCalledWith(
-    expect.objectContaining({ catalogProductId: 'prod-1', imagePath: null }),
+    expect.objectContaining({ catalogProductId: 'prod-1', imagePath: null, category: 'dairy_eggs' }),
+  )
+})
+
+it('respeta la categoría explícita sin inferir', async () => {
+  const repository = repositoryThatAdds()
+
+  await addItem(repository, {
+    id: 'i1',
+    communityId: 'c1',
+    name: 'Manzana',
+    category: 'drinks',
+  })
+
+  expect(repository.add).toHaveBeenCalledWith(
+    expect.objectContaining({ category: 'drinks' }),
   )
 })
 
@@ -83,6 +100,7 @@ it('sube la imagen opcional antes de insertar el artículo si se proporciona ima
     quantity: 1,
     catalogProductId: null,
     imagePath: 'c1/i1-123.jpg',
+    category: 'fruits_vegetables',
   })
   expect(result).toEqual({
     status: 'ok',

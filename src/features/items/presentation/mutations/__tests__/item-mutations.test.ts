@@ -98,6 +98,7 @@ it('un alta sin conexión se guarda, se rehidrata en otro cliente y llega al ser
     isPurchased: false,
     imagePath: null,
     catalogProductId: 'prod-1',
+    category: 'bakery',
     createdAt: '2026-08-04T10:00:00.000Z',
   })
 
@@ -110,6 +111,7 @@ it('un alta sin conexión se guarda, se rehidrata en otro cliente y llega al ser
     quantity: 2,
     catalogProductId: 'prod-1',
     imagePath: null,
+    category: 'bakery',
   })
 })
 
@@ -133,6 +135,7 @@ it('marcar un artículo añadido sin cobertura llega al servidor con el mismo id
       isPurchased: false,
       imagePath: null,
       catalogProductId: null,
+      category: 'bakery',
       createdAt: '2026-08-04T10:00:00.000Z',
     },
   })
@@ -155,6 +158,7 @@ it('marcar un artículo añadido sin cobertura llega al servidor con el mismo id
     isPurchased: false,
     imagePath: null,
     catalogProductId: null,
+    category: 'bakery',
     createdAt: '2026-08-04T10:00:00.000Z',
   })
   repository.setPurchased.mockResolvedValue(undefined)
@@ -168,6 +172,7 @@ it('marcar un artículo añadido sin cobertura llega al servidor con el mismo id
     quantity: 2,
     catalogProductId: null,
     imagePath: null,
+    category: 'bakery',
   })
   expect(repository.setPurchased).toHaveBeenCalledWith('item-nuevo', true)
 })

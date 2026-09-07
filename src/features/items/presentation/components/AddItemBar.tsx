@@ -1,16 +1,20 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 
 import type { CatalogProduct } from '@/features/catalog'
 import { CatalogSuggestions } from '@/features/catalog'
 import { Button } from '@/shared/ui/Button'
 import { Input } from '@/shared/ui/Input'
 import { QuantityStepper } from '@/shared/ui/QuantityStepper'
+import { usePalette } from '@/theme'
 
+import type { ItemCategory } from '../../domain/item-category'
+import { getCategoryMetadata, inferItemCategory } from '../../domain/item-category'
 import { isValidItemName, itemNameMaxLength, normalizeItemName } from '../../domain/item-name'
 import { minQuantity } from '../../domain/quantity'
 import { usePickImage } from '../hooks/use-pick-image'
+import { CategoryPickerModal } from './CategoryPickerModal'
 import { ItemImage } from './ItemImage'
 
 export function AddItemBar({
@@ -21,17 +25,24 @@ export function AddItemBar({
     quantity: number
     catalogProductId: string | null
     imageUri?: string | null
+    category?: ItemCategory
   }) => void
 }) {
   const { t } = useTranslation()
+  const palette = usePalette()
   const pickImage = usePickImage()
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState(minQuantity)
   const [picked, setPicked] = useState<CatalogProduct | null>(null)
   const [pickedImageUri, setPickedImageUri] = useState<string | null>(null)
+  const [manualCategory, setManualCategory] = useState<ItemCategory | null>(null)
+  const [pickerVisible, setPickerVisible] = useState(false)
 
   const canAdd = isValidItemName(normalizeItemName(name))
   const linked = picked !== null && picked.name === name ? picked : null
+
+  const activeCategory = manualCategory ?? (name.trim() ? inferItemCategory(name) : 'other')
+  const categoryMeta = getCategoryMetadata(activeCategory)
 
   const handlePick = async (source: 'camera' | 'gallery') => {
     const uri = await pickImage(source)
@@ -49,11 +60,13 @@ export function AddItemBar({
       quantity,
       catalogProductId: linked?.id ?? null,
       imageUri: pickedImageUri,
+      category: activeCategory,
     })
     setName('')
     setPicked(null)
     setQuantity(minQuantity)
     setPickedImageUri(null)
+    setManualCategory(null)
   }
 
   return (
@@ -79,48 +92,85 @@ export function AddItemBar({
         />
       )}
 
-      {pickedImageUri ? (
-        <View className="flex-row items-center justify-between rounded-xl border border-line bg-surface p-2.5 dark:border-line-dark dark:bg-surface-dark">
-          <View className="flex-row items-center gap-3">
+      <View className="flex-row flex-wrap items-center justify-between gap-2">
+        <Pressable
+          onPress={() => setPickerVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('items.categoryPicker.label', {
+            category: t(categoryMeta.translationKey),
+          })}
+          accessibilityHint={t('items.categoryPicker.hint')}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 20,
+            backgroundColor: palette.surface,
+            borderWidth: 1,
+            borderColor: manualCategory ? palette.primary : palette.border,
+            minHeight: 40,
+          }}
+        >
+          <Text style={{ fontSize: 16 }}>{categoryMeta.icon}</Text>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: manualCategory ? '600' : '500',
+              color: manualCategory ? palette.primary : palette.text,
+            }}
+          >
+            {t(categoryMeta.translationKey)}
+          </Text>
+          <Text style={{ fontSize: 11, color: palette.textMuted }}>▾</Text>
+        </Pressable>
+
+        {pickedImageUri ? (
+          <View className="flex-row items-center gap-2">
             <ItemImage
               path={null}
               localUri={pickedImageUri}
               name={name || t('items.image.sectionLabel')}
-              size={48}
+              size={36}
             />
-            <Text className="text-sm font-medium text-content dark:text-content-dark">
-              {t('items.image.attached')}
-            </Text>
+            <Button
+              label={t('items.image.remove')}
+              onPress={() => setPickedImageUri(null)}
+              variant="secondary"
+              size="sm"
+              fullWidth={false}
+              accessibilityHint={t('items.image.removeHint')}
+            />
           </View>
-          <Button
-            label={t('items.image.remove')}
-            onPress={() => setPickedImageUri(null)}
-            variant="secondary"
-            size="sm"
-            fullWidth={false}
-            accessibilityHint={t('items.image.removeHint')}
-          />
-        </View>
-      ) : (
-        <View className="flex-row items-center gap-2">
-          <Button
-            label={`📷 ${t('items.image.camera')}`}
-            onPress={() => void handlePick('camera')}
-            variant="secondary"
-            size="sm"
-            fullWidth={false}
-            accessibilityHint={t('items.image.cameraHint')}
-          />
-          <Button
-            label={`🖼️ ${t('items.image.gallery')}`}
-            onPress={() => void handlePick('gallery')}
-            variant="secondary"
-            size="sm"
-            fullWidth={false}
-            accessibilityHint={t('items.image.galleryHint')}
-          />
-        </View>
-      )}
+        ) : (
+          <View className="flex-row items-center gap-2">
+            <Button
+              label={`📷 ${t('items.image.camera')}`}
+              onPress={() => void handlePick('camera')}
+              variant="secondary"
+              size="sm"
+              fullWidth={false}
+              accessibilityHint={t('items.image.cameraHint')}
+            />
+            <Button
+              label={`🖼️ ${t('items.image.gallery')}`}
+              onPress={() => void handlePick('gallery')}
+              variant="secondary"
+              size="sm"
+              fullWidth={false}
+              accessibilityHint={t('items.image.galleryHint')}
+            />
+          </View>
+        )}
+      </View>
+
+      <CategoryPickerModal
+        visible={pickerVisible}
+        selectedCategory={activeCategory}
+        onSelect={(cat) => setManualCategory(cat)}
+        onDismiss={() => setPickerVisible(false)}
+      />
 
       <View className="flex-row items-center gap-3">
         <QuantityStepper
@@ -142,3 +192,4 @@ export function AddItemBar({
     </View>
   )
 }
+

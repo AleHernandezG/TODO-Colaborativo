@@ -8,6 +8,8 @@ import { randomUuid } from '@/shared/lib/uuid'
 
 import type { AddItemResult } from '../../domain/add-item'
 import type { Item } from '../../domain/item'
+import type { ItemCategory } from '../../domain/item-category'
+import { inferItemCategory } from '../../domain/item-category'
 import { normalizeItemName } from '../../domain/item-name'
 import type { AddItemVariables } from '../mutations/item-mutations'
 import { itemMutationKeys } from '../mutations/item-mutations'
@@ -34,6 +36,7 @@ export function useAddItem(communityId: string) {
         isPurchased: false,
         imagePath: null,
         catalogProductId: input.catalogProductId,
+        category: input.category ?? inferItemCategory(input.name),
         createdAt: new Date().toISOString(),
       }
 
@@ -68,6 +71,7 @@ export function useAddItem(communityId: string) {
       quantity: number
       catalogProductId: string | null
       imageUri?: string | null
+      category?: ItemCategory
     }) => mutation.mutate({ ...input, id: randomUuid(), communityId }),
   }
 }

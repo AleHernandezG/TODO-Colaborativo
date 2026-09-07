@@ -1,4 +1,6 @@
 import type { Item } from './item'
+import type { ItemCategory } from './item-category'
+import { inferItemCategory } from './item-category'
 import { isValidItemName, normalizeItemName } from './item-name'
 import type { ItemRepository } from './item-repository'
 import { isValidQuantity, minQuantity } from './quantity'
@@ -15,6 +17,7 @@ export async function addItem(
     quantity?: number
     catalogProductId?: string | null
     imageUri?: string | null
+    category?: ItemCategory
   },
 ): Promise<AddItemResult> {
   const name = normalizeItemName(input.name)
@@ -26,6 +29,8 @@ export async function addItem(
   if (!isValidQuantity(quantity)) {
     return { status: 'invalid_quantity' }
   }
+
+  const category = input.category ?? inferItemCategory(name)
 
   const imagePath = input.imageUri
     ? await repository.uploadImage({
@@ -44,6 +49,7 @@ export async function addItem(
       quantity,
       catalogProductId: input.catalogProductId ?? null,
       imagePath,
+      category,
     }),
   }
 }

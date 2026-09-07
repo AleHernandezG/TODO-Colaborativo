@@ -22,6 +22,7 @@ describe('buildListPdfHtml', () => {
         isPurchased: false,
         imagePath: null,
         catalogProductId: null,
+        category: 'fruits_vegetables',
         createdAt: '2026-09-01T10:00:00Z',
       },
     ]
@@ -47,6 +48,7 @@ describe('buildListPdfHtml', () => {
         isPurchased: false,
         imagePath: null,
         catalogProductId: null,
+        category: 'bakery',
         createdAt: '2026-09-01T10:00:00Z',
       },
       {
@@ -56,6 +58,7 @@ describe('buildListPdfHtml', () => {
         isPurchased: true,
         imagePath: null,
         catalogProductId: null,
+        category: 'dairy_eggs',
         createdAt: '2026-09-01T10:00:00Z',
       },
     ]
@@ -84,6 +87,7 @@ describe('buildListPdfHtml', () => {
         isPurchased: false,
         imagePath: null,
         catalogProductId: null,
+        category: 'dairy_eggs',
         createdAt: '2026-09-01T10:00:00Z',
       },
     ]

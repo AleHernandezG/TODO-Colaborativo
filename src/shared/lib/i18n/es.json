@@ -109,6 +109,7 @@
       "openHint": "Abre una ventana para cambiar el nombre y la cantidad",
       "title": "Cambiar el artículo",
       "nameLabel": "Nombre",
+      "categoryLabel": "Categoría / Pasillo",
       "submit": "Guardar"
     },
     "image": {
@@ -162,6 +163,53 @@
       "emptyList": "No hay artículos en la lista para exportar.",
       "sharingUnavailable": "La opción de compartir no está disponible en este dispositivo.",
       "error": "No se pudo generar o compartir el PDF. Inténtalo otra vez."
+    },
+    "shoppingMode": {
+      "button": "🛒 Modo Compra",
+      "buttonHint": "Abre el modo supermercado con pantalla encendida y vista optimizada para la tienda"
+    },
+    "grouping": {
+      "label": "Organizar",
+      "standard": "Normal",
+      "byAisle": "Por pasillos"
+    },
+    "categoryPicker": {
+      "title": "Seleccionar categoría",
+      "label": "Categoría {{category}}",
+      "hint": "Abre el selector para cambiar la categoría del artículo"
+    },
+    "categories": {
+      "fruits_vegetables": "Frutas y Verduras",
+      "dairy_eggs": "Lácteos y Huevos",
+      "meat_fish": "Carnes y Pescados",
+      "bakery": "Panadería y Bollería",
+      "pantry": "Despensa y Conservas",
+      "drinks": "Bebidas y Refrescos",
+      "frozen": "Congelados",
+      "cleaning_home": "Limpieza del Hogar",
+      "personal_care": "Cuidado Personal",
+      "other": "Otros / Varios"
+    }
+  },
+  "shoppingMode": {
+    "title": "Modo Supermercado",
+    "exit": "Salir",
+    "exitHint": "Vuelve a la lista estándar",
+    "progress": "{{purchased}} de {{total}} artículos",
+    "tabs": {
+      "pending": "Por comprar ({{count}})",
+      "inCart": "En el carro ({{count}})",
+      "all": "Todos ({{count}})"
+    },
+    "allPurchased": "¡Has comprado todos los artículos pendientes!",
+    "empty": "No hay artículos en este apartado.",
+    "finishButton": "Finalizar compra",
+    "finishButtonHint": "Muestra el resumen final de la compra",
+    "finishSuccess": "¡Compra completada! Se han comprado {{count}} artículos.",
+    "finishDialog": {
+      "title": "¿Finalizar la compra?",
+      "message": "Has marcado {{purchased}} de {{total}} artículos como comprados. La lista compartida se mantiene actualizada para el resto del grupo.",
+      "confirm": "Finalizar y salir"
     }
   },
   "catalog": {

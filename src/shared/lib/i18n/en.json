@@ -109,6 +109,7 @@
       "openHint": "Opens a window to change the name and the quantity",
       "title": "Edit the item",
       "nameLabel": "Name",
+      "categoryLabel": "Category / Aisle",
       "submit": "Save"
     },
     "image": {
@@ -162,6 +163,53 @@
       "emptyList": "No items in the list to export.",
       "sharingUnavailable": "Sharing is not available on this device.",
       "error": "Could not generate or share the PDF. Please try again."
+    },
+    "shoppingMode": {
+      "button": "🛒 Shopping Mode",
+      "buttonHint": "Opens supermarket shopping mode with screen kept awake and optimized view"
+    },
+    "grouping": {
+      "label": "Organize",
+      "standard": "Standard",
+      "byAisle": "By Aisle"
+    },
+    "categoryPicker": {
+      "title": "Select category",
+      "label": "Category {{category}}",
+      "hint": "Opens the picker to change the item's category"
+    },
+    "categories": {
+      "fruits_vegetables": "Fruit & Veg",
+      "dairy_eggs": "Dairy & Eggs",
+      "meat_fish": "Meat & Fish",
+      "bakery": "Bakery & Bread",
+      "pantry": "Pantry & Tins",
+      "drinks": "Drinks & Sodas",
+      "frozen": "Frozen Food",
+      "cleaning_home": "Household Cleaning",
+      "personal_care": "Personal Care",
+      "other": "Other / Misc"
+    }
+  },
+  "shoppingMode": {
+    "title": "Shopping Mode",
+    "exit": "Exit",
+    "exitHint": "Return to standard list",
+    "progress": "{{purchased}} of {{total}} items",
+    "tabs": {
+      "pending": "To buy ({{count}})",
+      "inCart": "In cart ({{count}})",
+      "all": "All ({{count}})"
+    },
+    "allPurchased": "You have bought all pending items!",
+    "empty": "No items in this tab.",
+    "finishButton": "Finish shopping",
+    "finishButtonHint": "Shows the final shopping summary",
+    "finishSuccess": "Shopping finished! {{count}} items purchased.",
+    "finishDialog": {
+      "title": "Finish shopping trip?",
+      "message": "You marked {{purchased}} of {{total}} items as bought. The shared list is up to date for everyone in the group.",
+      "confirm": "Finish and exit"
     }
   },
   "catalog": {

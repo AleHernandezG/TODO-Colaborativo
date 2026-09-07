@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
-import { itemsKey, supabaseItemRepository } from '@/features/items'
+import { inferItemCategory, itemsKey, supabaseItemRepository } from '@/features/items'
 import { supabaseNotificationsRepository } from '@/features/notifications'
 import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
 import { captureError } from '@/shared/lib/observability'
@@ -33,6 +33,7 @@ export function useAddRecipeToList(communityId: string) {
         name: item.name,
         quantity: Math.max(1, Math.round(item.quantity)),
         catalogProductId: item.catalogProductId,
+        category: inferItemCategory(item.name),
       }))
 
       await supabaseItemRepository.addMany(itemsWithIds)

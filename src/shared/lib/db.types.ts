@@ -222,6 +222,7 @@ export type Database = {
       items: {
         Row: {
           catalog_product_id: string | null
+          category: string
           community_id: string
           created_at: string
           created_by: string | null
@@ -234,6 +235,7 @@ export type Database = {
         }
         Insert: {
           catalog_product_id?: string | null
+          category?: string
           community_id: string
           created_at?: string
           created_by?: string | null
@@ -246,6 +248,7 @@ export type Database = {
         }
         Update: {
           catalog_product_id?: string | null
+          category?: string
           community_id?: string
           created_at?: string
           created_by?: string | null

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
-import { itemsKey, supabaseItemRepository } from '@/features/items'
+import { inferItemCategory, itemsKey, supabaseItemRepository } from '@/features/items'
 import { supabaseNotificationsRepository } from '@/features/notifications'
 import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
 import { captureError } from '@/shared/lib/observability'
@@ -39,6 +39,7 @@ export function useAddMealPlanToList(communityId: string) {
           name,
           quantity,
           catalogProductId: ing.catalogProductId,
+          category: inferItemCategory(ing.name),
         }
       })
 

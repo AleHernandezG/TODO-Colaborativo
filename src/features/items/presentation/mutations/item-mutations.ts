@@ -10,6 +10,7 @@ import { deleteItem } from '../../domain/delete-item'
 import type { EditItemResult, ItemImageChange } from '../../domain/edit-item'
 import { editItem } from '../../domain/edit-item'
 import type { Item } from '../../domain/item'
+import type { ItemCategory } from '../../domain/item-category'
 import { setPurchased } from '../../domain/set-purchased'
 import { itemsKey } from '../hooks/use-items'
 
@@ -20,6 +21,7 @@ export type AddItemVariables = {
   quantity: number
   catalogProductId: string | null
   imageUri?: string | null
+  category?: ItemCategory
 }
 
 export type EditItemVariables = {
@@ -29,6 +31,7 @@ export type EditItemVariables = {
   quantity: number
   image: ItemImageChange
   currentImagePath: string | null
+  category?: ItemCategory
 }
 
 export type ItemMutationVariables = { communityId: string; item: Item }

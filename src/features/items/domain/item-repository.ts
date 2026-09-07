@@ -1,4 +1,5 @@
 import type { Item } from './item'
+import type { ItemCategory } from './item-category'
 
 export type ItemsChannelStatus = 'connecting' | 'connected' | 'disconnected'
 
@@ -16,6 +17,7 @@ export interface ItemRepository {
     quantity: number
     catalogProductId: string | null
     imagePath?: string | null
+    category?: ItemCategory
   }): Promise<Item>
   addMany(
     items: {
@@ -24,11 +26,17 @@ export interface ItemRepository {
       name: string
       quantity: number
       catalogProductId: string | null
+      category?: ItemCategory
     }[],
   ): Promise<void>
   edit(
     itemId: string,
-    input: { name: string; quantity: number; imagePath?: string | null },
+    input: {
+      name: string
+      quantity: number
+      imagePath?: string | null
+      category?: ItemCategory
+    },
   ): Promise<void>
   setPurchased(itemId: string, isPurchased: boolean): Promise<void>
   remove(itemId: string): Promise<void>

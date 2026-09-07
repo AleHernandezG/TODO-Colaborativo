@@ -6,6 +6,7 @@ import { useSnackbar } from '@/shared/hooks/use-snackbar'
 
 import type { EditItemResult, ItemImageChange } from '../../domain/edit-item'
 import type { Item } from '../../domain/item'
+import type { ItemCategory } from '../../domain/item-category'
 import { normalizeItemName } from '../../domain/item-name'
 import type { EditItemVariables } from '../mutations/item-mutations'
 import { itemMutationKeys } from '../mutations/item-mutations'
@@ -17,6 +18,7 @@ export type EditInput = {
   quantity: number
   image: ItemImageChange
   currentImagePath: string | null
+  category?: ItemCategory
 }
 
 type MutationContext = { previous: Item[] | undefined }
@@ -42,6 +44,7 @@ export function useEditItem(communityId: string) {
                 name: normalizeItemName(input.name),
                 quantity: input.quantity,
                 imagePath: input.image.kind === 'clear' ? null : item.imagePath,
+                category: input.category ?? item.category,
               }
             : item,
         ),

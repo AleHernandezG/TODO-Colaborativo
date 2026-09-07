@@ -131,6 +131,7 @@ describe('list', () => {
         is_purchased: false,
         image_path: 'c1/i1.jpg',
         catalog_product_id: null,
+        category: 'dairy_eggs',
         created_at: '2026-07-20T10:00:00.000Z',
       },
     ])
@@ -143,6 +144,7 @@ describe('list', () => {
         isPurchased: false,
         imagePath: 'c1/i1.jpg',
         catalogProductId: null,
+        category: 'dairy_eggs',
         createdAt: '2026-07-20T10:00:00.000Z',
       },
     ])
@@ -170,6 +172,7 @@ describe('add', () => {
       is_purchased: false,
       image_path: null,
       catalog_product_id: null,
+      category: 'dairy_eggs',
       created_at: '2026-07-20T10:05:00.000Z',
     })
 
@@ -180,6 +183,7 @@ describe('add', () => {
         name: 'Huevos',
         quantity: 12,
         catalogProductId: null,
+        category: 'dairy_eggs',
       }),
     ).resolves.toEqual({
       id: 'i1',
@@ -188,6 +192,7 @@ describe('add', () => {
       isPurchased: false,
       imagePath: null,
       catalogProductId: null,
+      category: 'dairy_eggs',
       createdAt: '2026-07-20T10:05:00.000Z',
     })
     expect(insert).toHaveBeenCalledWith({
@@ -197,6 +202,7 @@ describe('add', () => {
       quantity: 12,
       catalog_product_id: null,
       image_path: null,
+      category: 'dairy_eggs',
     })
   })
 
@@ -208,6 +214,7 @@ describe('add', () => {
       is_purchased: false,
       image_path: null,
       catalog_product_id: 'prod-1',
+      category: 'dairy_eggs',
       created_at: '2026-08-16T10:05:00.000Z',
     })
 
@@ -217,6 +224,7 @@ describe('add', () => {
       name: 'Leche entera Hacendado',
       quantity: 1,
       catalogProductId: 'prod-1',
+      category: 'dairy_eggs',
     })
 
     expect(item.catalogProductId).toBe('prod-1')
@@ -245,6 +253,7 @@ describe('add', () => {
       is_purchased: true,
       image_path: null,
       catalog_product_id: null,
+      category: 'bakery',
       created_at: '2026-08-05T09:00:00.000Z',
     })
 
@@ -263,6 +272,7 @@ describe('add', () => {
       isPurchased: true,
       imagePath: null,
       catalogProductId: null,
+      category: 'bakery',
       createdAt: '2026-08-05T09:00:00.000Z',
     })
   })
@@ -291,6 +301,18 @@ describe('edit', () => {
     ).resolves.toBeUndefined()
     expect(update).toHaveBeenCalledWith({ name: 'Pan de molde', quantity: 3 })
     expect(eq).toHaveBeenCalledWith('id', 'i1')
+  })
+
+  it('actualiza la categoría si se especifica', async () => {
+    const { update } = mockUpdate()
+
+    await supabaseItemRepository.edit('i1', {
+      name: 'Pan',
+      quantity: 1,
+      category: 'bakery',
+    })
+
+    expect(update).toHaveBeenCalledWith({ name: 'Pan', quantity: 1, category: 'bakery' })
   })
 
   it('escribe image_path cuando la foto cambia', async () => {

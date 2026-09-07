@@ -1,3 +1,4 @@
+import type { ItemCategory } from './item-category'
 import { isValidItemName, normalizeItemName } from './item-name'
 import type { ItemRepository } from './item-repository'
 import { isValidQuantity } from './quantity'
@@ -12,6 +13,7 @@ export type EditItemInput = {
   quantity: number
   image: ItemImageChange
   currentImagePath: string | null
+  category?: ItemCategory
 }
 
 export type EditItemResult =
@@ -31,7 +33,12 @@ export async function editItem(
   }
 
   const imagePath = await nextImagePath(repository, input)
-  await repository.edit(input.itemId, { name, quantity: input.quantity, imagePath })
+  await repository.edit(input.itemId, {
+    name,
+    quantity: input.quantity,
+    imagePath,
+    category: input.category,
+  })
 
   if (imagePath !== undefined && input.currentImagePath && input.currentImagePath !== imagePath) {
     await discardStaleImage(repository, input.currentImagePath)

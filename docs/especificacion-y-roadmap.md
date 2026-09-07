@@ -760,7 +760,13 @@ Lo que hay que tener resuelto antes de la primera migración:
 - Soporte completo de foto de portada en Recetas: columna `image_path` en `recipes`, bucket privado `recipe-images` con políticas RLS y RPC `save_recipe` actualizada.
 - Componente desacoplado `RecipeImage` y enriquecimiento visual de `RecipeDetailScreen`, `RecipesScreen` y `EditRecipeScreen`.
 
-**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 a 13 son posteriores a la beta y no entran en esa cuenta.
+### Fase 14 · Modo Supermercado y Agrupación por Categorías/Pasillos (RF-16)
+
+- **Cerrada el 2026-09-07.** 10 categorías estándar de supermercado con motor de inferencia léxica inteligente en español (`inferItemCategory`).
+- Agrupación visual por pasillos en la lista principal (`groupItemsByAisle`) con orden lógico y emojis identificativos.
+- Modo Supermercado dedicado (`/shopping-mode`) con prevención de bloqueo de pantalla (`useKeepAwakeSafe` con `expo-keep-awake`), ergonomía táctil para una sola mano (filas ≥60pt), barra de progreso dinámico y filtro segmentado.
+
+**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 a 14 son posteriores a la beta y no entran en esa cuenta.
 
 ---
 
