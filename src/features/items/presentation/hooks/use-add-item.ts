@@ -63,7 +63,11 @@ export function useAddItem(communityId: string) {
   })
 
   return {
-    mutate: (input: { name: string; quantity: number; catalogProductId: string | null }) =>
-      mutation.mutate({ ...input, id: randomUuid(), communityId }),
+    mutate: (input: {
+      name: string
+      quantity: number
+      catalogProductId: string | null
+      imageUri?: string | null
+    }) => mutation.mutate({ ...input, id: randomUuid(), communityId }),
   }
 }

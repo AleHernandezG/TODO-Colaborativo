@@ -94,6 +94,7 @@ describe('meal-plan domain', () => {
           title: 'Tortilla de patatas',
           servings: 4,
           instructions: 'Freir y cuajar',
+          imagePath: null,
           createdAt: '2026-09-07T00:00:00Z',
           updatedAt: '2026-09-07T00:00:00Z',
           ingredients: [
@@ -140,6 +141,7 @@ describe('meal-plan domain', () => {
           title: 'Bizcocho casero',
           servings: 4,
           instructions: 'Hornear',
+          imagePath: null,
           createdAt: '2026-09-07T00:00:00Z',
           updatedAt: '2026-09-07T00:00:00Z',
           ingredients: [

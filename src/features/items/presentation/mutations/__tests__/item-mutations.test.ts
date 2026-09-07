@@ -109,6 +109,7 @@ it('un alta sin conexión se guarda, se rehidrata en otro cliente y llega al ser
     name: 'Pan',
     quantity: 2,
     catalogProductId: 'prod-1',
+    imagePath: null,
   })
 })
 
@@ -166,6 +167,7 @@ it('marcar un artículo añadido sin cobertura llega al servidor con el mismo id
     name: 'Pan',
     quantity: 2,
     catalogProductId: null,
+    imagePath: null,
   })
   expect(repository.setPurchased).toHaveBeenCalledWith('item-nuevo', true)
 })

@@ -1,10 +1,13 @@
-import { serverError } from '@/shared/lib/errors'
+import { ServerError, serverError } from '@/shared/lib/errors'
 import { assertOnline } from '@/shared/lib/network'
 import { supabase } from '@/shared/lib/supabase'
 import { randomUuid } from '@/shared/lib/uuid'
 
 import type { NewRecipeInput, Recipe, RecipeIngredient } from '../domain/recipe'
+import { recipeImageUrlTtlSeconds } from '../domain/recipe-image'
 import type { RecipeRepository } from '../domain/recipe-repository'
+
+const imagesBucket = 'recipe-images'
 
 type RecipeIngredientRow = {
   id: string
@@ -24,6 +27,7 @@ type RecipeRow = {
   title: string
   servings: number
   instructions: string
+  image_path: string | null
   created_at: string
   updated_at: string
   recipe_ingredients: RecipeIngredientRow[]
@@ -53,6 +57,7 @@ function toRecipe(row: RecipeRow): Recipe {
     title: row.title,
     servings: row.servings,
     instructions: row.instructions,
+    imagePath: row.image_path ?? null,
     ingredients: sortedIngredients.map(toIngredient),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -73,7 +78,7 @@ export const supabaseRecipeRepository: RecipeRepository = {
       throw serverError('recipes.select', error)
     }
 
-    return (data as unknown as RecipeRow[] ?? []).map(toRecipe)
+    return ((data as unknown as RecipeRow[]) ?? []).map(toRecipe)
   },
 
   async getById(id: string): Promise<Recipe | null> {
@@ -115,6 +120,7 @@ export const supabaseRecipeRepository: RecipeRepository = {
       p_servings: recipe.servings,
       p_instructions: recipe.instructions,
       p_ingredients: payloadIngredients,
+      p_image_path: recipe.imagePath ?? undefined,
     })
 
     if (error || !data) {
@@ -134,6 +140,49 @@ export const supabaseRecipeRepository: RecipeRepository = {
     if (error) {
       throw serverError('recipes.delete_recipe', error)
     }
+  },
+
+  async uploadImage({ communityId, recipeId, uri }): Promise<string> {
+    await assertOnline()
+
+    const body = await fetch(uri).then((response) => response.arrayBuffer())
+    const path = `${communityId}/${recipeId}-${Date.now()}.jpg`
+
+    const { error } = await supabase.storage
+      .from(imagesBucket)
+      .upload(path, body, { contentType: 'image/jpeg', upsert: true })
+
+    if (error) {
+      throw serverError('storage.upload', error)
+    }
+
+    return path
+  },
+
+  async removeImage(path: string): Promise<void> {
+    await assertOnline()
+
+    const { error } = await supabase.storage.from(imagesBucket).remove([path])
+
+    if (error) {
+      throw serverError('storage.remove', error)
+    }
+  },
+
+  async signImageUrl(path: string): Promise<string> {
+    await assertOnline()
+
+    const { data, error } = await supabase.storage
+      .from(imagesBucket)
+      .createSignedUrl(path, recipeImageUrlTtlSeconds)
+
+    if (error || !data) {
+      throw error
+        ? serverError('storage.sign', error)
+        : new ServerError('storage.sign', 'sin respuesta')
+    }
+
+    return data.signedUrl
   },
 
   subscribe(communityId: string, { onChange }: { onChange: () => void }): () => void {

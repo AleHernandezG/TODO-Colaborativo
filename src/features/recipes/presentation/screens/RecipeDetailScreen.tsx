@@ -10,6 +10,7 @@ import { QuantityStepper } from '@/shared/ui/QuantityStepper'
 import { minTouchTarget } from '@/theme'
 
 import { formatIngredientDisplay, scaleIngredientQuantity } from '../../domain/recipe'
+import { RecipeImage } from '../components/RecipeImage'
 import { useAddRecipeToList } from '../hooks/use-add-recipe-to-list'
 import { useDeleteRecipe } from '../hooks/use-delete-recipe'
 import { useRecipe } from '../hooks/use-recipes'
@@ -159,6 +160,19 @@ export function RecipeDetailScreen({ recipeId }: { recipeId: string }) {
           className="flex-1 px-4 py-4"
           contentContainerStyle={{ gap: 20, paddingBottom: 60 }}
         >
+          {/* Foto de portada */}
+          {recipe.imagePath ? (
+            <View className="overflow-hidden rounded-2xl border border-line dark:border-line-dark">
+              <RecipeImage
+                path={recipe.imagePath}
+                name={recipe.title}
+                width="100%"
+                height={200}
+                borderRadius={16}
+              />
+            </View>
+          ) : null}
+
           {/* Título */}
           <View className="gap-2">
             <Text className="text-3xl font-bold text-content dark:text-content-dark">

@@ -5,18 +5,23 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useActiveCommunityStore } from '@/features/community'
+import { usePickImage } from '@/shared/hooks/use-pick-image'
+import { randomUuid } from '@/shared/lib/uuid'
 import { Button } from '@/shared/ui/Button'
 import { Input } from '@/shared/ui/Input'
 import { QuantityStepper } from '@/shared/ui/QuantityStepper'
 import { minTouchTarget, usePalette } from '@/theme'
 
+import { supabaseRecipeRepository } from '../../data/supabase-recipe-repository'
 import {
   defaultServings,
   isValidRecipeTitle,
   type NewRecipeIngredientInput,
   type NewRecipeInput,
+  type RecipeImageChange,
 } from '../../domain/recipe'
 import { IngredientInputRow } from '../components/IngredientInputRow'
+import { RecipeImage } from '../components/RecipeImage'
 import { useRecipe } from '../hooks/use-recipes'
 import { useSaveRecipe } from '../hooks/use-save-recipe'
 
@@ -26,6 +31,7 @@ export function EditRecipeScreen({ recipeId }: { recipeId?: string }) {
   const palette = usePalette()
   const membership = useActiveCommunityStore((state) => state.membership)
   const communityId = membership?.community.id ?? ''
+  const pickImage = usePickImage()
 
   const isEditing = Boolean(recipeId)
   const { data: existingRecipe, isLoading: isLoadingRecipe } = useRecipe(recipeId ?? '')
@@ -34,6 +40,7 @@ export function EditRecipeScreen({ recipeId }: { recipeId?: string }) {
   const [title, setTitle] = useState('')
   const [servings, setServings] = useState(defaultServings)
   const [instructions, setInstructions] = useState('')
+  const [imageChange, setImageChange] = useState<RecipeImageChange>({ kind: 'keep' })
   const [ingredients, setIngredients] = useState<NewRecipeIngredientInput[]>([
     { name: '', quantity: 1, unit: null },
   ])
@@ -43,6 +50,7 @@ export function EditRecipeScreen({ recipeId }: { recipeId?: string }) {
       setTitle(existingRecipe.title)
       setServings(existingRecipe.servings)
       setInstructions(existingRecipe.instructions)
+      setImageChange({ kind: 'keep' })
       setIngredients(
         existingRecipe.ingredients.length > 0
           ? existingRecipe.ingredients.map((ing) => ({
@@ -64,6 +72,17 @@ export function EditRecipeScreen({ recipeId }: { recipeId?: string }) {
     ingredients.some((ing) => ing.name.trim().length > 0) &&
     !saveRecipeMutation.isPending
 
+  const previewPath = imageChange.kind === 'clear' ? null : (existingRecipe?.imagePath ?? null)
+  const previewLocalUri = imageChange.kind === 'replace' ? imageChange.uri : null
+  const hasCoverImage = previewPath !== null || previewLocalUri !== null
+
+  const handlePickCover = async (source: 'camera' | 'gallery') => {
+    const uri = await pickImage(source)
+    if (uri) {
+      setImageChange({ kind: 'replace', uri })
+    }
+  }
+
   const handleAddIngredient = () => {
     setIngredients((prev) => [...prev, { name: '', quantity: 1, unit: null }])
   }
@@ -84,13 +103,32 @@ export function EditRecipeScreen({ recipeId }: { recipeId?: string }) {
     if (!canSave) return
 
     const validIngredients = ingredients.filter((ing) => ing.name.trim().length > 0)
+    const targetId = recipeId ?? randomUuid()
+    let imagePath = existingRecipe?.imagePath ?? null
+
+    if (imageChange.kind === 'replace') {
+      imagePath = await supabaseRecipeRepository.uploadImage({
+        communityId,
+        recipeId: targetId,
+        uri: imageChange.uri,
+      })
+      if (existingRecipe?.imagePath && existingRecipe.imagePath !== imagePath) {
+        void supabaseRecipeRepository.removeImage(existingRecipe.imagePath).catch(() => undefined)
+      }
+    } else if (imageChange.kind === 'clear') {
+      if (existingRecipe?.imagePath) {
+        void supabaseRecipeRepository.removeImage(existingRecipe.imagePath).catch(() => undefined)
+      }
+      imagePath = null
+    }
 
     const payload: NewRecipeInput = {
-      id: recipeId,
+      id: targetId,
       communityId,
       title: title.trim(),
       servings,
       instructions: instructions.trim(),
+      imagePath,
       ingredients: validIngredients,
     }
 
@@ -158,6 +196,77 @@ export function EditRecipeScreen({ recipeId }: { recipeId?: string }) {
             onChangeText={setTitle}
             autoFocus={!isEditing}
           />
+
+          {/* Foto de portada */}
+          <View className="gap-2">
+            <Text className="text-base font-medium text-content dark:text-content-dark">
+              {t('recipes.image.sectionLabel')}
+            </Text>
+
+            {hasCoverImage ? (
+              <View className="gap-2">
+                <View className="overflow-hidden rounded-xl border border-line dark:border-line-dark">
+                  <RecipeImage
+                    path={previewPath}
+                    localUri={previewLocalUri}
+                    name={title || t('recipes.image.sectionLabel')}
+                    width="100%"
+                    height={180}
+                  />
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Button
+                    label={`📷 ${t('items.image.camera')}`}
+                    onPress={() => void handlePickCover('camera')}
+                    variant="secondary"
+                    size="sm"
+                    fullWidth={false}
+                    accessibilityHint={t('items.image.cameraHint')}
+                  />
+                  <Button
+                    label={`🖼️ ${t('items.image.gallery')}`}
+                    onPress={() => void handlePickCover('gallery')}
+                    variant="secondary"
+                    size="sm"
+                    fullWidth={false}
+                    accessibilityHint={t('items.image.galleryHint')}
+                  />
+                  <Button
+                    label={t('recipes.image.remove')}
+                    onPress={() => setImageChange({ kind: 'clear' })}
+                    variant="secondary"
+                    size="sm"
+                    fullWidth={false}
+                    accessibilityHint={t('recipes.image.removeHint')}
+                  />
+                </View>
+              </View>
+            ) : (
+              <View className="items-center justify-center gap-3 rounded-xl border border-dashed border-line-strong p-4 dark:border-line-strong-dark">
+                <Text className="text-sm text-muted dark:text-muted-dark">
+                  {t('recipes.image.empty')}
+                </Text>
+                <View className="flex-row items-center gap-2">
+                  <Button
+                    label={`📷 ${t('items.image.camera')}`}
+                    onPress={() => void handlePickCover('camera')}
+                    variant="secondary"
+                    size="sm"
+                    fullWidth={false}
+                    accessibilityHint={t('items.image.cameraHint')}
+                  />
+                  <Button
+                    label={`🖼️ ${t('items.image.gallery')}`}
+                    onPress={() => void handlePickCover('gallery')}
+                    variant="secondary"
+                    size="sm"
+                    fullWidth={false}
+                    accessibilityHint={t('items.image.galleryHint')}
+                  />
+                </View>
+              </View>
+            )}
+          </View>
 
           {/* Comensales */}
           <View className="gap-2">

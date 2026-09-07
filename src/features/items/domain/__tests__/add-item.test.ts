@@ -24,6 +24,7 @@ it('normaliza el nombre y usa cantidad 1 por defecto', async () => {
     name: 'pan de molde',
     quantity: 1,
     catalogProductId: null,
+    imagePath: null,
   })
 })
 
@@ -38,6 +39,7 @@ it('pasa la cantidad indicada al repositorio', async () => {
     name: 'Huevos',
     quantity: 12,
     catalogProductId: null,
+    imagePath: null,
   })
 })
 
@@ -52,8 +54,40 @@ it('enlaza el producto del catálogo cuando el alta viene de una sugerencia', as
   })
 
   expect(repository.add).toHaveBeenCalledWith(
-    expect.objectContaining({ catalogProductId: 'prod-1' }),
+    expect.objectContaining({ catalogProductId: 'prod-1', imagePath: null }),
   )
+})
+
+it('sube la imagen opcional antes de insertar el artículo si se proporciona imageUri', async () => {
+  const repository = fakeItemRepository({
+    add: jest.fn().mockResolvedValue(fakeItem({ imagePath: 'c1/i1-123.jpg' })),
+    uploadImage: jest.fn().mockResolvedValue('c1/i1-123.jpg'),
+  })
+
+  const result = await addItem(repository, {
+    id: 'i1',
+    communityId: 'c1',
+    name: 'Tomates',
+    imageUri: 'file:///tmp/tomate.jpg',
+  })
+
+  expect(repository.uploadImage).toHaveBeenCalledWith({
+    communityId: 'c1',
+    itemId: 'i1',
+    uri: 'file:///tmp/tomate.jpg',
+  })
+  expect(repository.add).toHaveBeenCalledWith({
+    id: 'i1',
+    communityId: 'c1',
+    name: 'Tomates',
+    quantity: 1,
+    catalogProductId: null,
+    imagePath: 'c1/i1-123.jpg',
+  })
+  expect(result).toEqual({
+    status: 'ok',
+    item: expect.objectContaining({ imagePath: 'c1/i1-123.jpg' }),
+  })
 })
 
 it('rechaza un nombre vacío sin tocar la red', async () => {

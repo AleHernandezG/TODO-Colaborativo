@@ -120,6 +120,7 @@
       "remove": "Quitar la foto",
       "removeHint": "El artículo se queda sin foto",
       "empty": "Este artículo no tiene foto",
+      "attached": "Foto adjunta",
       "preview": "Foto de {{name}}",
       "uploading": "Subiendo la foto de {{name}}",
       "cameraDenied": "No has dado permiso para la cámara. Puedes cambiarlo en los ajustes del móvil.",
@@ -344,6 +345,14 @@
     "addSelectedToList_other": "Añadir {{count}} ingredientes a la lista",
     "instructionsLabel": "Instrucciones de preparación",
     "instructionsPlaceholder": "Pasos para cocinar la receta (opcional)...",
+    "image": {
+      "sectionLabel": "Foto de portada",
+      "empty": "Esta receta no tiene foto de portada",
+      "remove": "Quitar foto",
+      "removeHint": "Elimina la foto de portada de la receta",
+      "loading": "Cargando foto de {{name}}",
+      "preview": "Foto de {{name}}"
+    },
     "ingredientsCount_one": "{{count}} ingrediente",
     "ingredientsCount_other": "{{count}} ingredientes",
     "ingredients": {

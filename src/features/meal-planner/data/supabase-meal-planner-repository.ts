@@ -28,6 +28,7 @@ type RecipeRow = {
   title: string
   servings: number
   instructions: string
+  image_path: string | null
   created_at: string
   updated_at: string
   recipe_ingredients: RecipeIngredientRow[]
@@ -72,6 +73,7 @@ function toRecipe(row: RecipeRow): Recipe {
     title: row.title,
     servings: row.servings,
     instructions: row.instructions,
+    imagePath: row.image_path ?? null,
     ingredients: sortedIngredients.map(toIngredient),
     createdAt: row.created_at,
     updatedAt: row.updated_at,

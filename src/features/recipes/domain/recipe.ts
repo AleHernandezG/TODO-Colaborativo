@@ -16,10 +16,16 @@ export type Recipe = {
   title: string
   servings: number
   instructions: string
+  imagePath: string | null
   ingredients: RecipeIngredient[]
   createdAt: string
   updatedAt: string
 }
+
+export type RecipeImageChange =
+  | { kind: 'keep' }
+  | { kind: 'clear' }
+  | { kind: 'replace'; uri: string }
 
 export type NewRecipeIngredientInput = {
   id?: string
@@ -36,6 +42,7 @@ export type NewRecipeInput = {
   title: string
   servings: number
   instructions: string
+  imagePath?: string | null
   ingredients: NewRecipeIngredientInput[]
 }
 

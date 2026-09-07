@@ -196,6 +196,7 @@ describe('add', () => {
       name: 'Huevos',
       quantity: 12,
       catalog_product_id: null,
+      image_path: null,
     })
   })
 

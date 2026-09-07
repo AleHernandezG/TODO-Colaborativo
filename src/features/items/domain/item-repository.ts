@@ -15,6 +15,7 @@ export interface ItemRepository {
     name: string
     quantity: number
     catalogProductId: string | null
+    imagePath?: string | null
   }): Promise<Item>
   addMany(
     items: {

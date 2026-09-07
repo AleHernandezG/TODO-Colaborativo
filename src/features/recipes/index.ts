@@ -3,6 +3,7 @@ export type {
   NewRecipeIngredientInput,
   NewRecipeInput,
   Recipe,
+  RecipeImageChange,
   RecipeIngredient,
 } from './domain/recipe'
 export {
@@ -13,9 +14,15 @@ export {
   normalizeRecipeTitle,
   scaleIngredientQuantity,
 } from './domain/recipe'
+export { recipeImageUrl, recipeImageUrlTtlSeconds } from './domain/recipe-image'
 export type { RecipeRepository } from './domain/recipe-repository'
+export { RecipeImage } from './presentation/components/RecipeImage'
 export { useAddRecipeToList } from './presentation/hooks/use-add-recipe-to-list'
 export { useDeleteRecipe } from './presentation/hooks/use-delete-recipe'
+export {
+  recipeImageUrlKey,
+  useRecipeImageUrl,
+} from './presentation/hooks/use-recipe-image-url'
 export {
   recipeDetailKey,
   recipesKey,

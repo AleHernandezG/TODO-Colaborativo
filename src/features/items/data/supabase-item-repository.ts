@@ -49,7 +49,7 @@ export const supabaseItemRepository: ItemRepository = {
     return (data ?? []).map(toItem)
   },
 
-  async add({ id, communityId, name, quantity, catalogProductId }) {
+  async add({ id, communityId, name, quantity, catalogProductId, imagePath }) {
     await assertOnline()
 
     const { data, error } = await supabase
@@ -60,6 +60,7 @@ export const supabaseItemRepository: ItemRepository = {
         name,
         quantity,
         catalog_product_id: catalogProductId,
+        image_path: imagePath ?? null,
       })
       .select(columns)
       .single()

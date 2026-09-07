@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       catalog_products: {
@@ -470,6 +495,7 @@ export type Database = {
           created_at: string
           created_by_member_id: string | null
           id: string
+          image_path: string | null
           instructions: string
           servings: number
           title: string
@@ -480,6 +506,7 @@ export type Database = {
           created_at?: string
           created_by_member_id?: string | null
           id?: string
+          image_path?: string | null
           instructions?: string
           servings?: number
           title: string
@@ -490,6 +517,7 @@ export type Database = {
           created_at?: string
           created_by_member_id?: string | null
           id?: string
+          image_path?: string | null
           instructions?: string
           servings?: number
           title?: string
@@ -664,6 +692,7 @@ export type Database = {
         Args: {
           p_community_id: string
           p_id: string
+          p_image_path?: string
           p_ingredients: Json
           p_instructions: string
           p_servings: number
@@ -839,6 +868,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

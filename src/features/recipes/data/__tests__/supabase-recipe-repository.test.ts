@@ -14,7 +14,7 @@ describe('SupabaseRecipeRepository', () => {
     jest.clearAllMocks()
   })
 
-  it('lists recipes mapped to domain', async () => {
+  it('lists recipes mapped to domain including imagePath', async () => {
     const mockData = [
       {
         id: recipeId,
@@ -23,6 +23,7 @@ describe('SupabaseRecipeRepository', () => {
         title: 'Tortilla',
         servings: 4,
         instructions: 'Freír',
+        image_path: 'community/recipe.jpg',
         created_at: '2026-09-06T12:00:00Z',
         updated_at: '2026-09-06T12:00:00Z',
         recipe_ingredients: [
@@ -49,12 +50,13 @@ describe('SupabaseRecipeRepository', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].title).toBe('Tortilla')
+    expect(result[0].imagePath).toBe('community/recipe.jpg')
     expect(result[0].ingredients).toHaveLength(1)
     expect(result[0].ingredients[0].name).toBe('Huevos')
     expect(result[0].ingredients[0].quantity).toBe(4)
   })
 
-  it('saves recipe via save_recipe RPC', async () => {
+  it('saves recipe via save_recipe RPC with optional imagePath', async () => {
     jest.spyOn(supabase, 'rpc').mockResolvedValue({ data: recipeId, error: null } as never)
 
     const savedId = await supabaseRecipeRepository.save({
@@ -62,6 +64,7 @@ describe('SupabaseRecipeRepository', () => {
       title: 'Ensalada',
       servings: 2,
       instructions: 'Mezclar',
+      imagePath: 'community/ensalada.jpg',
       ingredients: [{ name: 'Tomate', quantity: 2, unit: 'uds' }],
     })
 
@@ -72,6 +75,7 @@ describe('SupabaseRecipeRepository', () => {
         p_community_id: communityId,
         p_title: 'Ensalada',
         p_servings: 2,
+        p_image_path: 'community/ensalada.jpg',
       }),
     )
   })
@@ -82,5 +86,38 @@ describe('SupabaseRecipeRepository', () => {
     await supabaseRecipeRepository.delete(recipeId)
 
     expect(supabase.rpc).toHaveBeenCalledWith('delete_recipe', { p_id: recipeId })
+  })
+
+  it('uploads, removes and signs cover image in recipe-images bucket', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    } as never)
+
+    const uploadMock = jest.fn().mockResolvedValue({ data: { path: 'path' }, error: null })
+    const removeMock = jest.fn().mockResolvedValue({ data: [], error: null })
+    const createSignedUrlMock = jest
+      .fn()
+      .mockResolvedValue({ data: { signedUrl: 'https://signed.url' }, error: null })
+
+    jest.spyOn(supabase.storage, 'from').mockReturnValue({
+      upload: uploadMock,
+      remove: removeMock,
+      createSignedUrl: createSignedUrlMock,
+    } as never)
+
+    const path = await supabaseRecipeRepository.uploadImage({
+      communityId,
+      recipeId,
+      uri: 'file:///image.jpg',
+    })
+
+    expect(path).toContain(`${communityId}/${recipeId}-`)
+    expect(uploadMock).toHaveBeenCalled()
+
+    await supabaseRecipeRepository.removeImage(path)
+    expect(removeMock).toHaveBeenCalledWith([path])
+
+    const url = await supabaseRecipeRepository.signImageUrl(path)
+    expect(url).toBe('https://signed.url')
   })
 })

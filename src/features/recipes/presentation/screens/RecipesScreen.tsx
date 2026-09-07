@@ -6,9 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useActiveCommunityStore } from '@/features/community'
 import { Button } from '@/shared/ui/Button'
-import { minTouchTarget, usePalette } from '@/theme'
+import { minTouchTarget, radius, usePalette } from '@/theme'
 
 import type { Recipe } from '../../domain/recipe'
+import { RecipeImage } from '../components/RecipeImage'
 import { useRecipes, useRecipesRealtime } from '../hooks/use-recipes'
 
 export function RecipesScreen() {
@@ -39,8 +40,16 @@ export function RecipesScreen() {
       accessibilityLabel={`${item.title}, ${item.servings} raciones`}
       onPress={() => router.push(`/recipes/${item.id}` as never)}
       style={{ minHeight: minTouchTarget }}
-      className="flex-row items-center justify-between rounded-xl border border-line bg-surface p-4 active:opacity-80 dark:border-line-dark dark:bg-surface-dark"
+      className="flex-row items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 active:opacity-80 dark:border-line-dark dark:bg-surface-dark"
     >
+      {item.imagePath ? (
+        <RecipeImage
+          path={item.imagePath}
+          name={item.title}
+          size={56}
+          borderRadius={radius.md}
+        />
+      ) : null}
       <View className="flex-1 gap-1.5">
         <Text className="text-lg font-bold text-content dark:text-content-dark">
           {item.title}

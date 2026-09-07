@@ -19,6 +19,7 @@ export type AddItemVariables = {
   name: string
   quantity: number
   catalogProductId: string | null
+  imageUri?: string | null
 }
 
 export type EditItemVariables = {

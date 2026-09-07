@@ -14,6 +14,7 @@ export async function addItem(
     name: string
     quantity?: number
     catalogProductId?: string | null
+    imageUri?: string | null
   },
 ): Promise<AddItemResult> {
   const name = normalizeItemName(input.name)
@@ -26,6 +27,14 @@ export async function addItem(
     return { status: 'invalid_quantity' }
   }
 
+  const imagePath = input.imageUri
+    ? await repository.uploadImage({
+        communityId: input.communityId,
+        itemId: input.id,
+        uri: input.imageUri,
+      })
+    : null
+
   return {
     status: 'ok',
     item: await repository.add({
@@ -34,6 +43,7 @@ export async function addItem(
       name,
       quantity,
       catalogProductId: input.catalogProductId ?? null,
+      imagePath,
     }),
   }
 }

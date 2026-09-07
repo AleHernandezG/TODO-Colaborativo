@@ -120,6 +120,7 @@
       "remove": "Remove the photo",
       "removeHint": "The item is left without a photo",
       "empty": "This item has no photo",
+      "attached": "Attached photo",
       "preview": "Photo of {{name}}",
       "uploading": "Uploading the photo of {{name}}",
       "cameraDenied": "You haven't given camera permission. You can change it in your phone's settings.",
@@ -344,6 +345,14 @@
     "addSelectedToList_other": "Add {{count}} ingredients to list",
     "instructionsLabel": "Preparation instructions",
     "instructionsPlaceholder": "Steps to cook the recipe (optional)...",
+    "image": {
+      "sectionLabel": "Cover photo",
+      "empty": "This recipe has no cover photo",
+      "remove": "Remove photo",
+      "removeHint": "Removes the recipe cover photo",
+      "loading": "Loading photo of {{name}}",
+      "preview": "Photo of {{name}}"
+    },
     "ingredientsCount_one": "{{count}} ingredient",
     "ingredientsCount_other": "{{count}} ingredients",
     "ingredients": {

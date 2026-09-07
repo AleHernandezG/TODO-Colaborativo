@@ -754,7 +754,13 @@ Lo que hay que tener resuelto antes de la primera migración:
 - Consolidación pura de ingredientes de la semana sumando cantidades repetidas.
 - Modal de revisión de existencias y volcado masivo a la lista de compra en un toque.
 
-**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 a 12 son posteriores a la beta y no entran en esa cuenta.
+### Fase 13 · Foto opcional en alta de artículos y portada en recetas (RF-4 y RF-14 extendidos)
+
+- **Cerrada el 2026-09-07.** Foto directa desde la barra de alta (`AddItemBar`) con previsualización desmontable y subida a Storage (`item-images`).
+- Soporte completo de foto de portada en Recetas: columna `image_path` en `recipes`, bucket privado `recipe-images` con políticas RLS y RPC `save_recipe` actualizada.
+- Componente desacoplado `RecipeImage` y enriquecimiento visual de `RecipeDetailScreen`, `RecipesScreen` y `EditRecipeScreen`.
+
+**Estimación total MVP (Fases 0–4):** ~10–17 días de trabajo efectivo (variable según experiencia y ritmo con Claude Code). Las fases 5 a 13 son posteriores a la beta y no entran en esa cuenta.
 
 ---
 
