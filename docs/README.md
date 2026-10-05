@@ -41,6 +41,8 @@ El criterio y sus motivos están en
 | [0021](./adr/ADR-0021-modulo-de-recetas-y-volcado-a-lista.md)   | Módulo de recetas y volcado a lista de compra            | Aceptado y **verificado** (61/61) |
 | [0022](./adr/ADR-0022-planificador-semanal-de-menus-y-consolidacion.md) | Planificador semanal de menús y consolidación    | Aceptado y **verificado** (65/65) |
 
+| [0025](./adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md) | Varias listas por usuario y lista activa             | Aceptado (RLS 70/70)              |
+
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin
 reutilizar números.
@@ -69,6 +71,7 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 10 · Notificaciones push colaborativas con Expo](./phases/fase-10.md) — cerrada (código, RLS 56/56, Realtime 18/18, tests y docs completados)
 - [Fase 11 · Módulo de Recetas Compartidas y volcado a lista](./phases/fase-11.md) — cerrada (código, RLS 61/61, Realtime, tests y docs completados)
 - [Fase 12 · Planificador Semanal de Menús y consolidación](./phases/fase-12.md) — cerrada (código, RLS 65/65, Realtime, tests y docs completados)
+- [Fase 15 · Varias listas a la vez](./phases/fase-15.md) — código, tests, RLS 70/70 y export completados; falta la prueba en dispositivo
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
 [la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).

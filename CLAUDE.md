@@ -139,6 +139,22 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
     puede adivinar (el `join_code` de `create_community`). Ahí el botón se queda en carga y se
     espera. Si dudas, la mutación sí puede ser optimista. Razonado en `docs/phases/fase-1.md`.
 
+### Varias listas por usuario
+
+- **A qué listas pertenezco es server state**: la query `['my-communities']`
+  (`useMyCommunities()`). **Cuál estoy mirando es client state**: `useActiveCommunityStore`.
+  El store guarda la `membership` entera para pintar sin red y `useActiveMembershipSync()` lo
+  corrige con cada respuesta del servidor. No añadas más datos de la comunidad a ese store.
+- **Al crear o unirse se entra con `useEnterCommunity()`, nunca con `setMembership` directo.**
+  Mete la lista en la caché antes de activarla; sin eso, una carga en vuelo expulsa al usuario de
+  la lista que acaba de crear.
+- **No hay botón de "salir de la lista".** Se cambia desde el título (`CommunitySwitcher`). El
+  botón antiguo solo borraba el dato local y la persona seguía siendo miembro en el servidor.
+- **Una notificación push lleva `communityId` en sus datos**, que añade `notifyCommunity`. No lo
+  quites: es lo que permite abrir la lista correcta al tocarla.
+
+Razonado en [ADR-0025](docs/adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md).
+
 ## Reglas de errores
 
 - **`data/` no escribe mensajes para el usuario.** Todo error de Supabase se envuelve con
@@ -309,7 +325,12 @@ descartó y a costa de qué) y **qué implica** para quien toque eso después.
 Si una decisión no encaja en ninguna, va en `docs/phases/fase-N.md` bajo "Decisiones sobre la
 marcha". Nunca se queda sin escribir.
 
-**Fase actual: 6 (catálogo y reparto de gastos), abierta el 2026-08-07.** El MVP (fases 0 → 4) está
+**Fase en curso: 15 (varias listas a la vez), abierta el 2026-10-05.** Código, tests, RLS 70/70 y
+export hechos; falta recorrer el guion en el Android real. Detalle en `docs/phases/fase-15.md`.
+Los párrafos de abajo cuentan las fases 5 y 6 tal como se escribieron entonces; las fases 7 a 14
+están en `docs/phases/` y en `docs/README.md`.
+
+**Fase 6 (catálogo y reparto de gastos), abierta el 2026-08-07.** El MVP (fases 0 → 4) está
 cerrado y probado en dispositivo con dos móviles; su diario está en `docs/phases/`. Las dos últimas
 se cerraron el 2026-08-05 de una sentada; qué se probó y con qué resultado, en
 `docs/guias/prueba-de-cierre-en-dispositivo.md`.
@@ -427,8 +448,9 @@ npx expo start
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
 # Aislamiento entre comunidades (RLS + Storage + rotación del código), lectura y búsqueda del
-# catálogo (la única tabla compartida) y el alta idempotente de gastos. Debe dar 39/39
-# (38/39 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
+# catálogo (la única tabla compartida), el alta idempotente de gastos y que una sesión en varias
+# listas solo ve las suyas. Debe dar 70/70
+# (69/70 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
 npm run test:rls
 
 # Realtime: eventos de artículos y de gastos, filtro por comunidad, aislamiento y presencia.

@@ -2,7 +2,7 @@ import { ServerError, serverError } from '@/shared/lib/errors'
 import { assertOnline } from '@/shared/lib/network'
 import { supabase } from '@/shared/lib/supabase'
 
-import type { Community, JoinCodeInfo } from '../domain/community'
+import type { Community, JoinCodeInfo, Membership } from '../domain/community'
 import type {
   CommunityMember,
   CommunityRepository,
@@ -96,6 +96,43 @@ export const supabaseCommunityRepository: CommunityRepository = {
       status: 'ok',
       membership: { community: await readCommunity(result.community_id), username },
     }
+  },
+
+  async listMine(): Promise<Membership[]> {
+    await assertOnline()
+
+    const { data: sessionData } = await supabase.auth.getSession()
+    const authUserId = sessionData?.session?.user?.id
+    if (!authUserId) {
+      throw new ServerError('members.selectMine', 'no hay sesión abierta')
+    }
+
+    const { data, error } = await supabase
+      .from('members')
+      .select('username, communities(id, name, join_code)')
+      .eq('auth_user_id', authUserId)
+      .is('removed_at', null)
+
+    if (error) {
+      throw serverError('members.selectMine', error)
+    }
+
+    return (data ?? []).map((row) => {
+      if (!row.communities) {
+        throw new ServerError(
+          'members.selectMine',
+          `la fila de ${row.username} llegó sin su comunidad`,
+        )
+      }
+      return {
+        community: {
+          id: row.communities.id,
+          name: row.communities.name,
+          joinCode: row.communities.join_code,
+        },
+        username: row.username,
+      }
+    })
   },
 
   async getJoinCode(communityId): Promise<JoinCodeInfo> {

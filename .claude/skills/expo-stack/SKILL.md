@@ -168,6 +168,40 @@ Copiar la lista de artículos a un store de Zustand parece cómodo y rompe la ap
 llega un evento Realtime: tendrías dos copias divergiendo. La caché de Query ya es un store
 global, con invalidación y refetch incluidos.
 
+### La lista activa es del cliente; mis listas, del servidor
+
+Una persona puede estar en varias listas ([ADR-0025](../../../docs/adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md)).
+Son dos datos distintos y cada uno vive donde le toca:
+
+- **A qué listas pertenezco** lo puede cambiar otra persona (un admin me quita), así que es la
+  query `['my-communities']` de `useMyCommunities()`.
+- **Cuál estoy mirando** no lo cambia nadie más: es `useActiveCommunityStore`, que guarda la
+  `membership` entera para poder pintar el título sin red.
+
+Ese store lleva una copia del nombre y del código, y por eso `useActiveMembershipSync()` lo
+reconcilia con cada respuesta fresca del servidor. Dos reglas al tocarlo:
+
+```ts
+const enterCommunity = useEnterCommunity()
+
+onSuccess: async (result) => {
+  if (result.status === 'ok') {
+    await enterCommunity(result.membership)
+  }
+}
+```
+
+Al crear o unirse **no se llama a `setMembership` a secas**. `useEnterCommunity` cancela la query,
+mete la lista nueva en la caché y solo entonces la deja activa. Sin ese orden, una carga que iba
+en vuelo aterriza sin la lista recién creada y la reconciliación echa al usuario de ella.
+
+Y la reconciliación **no decide con la copia persistida**: espera a `isFetchedAfterMount`. Lo
+guardado en disco puede ser anterior a la última lista creada.
+
+Una pantalla que dependa de la lista activa y tenga estado local se monta con
+`key={community.id}`, como `ItemsView`. Lo que no deba repetirse en cada cambio (registrar el
+token de push, la propia reconciliación) va en el componente de fuera.
+
 ### Stores persistidos: espera a la hidratación
 
 El store de la comunidad activa usa `persist` sobre AsyncStorage, que es **asíncrono**. En el
@@ -885,10 +919,12 @@ botón, `includeFontPadding: false` en su estilo antes de tocar el padding del c
 ### Cifras que no bailan
 
 Un importe o un contador que se actualiza cambia de ancho con cada dígito y arrastra lo que tenga al
-lado. Va con cifras tabulares:
+lado. Va con cifras tabulares, con `tabularNums` de `@/theme`. NativeWind no convierte la clase
+`tabular-nums` de Tailwind, así que va por `style`; si el `Text` ya tiene uno, en array
+(`style={[tabularNums, { … }]}`):
 
 ```tsx
-<Text style={{ fontVariant: ['tabular-nums'] }} className="text-base font-medium">
+<Text style={tabularNums} className="text-base font-medium">
   {formatCents(total)}
 </Text>
 ```

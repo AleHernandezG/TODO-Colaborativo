@@ -2,7 +2,7 @@ import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import { useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 
 import { captureError } from '@/shared/lib/observability'
@@ -20,12 +20,22 @@ Notifications.setNotificationHandler({
   }),
 })
 
-export function usePushNotifications(communityId?: string | null) {
+export function usePushNotifications(
+  communityIds: readonly string[],
+  onOpenCommunity?: (communityId: string) => boolean,
+) {
   const router = useRouter()
   const [currentToken, setCurrentToken] = useState<string | null>(null)
+  const communityIdsKey = communityIds.join(',')
+  const openCommunity = useRef(onOpenCommunity)
+
+  useEffect(() => {
+    openCommunity.current = onOpenCommunity
+  }, [onOpenCommunity])
 
   useEffect(() => {
     let isMounted = true
+    const ids = communityIdsKey === '' ? [] : communityIdsKey.split(',')
 
     async function setupChannelAndRegister() {
       // 1. Canal obligatorio para Android 8.0+
@@ -72,15 +82,25 @@ export function usePushNotifications(communityId?: string | null) {
 
         setCurrentToken(token)
 
-        if (communityId) {
-          await supabaseNotificationsRepository.registerToken(
-            communityId,
-            token,
-            Device.modelName ?? undefined,
-          )
-        }
+        const registrations = await Promise.allSettled(
+          ids.map((communityId) =>
+            supabaseNotificationsRepository.registerToken(
+              communityId,
+              token,
+              Device.modelName ?? undefined,
+            ),
+          ),
+        )
+        registrations.forEach((registration, index) => {
+          if (registration.status === 'rejected') {
+            captureError(registration.reason, {
+              operation: 'registerPushToken',
+              communityId: ids[index],
+            })
+          }
+        })
       } catch (err) {
-        captureError(err, { operation: 'registerPushToken', communityId })
+        captureError(err, { operation: 'registerPushToken' })
       }
     }
 
@@ -89,16 +109,23 @@ export function usePushNotifications(communityId?: string | null) {
     // 3. Listener para navegación al pulsar la notificación en segundo plano
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data
-      if (typeof data?.url === 'string') {
-        router.push(data.url as any)
+      if (typeof data?.url !== 'string') {
+        return
       }
+      if (typeof data.communityId === 'string' && openCommunity.current) {
+        const opened = openCommunity.current(data.communityId)
+        if (!opened) {
+          return
+        }
+      }
+      router.push(data.url as any)
     })
 
     return () => {
       isMounted = false
       subscription.remove()
     }
-  }, [communityId, router])
+  }, [communityIdsKey, router])
 
   return {
     currentToken,

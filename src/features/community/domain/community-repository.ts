@@ -21,6 +21,7 @@ export type CommunityMember = {
 export interface CommunityRepository {
   create(input: { name: string; username: string; pin: string }): Promise<Membership>
   join(input: { joinCode: string; username: string; pin: string }): Promise<JoinOutcome>
+  listMine(): Promise<Membership[]>
   getJoinCode(communityId: string): Promise<JoinCodeInfo>
   rotateJoinCode(communityId: string): Promise<JoinCodeInfo>
   listMembers(

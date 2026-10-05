@@ -6,10 +6,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import type { CatalogProductsById } from '@/features/catalog'
 import { useCatalogProducts } from '@/features/catalog'
-import type { Community } from '@/features/community'
+import type { Membership } from '@/features/community'
 import {
+  CommunitySwitcher,
   JoinCodeCard,
   useActiveCommunityStore,
+  useActiveMembershipSync,
+  useMyCommunities,
+  useOpenCommunity,
   useViewers,
   ViewersLine,
 } from '@/features/community'
@@ -53,15 +57,29 @@ export function ItemsScreen() {
     return <Redirect href="/" />
   }
 
-  return <ItemsView community={membership.community} username={membership.username} />
+  return <ActiveList membership={membership} />
 }
 
-function ItemsView({ community, username }: { community: Community; username: string }) {
+function ActiveList({ membership }: { membership: Membership }) {
+  const activeCommunityId = membership.community.id
+  const { data: mine } = useMyCommunities()
+  const openCommunity = useOpenCommunity()
+  const pushCommunityIds = useMemo(
+    () => [...new Set([activeCommunityId, ...(mine ?? []).map((m) => m.community.id)])].sort(),
+    [activeCommunityId, mine],
+  )
+
+  useActiveMembershipSync()
+  usePushNotifications(pushCommunityIds, openCommunity)
+
+  return <ItemsView key={activeCommunityId} membership={membership} />
+}
+
+function ItemsView({ membership }: { membership: Membership }) {
+  const { community, username } = membership
   const { t } = useTranslation()
   const router = useRouter()
   const palette = usePalette()
-  usePushNotifications(community.id)
-  const leave = useActiveCommunityStore((state) => state.leave)
   const {
     data: items,
     isLoading,
@@ -170,12 +188,7 @@ function ItemsView({ community, username }: { community: Community; username: st
           <View className="gap-4 pb-2">
             <View className="flex-row items-start justify-between gap-2">
               <View className="flex-1 gap-1">
-                <Text
-                  accessibilityRole="header"
-                  className="text-3xl font-bold text-content dark:text-content-dark"
-                >
-                  {community.name}
-                </Text>
+                <CommunitySwitcher active={membership} />
                 <Text className="text-base text-muted dark:text-muted-dark">
                   {t('list.signedInAs', { username })}
                 </Text>
@@ -304,16 +317,6 @@ function ItemsView({ community, username }: { community: Community; username: st
         ListFooterComponent={
           <View className="mt-4 gap-2 border-t border-line pt-4 dark:border-line-dark">
             <JoinCodeCard communityId={community.id} communityName={community.name} />
-            <Button
-              label={t('list.leave')}
-              onPress={() => {
-                leave()
-                router.replace('/')
-              }}
-              variant="secondary"
-              size="sm"
-              accessibilityHint={t('list.leaveHint')}
-            />
             <BuildTag />
           </View>
         }
