@@ -68,6 +68,7 @@ Y el reparto de la raíz:
 ```
 README.md          qué es esto y cómo arrancarlo
 CLAUDE.md          este fichero: las reglas duras
+DESIGN.md          cómo se ve la app: papel de cada color, tamaños, radios y qué no se hace
 .env.example       nombres de variables, sin valores
 docs/              ver abajo
 scripts/           herramientas de CLI/CI, fuera del bundle de la app
@@ -160,6 +161,10 @@ Razonado en [ADR-0016](docs/adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-u
 - Cada control nuevo: `accessibilityLabel` + `accessibilityRole`, **contraste AA**, área táctil **≥ 44×44 pt**.
 - Estados no dependientes solo del color (icono + texto para "comprado").
 - Soporta **modo claro/oscuro** desde los tokens y respeta el tamaño de fuente del sistema.
+- **Antes de pintar una pantalla o tocar el aspecto de una, lee [`DESIGN.md`](DESIGN.md).** Dice qué
+  colores, tamaños y radios existen y para qué es cada uno; lo que no esté ahí no se usa sin
+  añadirlo antes a `src/theme/tokens.js`. El cómo (animación, respuesta al pulsar, alineación) está
+  en la skill `expo-stack`, sección "Pulido visual y movimiento".
 
 ## Reglas de datos y sincronización
 

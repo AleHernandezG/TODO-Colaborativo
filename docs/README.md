@@ -9,6 +9,7 @@ Organizada por **para qué sirve cada documento**, no por tema. Si buscas algo:
 | Ver qué se hizo en cada fase y cómo probarlo   | [`phases/`](./phases/)                                         |
 | Hacer una tarea concreta paso a paso           | [`guias/`](./guias/)                                           |
 | Las reglas duras que sigue el proyecto         | [`../CLAUDE.md`](../CLAUDE.md)                                 |
+| Saber qué aspecto tiene que tener una pantalla | [`../DESIGN.md`](../DESIGN.md)                                 |
 
 El criterio y sus motivos están en
 [ADR-0003](./adr/ADR-0003-estructura-del-repositorio.md).
