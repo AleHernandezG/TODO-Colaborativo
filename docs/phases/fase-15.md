@@ -123,8 +123,31 @@ suite. `hooks/__fixtures__/query-wrapper.tsx` da el `QueryClient` y el envoltori
 Las dos listas de la prueba se crean aparte en vez de reutilizar A y B, porque varias
 comprobaciones posteriores cuentan los miembros de B y un invitado más las habría descuadrado.
 
+### La prueba en dispositivo va con un APK nuevo, la 1.3.0, y no por aire
+
+La rama lleva además la subida a SDK 57, que el usuario decidió al actualizarse los dispositivos
+de prueba. El APK instalado, la 1.2.0, es SDK 54, y el `runtimeVersion` sale de la `version` de
+`app.json`. Publicar un update con la `version` sin tocar habría mandado un bundle de SDK 57 a
+todos los móviles con la 1.2.0. Se subió a 1.3.0 y se lanzó `eas build --profile preview`: quien
+tenga la 1.2.0 se queda como está.
+
+El primer build falló en `npm ci` porque a `package-lock.json` le faltaban nueve paquetes de la
+subida. Se regeneró con `npm install` y `npm ci --dry-run` pasa.
+
+### Los parches de Expo atrasados no se tocan con el build en marcha
+
+`npx expo install --check` avisa de que una decena de paquetes van algún parche por detrás de lo
+que espera SDK 57 y de que espera TypeScript 6. No se aplicó `--fix`: varios son módulos nativos
+(`expo-updates`, `expo-notifications`, `expo-router`) y cambiarlos en local después de subir el
+árbol dejaría el JS desalineado con el binario 1.3.0, que es el mismo problema de arriba en
+pequeño. Van juntos en el siguiente build, con su subida de `version`. TypeScript 6 es un cambio
+aparte, con su propia pasada de typecheck y lint.
+
 ## 6. Deuda asumida
 
+- Los parches de SDK 57 pendientes (`npx expo install --check`) y TypeScript 6.
+- `docs/guias/auditoria-dependencias.md` y ADR-0008 siguen razonando con Expo Go 54. La guía hay
+  que repasarla; el ADR no se edita, y si se quiere MMKV ahora que hay APK propio, es un ADR nuevo.
 - No se ha visto en un dispositivo. Hasta recorrer el guion de arriba, la fase no está cerrada.
 - Abrir la app en frío tocando una notificación no lleva a ningún sitio concreto. Ya pasaba.
 - Si me quitan de una lista, mi token de push sigue guardado en `member_push_tokens`. No llega

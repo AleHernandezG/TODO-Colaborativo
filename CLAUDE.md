@@ -19,7 +19,8 @@ funcionar, pero no manda.
 En la práctica:
 
 - Verifica en Android. Un incremento no está terminado porque compile: está terminado cuando se
-  ha visto en el Android real vía Expo Go.
+  ha visto en el Android real, con el APK del perfil `preview` o con Expo Go si el del móvil
+  admite el SDK del proyecto.
 - `npx expo export --platform android` es la comprobación de build por defecto.
 - Ante una decisión que beneficie a una plataforma y perjudique a la otra, gana Android. Si el
   coste para iOS es alto, dímelo antes de aplicarla.
@@ -29,9 +30,11 @@ En la práctica:
 ## Stack
 
 - **Expo (React Native)** + **Expo Router** (navegación por ficheros) + **TypeScript (strict)**.
-  - **SDK fijado en 54. No lo subas.** El Expo Go del Android de pruebas es cliente **54.0.8** y solo admite **SDK 54**, y ese dispositivo no puede actualizar Expo Go desde el Play Store. Un proyecto en SDK 55+ no arranca ahí: da "Project is incompatible with this version of Expo Go" y no hay forma de sortearlo sin development build.
-  - Antes de tocar la versión del SDK, **pregunta qué SDK admite el Expo Go del dispositivo real**. No lo deduzcas de lo que devuelva `create-expo-app@latest`, que siempre da la última. Se comprueba abriendo Expo Go: muestra "Client version" y "Supported SDK".
-  - **La skill `upgrading-expo` del plugin `expo` no se usa en este repo.** El plugin está habilitado por sus skills de despliegue y EAS, pero trae una que se autocarga en cuanto alguien menciona subir de versión y cuya única recomendación posible es lo contrario de la regla de arriba. Si se carga sola, ignórala y dilo. Subir el SDK es una decisión del usuario con el móvil de pruebas delante, nunca una sugerencia de una skill genérica.
+  - **SDK 57 desde octubre de 2026** (RN 0.86, React 19.2). Estuvo fijado en 54 mientras el Expo Go del Android de pruebas solo admitía ese; se subió por decisión del usuario cuando se actualizaron los dispositivos. **No lo vuelvas a subir por tu cuenta.**
+  - Subir el SDK es un cambio nativo: lleva **`version` nueva en `app.json` y build nuevo**. El `runtimeVersion` sale de esa `version`, así que un `eas update` con el SDK cambiado y la `version` igual se lo traga el APK viejo y revienta. La 1.2.0 es el último APK de SDK 54; la 1.3.0, el primero de SDK 57. Detalle en `docs/guias/despliegue.md` (apartado 5).
+  - Antes de tocar la versión del SDK, **pregunta qué SDK admiten los dispositivos de prueba**. No lo deduzcas de lo que devuelva `create-expo-app@latest`, que siempre da la última. En Expo Go se comprueba al abrirlo: muestra "Client version" y "Supported SDK".
+  - **`package-lock.json` se commitea en el mismo cambio que `package.json`.** EAS instala con `npm ci`, que falla en cuanto no cuadran; el primer build de la 1.3.0 murió por eso. Se comprueba con `npm ci --dry-run`.
+  - **La skill `upgrading-expo` del plugin `expo` no se usa en este repo.** El plugin está habilitado por sus skills de despliegue y EAS, pero trae una que se autocarga en cuanto alguien menciona subir de versión y que recomienda subir siempre a la última, que es justo lo que aquí no se hace sin preguntar. Si se carga sola, ignórala y dilo. Subir el SDK es una decisión del usuario con el móvil de pruebas delante, nunca una sugerencia de una skill genérica.
 - **Estado servidor:** TanStack Query (caché, refetch, mutaciones, optimistic updates).
 - **Estado cliente:** Zustand (sesión local, tema, UI). **Nunca dupliques el estado del servidor en Zustand.**
 - **Backend (BaaS):** Supabase → Postgres + Realtime + Storage + RLS.
@@ -357,8 +360,8 @@ otro. Los dos JSON viven en `src/shared/lib/i18n/` y hay un test que falla si se
 Un `throw new Error` sigue llevando su mensaje en español porque no se pinta nunca: si uno acaba en
 pantalla, el fallo es que llegue. Detalle en el incremento 3 de `docs/phases/fase-5.md`.
 
-La versión que corre en el móvil se ve al pie de la pantalla de lista (`v1.2.0 · base` si es el
-bundle del APK, `v1.2.0 · <id>` si es un update por aire). Compruébala ahí antes de dar por
+La versión que corre en el móvil se ve al pie de la pantalla de lista (`v1.3.0 · base` si es el
+bundle del APK, `v1.3.0 · <id>` si es un update por aire). Compruébala ahí antes de dar por
 hecho que un cambio llegó al dispositivo.
 
 RF-8 (PDF), RF-9 (reparto de gastos) y RF-10 (catálogo de productos de supermercado) son

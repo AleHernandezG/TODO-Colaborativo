@@ -7,7 +7,7 @@
 **Una lista, varias personas, en tiempo real.**
 Se entra con un código de invitación y un nombre. Sin registro y sin contraseñas.
 
-![Expo SDK 54](https://img.shields.io/badge/Expo_SDK-54-000020?style=flat-square&logo=expo&logoColor=white)
+![Expo SDK 57](https://img.shields.io/badge/Expo_SDK-57-000020?style=flat-square&logo=expo&logoColor=white)
 ![React Native 0.81](https://img.shields.io/badge/React_Native-0.81-20232A?style=flat-square&logo=react&logoColor=61DAFB)
 ![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres_·_Realtime_·_RLS-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
@@ -62,8 +62,8 @@ todavía no existe.
 ## Arranque
 
 Necesitas Node 22+, un `.env` con las claves de Supabase (los nombres están en `.env.example`) y
-un móvil con **Expo Go 54**. La versión del SDK está fijada: Expo Go solo abre proyectos de su
-misma major.
+un móvil con un **Expo Go que admita SDK 57** o con el APK de `preview` instalado
+(`docs/guias/despliegue.md`). Expo Go solo abre proyectos de su misma major.
 
 ```bash
 npm install
