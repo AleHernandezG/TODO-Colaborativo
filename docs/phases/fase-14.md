@@ -148,3 +148,31 @@ que el código ya tenía en contra de estas reglas; no se ha tocado ningún comp
 así que esa lista es deuda abierta. Las reglas de movimiento no se han visto en dispositivo porque
 no hay código nuevo que las use: la primera pantalla que aplique la escala al pulsar es la que las
 valida en el Android real.
+
+### Arreglo de lo que `DESIGN.md` listaba como incumplido (2026-10-05)
+
+**Qué se cambió.** Los cuatro puntos del apartado "Lo que hoy no cumple", en 17 ficheros de `src/`
+y sin tocar lógica:
+
+- Los nueve radios fuera de los tokens pasan a `rounded-lg` (tarjetas y portadas de receta) o a
+  `rounded-md` (los huecos de comida y cena del planificador, que son controles). La miniatura de la
+  tarjeta de receta baja a `radius.sm` para seguir siendo concéntrica con su tarjeta, que ahora mide
+  16 con 12 de padding.
+- El estado pulsado queda en `active:opacity-70` en todo lo que no es un `Button`.
+- Se quita el `shadow-sm` del planificador.
+- Importes, cantidades y progreso llevan números tabulares con un token nuevo, `tabularNums`,
+  exportado desde `src/theme/index.ts`. Lo usan los importes de gastos, el `×N` de la lista y del
+  modo compra, el porcentaje de progreso, la cantidad del volcado de menús y `QuantityStepper`.
+
+**Por qué.** `tabularNums` es un objeto de estilo y no una clase porque NativeWind no convierte
+`font-variant-numeric`: se comprobó en `react-native-css-interop`, que solo conoce
+`font-variant-caps`. Va en `@/theme` para no repetir el literal en quince sitios. Las frases que
+llevan un importe dentro ("Ha pagado 12,00 €") se dejaron sin tocar: lo que baila es una cifra sola
+en una columna, no una palabra en mitad de un texto.
+
+**Qué implica.** `npm run typecheck` y `npm test` (60 suites, 431 tests) pasan; `eslint` da los
+mismos tres avisos de `set-state-in-effect` que ya había en esos ficheros. **No se ha visto en el
+móvil**: son cambios de aspecto y falta mirar en el Android real el planificador, la lista de
+recetas y la pantalla de gastos. El apartado de `DESIGN.md` se reescribió con tres incumplimientos
+que aparecieron al hacer este y que siguen abiertos; el primero, `text-content-muted` en el
+planificador, es una clase que no existe y deja ese texto con el color por defecto.

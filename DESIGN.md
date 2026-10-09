@@ -72,7 +72,8 @@ fuente del sistema se respeta: ningún `allowFontScaling={false}` y ninguna altu
 contenedor con texto, que se usa `minHeight`.
 
 Las cifras que cambian o que se comparan en columna (importes, cantidades, contadores) van con
-números tabulares para que no bailen al actualizarse.
+números tabulares para que no bailen al actualizarse: `style={tabularNums}`, de `@/theme`. NativeWind
+no tiene clase para esto.
 
 ## Forma
 
@@ -140,11 +141,14 @@ veces en una compra, como marcar un artículo, cambia al instante. El detalle es
 
 ## Lo que hoy no cumple
 
-Medido sobre `src/` el 2026-10-05. No es urgente, pero quien toque estos ficheros que lo arregle de
-paso en vez de copiarlo:
+Los cuatro incumplimientos que se midieron el 2026-10-05 (radios fuera de los tokens, cuatro
+opacidades de pulsado, una sombra y cifras sin números tabulares) se arreglaron ese mismo día. Al
+hacerlo aparecieron otros que siguen abiertos; quien toque estos ficheros que los arregle de paso
+en vez de copiarlos:
 
-- `rounded-xl` (7 usos) y `rounded-2xl` (2) son radios de Tailwind que no están en los tokens.
-  `rounded-2xl` mide 16, lo mismo que `rounded-lg`.
-- El estado pulsado usa cuatro opacidades distintas (60, 70, 75 y 80).
-- `MealPlannerScreen.tsx` tiene el único `shadow-sm` de la app.
-- Ninguna cifra usa números tabulares todavía.
+- `MealPlannerScreen.tsx` usa `text-content-muted`, una clase que no existe: el color secundario es
+  `text-muted`. Ese texto sale hoy con el color por defecto del sistema.
+- En el mismo fichero y en algún otro hay `text-primary` y `bg-primary/15` sin su pareja `dark:`.
+- `ShoppingModeScreen.tsx` y los componentes de alta y edición de artículos ponen tamaños de fuente
+  y radios con números en `style` (`fontSize: 13`, `borderRadius: 18`) en vez de con las clases de
+  la escala.

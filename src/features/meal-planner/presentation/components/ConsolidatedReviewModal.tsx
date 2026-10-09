@@ -4,7 +4,7 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 
 import { Checkbox } from '@/shared/ui/Checkbox'
 import { Dialog } from '@/shared/ui/Dialog'
-import { usePalette } from '@/theme'
+import { tabularNums, usePalette } from '@/theme'
 
 import type { ConsolidatedIngredient } from '../../domain/meal-plan'
 
@@ -138,9 +138,10 @@ export function ConsolidatedReviewModal({
                         </Text>
                         <Text
                           className="font-semibold text-xs"
-                          style={{
-                            color: isChecked ? palette.primary : palette.textMuted,
-                          }}
+                          style={[
+                            tabularNums,
+                            { color: isChecked ? palette.primary : palette.textMuted },
+                          ]}
                         >
                           {quantityStr}
                           {unitStr}

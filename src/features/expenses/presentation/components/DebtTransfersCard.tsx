@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
 import { Button } from '@/shared/ui/Button'
+import { tabularNums } from '@/theme'
 
 import type { DebtTransfer } from '../../domain/expense'
 import { formatCents } from '../../domain/money'
@@ -44,7 +45,10 @@ export function DebtTransfersCard({ transfers, onSettle }: Props) {
                   <Text className="font-bold">{transfer.fromUsername}</Text> {t('expenses.paysTo')}{' '}
                   <Text className="font-bold">{transfer.toUsername}</Text>
                 </Text>
-                <Text className="text-lg font-bold text-primary dark:text-primary-dark">
+                <Text
+                  style={tabularNums}
+                  className="text-lg font-bold text-primary dark:text-primary-dark"
+                >
                   {formatCents(transfer.amountCents)}
                 </Text>
               </View>

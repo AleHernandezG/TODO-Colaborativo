@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated'
 
 import { Checkbox } from '@/shared/ui/Checkbox'
-import { minTouchTarget } from '@/theme'
+import { minTouchTarget, tabularNums } from '@/theme'
 
 import type { Item } from '../../domain/item'
 import { ItemImage } from './ItemImage'
@@ -86,7 +86,10 @@ export const ItemRow = memo(function ItemRow({
           </Text>
 
           {item.quantity > 1 ? (
-            <Text className="text-base font-medium text-muted dark:text-muted-dark">
+            <Text
+              style={tabularNums}
+              className="text-base font-medium text-muted dark:text-muted-dark"
+            >
               ×{item.quantity}
             </Text>
           ) : null}

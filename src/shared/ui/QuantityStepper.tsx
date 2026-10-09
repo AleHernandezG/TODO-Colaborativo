@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native'
 
-import { minTouchTarget } from '@/theme'
+import { minTouchTarget, tabularNums } from '@/theme'
 
 type QuantityStepperProps = {
   value: number
@@ -31,6 +31,7 @@ export function QuantityStepper({
       />
       <Text
         accessibilityLabel={valueLabel}
+        style={tabularNums}
         className="min-w-10 text-center text-lg font-semibold text-content dark:text-content-dark"
       >
         {value}
