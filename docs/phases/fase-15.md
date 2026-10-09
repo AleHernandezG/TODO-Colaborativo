@@ -134,18 +134,30 @@ tenga la 1.2.0 se queda como está.
 El primer build falló en `npm ci` porque a `package-lock.json` le faltaban nueve paquetes de la
 subida. Se regeneró con `npm install` y `npm ci --dry-run` pasa.
 
-### Los parches de Expo atrasados no se tocan con el build en marcha
+### Los parches de Expo se alinearon aparte, en la 1.3.1
 
-`npx expo install --check` avisa de que una decena de paquetes van algún parche por detrás de lo
-que espera SDK 57 y de que espera TypeScript 6. No se aplicó `--fix`: varios son módulos nativos
+El build de la 1.3.0 salió con `expo doctor` avisando de 19 paquetes de Expo algún parche por
+detrás de lo que espera SDK 57. No se tocaron con ese build en marcha: varios son módulos nativos
 (`expo-updates`, `expo-notifications`, `expo-router`) y cambiarlos en local después de subir el
-árbol dejaría el JS desalineado con el binario 1.3.0, que es el mismo problema de arriba en
-pequeño. Van juntos en el siguiente build, con su subida de `version`. TypeScript 6 es un cambio
-aparte, con su propia pasada de typecheck y lint.
+árbol dejaría el JS desalineado con el binario, que es el mismo problema de arriba en pequeño.
+
+El 2026-10-09, con el build terminado, se lanzó `npx expo install --fix` y se subió la `version`
+a 1.3.1. Tres cosas que deja:
+
+- El comando añadió por su cuenta tres config plugins a `app.json`: `expo-image`,
+  `expo-localization` y `expo-sharing`. Es configuración nativa, otro motivo para que esto vaya
+  en build nuevo y no por aire.
+- `typescript` está en `expo.install.exclude` de `package.json`. SDK 57 espera la 6.0 y el
+  proyecto sigue en 5.9: es un salto mayor que no entra en el APK y merece su propia pasada de
+  typecheck y lint. Sin esa exclusión `expo doctor` falla siempre por lo mismo y tapa lo demás.
+- Comprobado después: `expo-doctor` 21/21, `npm ci --dry-run`, typecheck, lint sin errores, 483
+  tests y `expo export --platform android`.
+
+La 1.3.0 queda como build de paso. Un update por aire desde este árbol va a la 1.3.1, no a ella.
 
 ## 6. Deuda asumida
 
-- Los parches de SDK 57 pendientes (`npx expo install --check`) y TypeScript 6.
+- TypeScript 6, excluido a propósito de la comprobación de Expo.
 - `docs/guias/auditoria-dependencias.md` y ADR-0008 siguen razonando con Expo Go 54. La guía hay
   que repasarla; el ADR no se edita, y si se quiere MMKV ahora que hay APK propio, es un ADR nuevo.
 - No se ha visto en un dispositivo. Hasta recorrer el guion de arriba, la fase no está cerrada.
