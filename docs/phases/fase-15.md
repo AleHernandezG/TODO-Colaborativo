@@ -3,8 +3,7 @@
 - **Fecha:** 2026-10-05 (abierta) · 2026-10-09 (versión 1.3.1) · 2026-10-11 (fusión en `main`)
 - **Estado:** Código, pruebas automáticas y build completados. Falta verlo en el Android real.
 - **Commit:** En la rama `feat/expo-sdk-57`: `4f08737`, `77255bd`, `1fc0dab`, `fb0dab5`, `a364876`.
-  El commit de la fusión en `main` lo lanza el usuario; hasta que exista, `main` sigue en SDK 54 y
-  1.2.0 para cualquier clon.
+  Fusión en `main`: `febae87` (2026-10-12), subido a GitHub.
 - **Decisión de fondo:** [ADR-0025](../adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md)
 
 ---
@@ -173,7 +172,7 @@ La 1.3.0 queda como build de paso. Un update por aire desde este árbol va a la 
 
 ### Qué se cambió
 
-La rama `feat/expo-sdk-57` (5 commits, de `4f08737` a `a364876`) se fusionó en `main` en el árbol de trabajo (el commit de fusión lo lanza el usuario). Con eso
+La rama `feat/expo-sdk-57` (5 commits, de `4f08737` a `a364876`) se fusionó en `main` (commit `febae87`). Con eso
 `main` pasa a ser SDK 57, versión 1.3.1, y contiene el selector de listas de esta fase, `DESIGN.md`
 y ADR-0025. Hasta hoy `main` seguía en SDK 54 y versión 1.2.0, mientras los únicos APK descargables
 (1.3.0 y 1.3.1, del 2026-10-09) se habían construido desde la rama.
@@ -476,5 +475,20 @@ npx eas-cli@latest update:republish \
 
 ### Resultado
 
-Pendiente: el comando lo lanza el usuario. Anotar aquí la fecha, el id del grupo nuevo y lo que se
-vea en el pie del móvil.
+Republicado el 2026-10-12 por el usuario.
+
+| Dato              | Valor                                                                     |
+| ----------------- | ------------------------------------------------------------------------- |
+| Rama              | `preview`                                                                 |
+| Runtime           | 1.2.0                                                                     |
+| Grupo nuevo       | `c3353939-5487-4c66-b64d-6704585b3769`                                    |
+| Update de Android | `01a12d00-4848-7bc7-9827-9b7757e93d22` (en el pie se verá `01a12d00`)     |
+| Update de iOS     | `01a12d00-4848-753a-82a8-2c633611eed5`                                    |
+| Copia de          | `96f20bba-9b89-42f7-af7f-a56f09441436`                                    |
+
+`eas update:list --branch preview --limit 3` lo devuelve el primero, por delante de `b318117c` y
+`5b55fc8d`, que siguen en el historial.
+
+**Falta la prueba en dispositivo.** Nadie ha abierto todavía un Android con el APK 1.2.0 después de
+republicar. Hasta que se haga el paso 2 de «Cómo verificarlo» y el pie enseñe `v1.2.0 · 01a12d00`,
+que el update arregla esos móviles sigue siendo una deducción.
