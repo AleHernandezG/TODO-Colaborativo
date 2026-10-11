@@ -9,7 +9,7 @@ import { useActiveCommunityStore, useCommunityMembers } from '@/features/communi
 import { Button } from '@/shared/ui/Button'
 import { Checkbox } from '@/shared/ui/Checkbox'
 import { Input } from '@/shared/ui/Input'
-import { minTouchTarget } from '@/theme'
+import { minTouchTarget, tabularNums } from '@/theme'
 
 import { formatCents, parseCurrencyToCents, splitEvenly } from '../../domain/money'
 import { ExpensesHeader } from '../components/ExpensesHeader'
@@ -163,7 +163,10 @@ function NewExpenseForm({ communityId }: { communityId: string }) {
                     {member.isSelf ? t('expenses.you') : member.username}
                   </Text>
                   {checked && share ? (
-                    <Text className="text-base font-semibold text-content dark:text-content-dark">
+                    <Text
+                      style={tabularNums}
+                      className="text-base font-semibold text-content dark:text-content-dark"
+                    >
                       {formatCents(share)}
                     </Text>
                   ) : null}

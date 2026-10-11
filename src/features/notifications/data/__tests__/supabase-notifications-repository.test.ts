@@ -115,4 +115,21 @@ describe('SupabaseNotificationsRepository', () => {
 
     expect(global.fetch).toHaveBeenCalled()
   })
+
+  it('notifyCommunity manda la lista de origen junto a los datos de la notificación', async () => {
+    ;(supabase.rpc as jest.Mock).mockResolvedValueOnce({
+      data: [{ expo_push_token: 'ExponentPushToken[token-peer]' }],
+      error: null,
+    })
+
+    await repository.notifyCommunity({
+      communityId: 'comm-1',
+      title: 'Gastos',
+      body: 'Carlos apuntó un gasto',
+      data: { url: '/expenses' },
+    })
+
+    const [, request] = (global.fetch as jest.Mock).mock.calls.at(-1)
+    expect(JSON.parse(request.body)[0].data).toEqual({ url: '/expenses', communityId: 'comm-1' })
+  })
 })

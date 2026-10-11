@@ -93,6 +93,92 @@ El requisito RF-16 del roadmap y la especificación de funcionalidades establece
 
 ---
 
+## 4. Decisiones sobre la marcha
+
+### Referencias externas de diseño: qué entra y qué no (2026-10-05)
+
+**Qué se cambió.** Se revisaron ocho herramientas y skills pensadas para que un agente haga mejor
+interfaz, por si alguna merecía entrar en el repo. No se instaló ninguna. Lo que salió de la
+revisión son dos documentos propios:
+
+- [`DESIGN.md`](../../DESIGN.md) en la raíz, con el papel de cada color, la escala de texto, los
+  radios, el espaciado y la lista de lo que no se hace. Sale de `src/theme/tokens.js` y de contar
+  las clases que usa `src/` hoy.
+- Una sección nueva, "Pulido visual y movimiento", en la skill `expo-stack`, con las reglas de
+  animación, respuesta al pulsar, radio concéntrico, alineación óptica y cifras tabulares escritas
+  para Reanimated y NativeWind.
+
+`CLAUDE.md` gana una línea en las reglas de UX que obliga a leer `DESIGN.md` antes de pintar, y otra
+en el reparto de la raíz.
+
+**Por qué.** La skill `expo-stack` no decía nada del aspecto ni del movimiento, solo de
+accesibilidad, así que cada pantalla nueva improvisaba. El recuento lo confirma: cuatro opacidades
+distintas para el estado pulsado, dos radios que no están en los tokens y una sola sombra en toda la
+app.
+
+Lo revisado y el motivo de cada descarte:
+
+| Referencia                    | Decisión                 | Motivo                                                                                                                                                                                |
+| ----------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| make-interfaces-feel-better   | Adaptada, no instalada   | De sus 19 reglas unas 10 valen sin DOM. El resto es CSS (`text-wrap`, `will-change`, `transition: all`) y aquí sería ruido. Es MIT y la skill cita la fuente.                         |
+| Awesome DESIGN.md             | Se copia el formato      | Los 55 ficheros describen el aspecto de webs de terceros. Copiar uno contradice ADR-0004, que dice que el aspecto de la app es nuestro. El formato de documento sí sirve.             |
+| taste-skill                   | Descartada               | Todo web. Su variante móvil genera imágenes de maquetas, no código. Empuja a layouts llamativos, lo contrario de una acción principal evidente para un usuario novato.                |
+| Impeccable                    | Descartada               | Su detector analiza HTML y CSS y no ve nada en un árbol de NativeWind. Instala hooks que ejecutan código en cada edición.                                                             |
+| Playwright CLI                | Descartada               | Automatiza un navegador y esta app se verifica en un Android real. Los E2E ya son de Maestro.                                                                                         |
+| gsap-skills                   | Descartada               | GSAP anima el DOM. No corre en React Native.                                                                                                                                          |
+| transitions.dev               | Descartada               | Transiciones CSS y de React web, con un agente de pago. Vale como catálogo para mirar qué se suele animar.                                                                            |
+| img2threejs                   | Descartada               | Reconstruye objetos en Three.js. No hay 3D en esta app.                                                                                                                               |
+
+La alternativa de instalar make-interfaces-feel-better con `npx skills add` se descartó por dos
+cosas: metía en contexto nueve reglas que no aplican, y es código de un tercero fuera del
+marketplace oficial, que es justo lo que la sección "Plugins de Claude Code" de `CLAUDE.md` cierra.
+El coste de adaptarla es que no recibe las mejoras del original; si su autor añade reglas, hay que
+mirarlas a mano.
+
+Dos decisiones de aspecto se tomaron al escribir los documentos, porque el código no era coherente y
+había que fijar una:
+
+- El estado pulsado es `active:opacity-70`, y `active:opacity-80` en botones con relleno. La escala
+  a 0.96 queda solo para tarjetas enteras que se pulsan.
+- La app no usa sombras. Las superficies se separan por color y por borde.
+
+**Qué implica.** `DESIGN.md` se mantiene a mano: quien cambie `tokens.js` actualiza sus tablas en el
+mismo cambio, y si discrepan mandan los tokens. Su último apartado, "Lo que hoy no cumple", lista lo
+que el código ya tenía en contra de estas reglas; no se ha tocado ningún componente en este cambio,
+así que esa lista es deuda abierta. Las reglas de movimiento no se han visto en dispositivo porque
+no hay código nuevo que las use: la primera pantalla que aplique la escala al pulsar es la que las
+valida en el Android real.
+
+### Arreglo de lo que `DESIGN.md` listaba como incumplido (2026-10-05)
+
+**Qué se cambió.** Los cuatro puntos del apartado "Lo que hoy no cumple", en 17 ficheros de `src/`
+y sin tocar lógica:
+
+- Los nueve radios fuera de los tokens pasan a `rounded-lg` (tarjetas y portadas de receta) o a
+  `rounded-md` (los huecos de comida y cena del planificador, que son controles). La miniatura de la
+  tarjeta de receta baja a `radius.sm` para seguir siendo concéntrica con su tarjeta, que ahora mide
+  16 con 12 de padding.
+- El estado pulsado queda en `active:opacity-70` en todo lo que no es un `Button`.
+- Se quita el `shadow-sm` del planificador.
+- Importes, cantidades y progreso llevan números tabulares con un token nuevo, `tabularNums`,
+  exportado desde `src/theme/index.ts`. Lo usan los importes de gastos, el `×N` de la lista y del
+  modo compra, el porcentaje de progreso, la cantidad del volcado de menús y `QuantityStepper`.
+
+**Por qué.** `tabularNums` es un objeto de estilo y no una clase porque NativeWind no convierte
+`font-variant-numeric`: se comprobó en `react-native-css-interop`, que solo conoce
+`font-variant-caps`. Va en `@/theme` para no repetir el literal en quince sitios. Las frases que
+llevan un importe dentro ("Ha pagado 12,00 €") se dejaron sin tocar: lo que baila es una cifra sola
+en una columna, no una palabra en mitad de un texto.
+
+**Qué implica.** `npm run typecheck` y `npm test` (60 suites, 431 tests) pasan; `eslint` da los
+mismos tres avisos de `set-state-in-effect` que ya había en esos ficheros. **No se ha visto en el
+móvil**: son cambios de aspecto y falta mirar en el Android real el planificador, la lista de
+recetas y la pantalla de gastos. El apartado de `DESIGN.md` se reescribió con tres incumplimientos
+que aparecieron al hacer este y que siguen abiertos; el primero, `text-content-muted` en el
+planificador, es una clase que no existe y deja ese texto con el color por defecto.
+
+---
+
 ## Utillaje · Agentes del proyecto y `pr-review-toolkit` (2026-10-11)
 
 No es un incremento de la fase, es una decisión de herramienta, como la de plugins del 2026-08-05

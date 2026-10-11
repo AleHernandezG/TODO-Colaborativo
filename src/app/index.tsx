@@ -4,6 +4,7 @@ import { ActivityIndicator, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import {
+  MyListsShortcut,
   useActiveCommunityHydrated,
   useActiveCommunityStore,
 } from '@/features/community'
@@ -44,6 +45,7 @@ export default function Landing() {
         </View>
 
         <View className="gap-3">
+          <MyListsShortcut />
           <Button label={t('landing.createCommunity')} onPress={() => router.push('/create')} />
           <Button
             label={t('landing.joinCommunity')}

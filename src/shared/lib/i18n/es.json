@@ -77,8 +77,6 @@
     "shareCodeHint": "Abre el menú de compartir del móvil",
     "shareMessage": "Entra en mi lista de la compra «{{name}}» con el código {{code}}",
     "shareFailed": "No se pudo compartir el código.",
-    "leave": "Salir de esta lista",
-    "leaveHint": "Vuelve a la pantalla de inicio en este móvil",
     "realtime": {
       "connecting": "Conectando para ver los cambios al momento…",
       "disconnected": "Los cambios de los demás no llegan solos. Tira hacia abajo para actualizar."
@@ -95,6 +93,27 @@
       "andMore_one": "{{names}} y otra persona están viendo la lista",
       "andMore_other": "{{names}} y otras {{count}} personas están viendo la lista"
     }
+  },
+  "lists": {
+    "title": "Tus listas",
+    "switcher": "Lista {{name}}",
+    "switcherHint": "Abre tus listas para cambiar de una a otra",
+    "option": "{{name}}, entras como {{username}}",
+    "optionHint": "Abre esta lista",
+    "as": "Como {{username}}",
+    "openNow": "Abierta",
+    "create": "Crear otra lista",
+    "createHint": "Abre el formulario para crear una lista nueva",
+    "join": "Unirme con un código",
+    "joinHint": "Abre el formulario para entrar en la lista de otra persona",
+    "close": "Cerrar",
+    "loading": "Cargando tus listas…",
+    "loadError": "No se pudieron cargar tus listas.",
+    "onlyOne": "Por ahora solo estás en esta lista.",
+    "switched": "Ahora estás en {{name}}",
+    "removed": "Ya no estás en «{{name}}».",
+    "removedAndMoved": "Ya no estás en «{{name}}». Te hemos llevado a «{{next}}».",
+    "backToYours": "Vuelve a una de tus listas"
   },
   "items": {
     "add": {

@@ -205,7 +205,7 @@ export function EditRecipeScreen({ recipeId }: { recipeId?: string }) {
 
             {hasCoverImage ? (
               <View className="gap-2">
-                <View className="overflow-hidden rounded-xl border border-line dark:border-line-dark">
+                <View className="overflow-hidden rounded-lg border border-line dark:border-line-dark">
                   <RecipeImage
                     path={previewPath}
                     localUri={previewLocalUri}
@@ -242,7 +242,7 @@ export function EditRecipeScreen({ recipeId }: { recipeId?: string }) {
                 </View>
               </View>
             ) : (
-              <View className="items-center justify-center gap-3 rounded-xl border border-dashed border-line-strong p-4 dark:border-line-strong-dark">
+              <View className="items-center justify-center gap-3 rounded-lg border border-dashed border-line-strong p-4 dark:border-line-strong-dark">
                 <Text className="text-sm text-muted dark:text-muted-dark">
                   {t('recipes.image.empty')}
                 </Text>

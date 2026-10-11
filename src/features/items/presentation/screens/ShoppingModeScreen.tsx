@@ -9,7 +9,7 @@ import { useSnackbar } from '@/shared/hooks/use-snackbar'
 import { useKeepAwakeSafe } from '@/shared/lib/keep-awake'
 import { Button } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
-import { radius, usePalette } from '@/theme'
+import { radius, tabularNums, usePalette } from '@/theme'
 
 import type { Item } from '../../domain/item'
 import { groupItemsByAisle } from '../../domain/item-category'
@@ -115,14 +115,14 @@ function ShoppingModeView({
         {/* Barra de progreso visual */}
         <View className="gap-1.5">
           <View className="flex-row items-center justify-between">
-            <Text style={{ fontSize: 13, fontWeight: '600', color: palette.text }}>
+            <Text style={[tabularNums, { fontSize: 13, fontWeight: '600', color: palette.text }]}>
               {t('shoppingMode.progress', {
                 purchased: purchasedCount,
                 total: totalCount,
                 percent: progressPercent,
               })}
             </Text>
-            <Text style={{ fontSize: 13, color: palette.primary, fontWeight: '700' }}>
+            <Text style={[tabularNums, { fontSize: 13, color: palette.primary, fontWeight: '700' }]}>
               {progressPercent}%
             </Text>
           </View>
@@ -382,11 +382,14 @@ function ShoppingModeItemRow({
         }}
       >
         <Text
-          style={{
-            fontSize: 15,
-            fontWeight: '700',
-            color: item.isPurchased ? palette.textMuted : palette.primary,
-          }}
+          style={[
+            tabularNums,
+            {
+              fontSize: 15,
+              fontWeight: '700',
+              color: item.isPurchased ? palette.textMuted : palette.primary,
+            },
+          ]}
         >
           x{item.quantity}
         </Text>

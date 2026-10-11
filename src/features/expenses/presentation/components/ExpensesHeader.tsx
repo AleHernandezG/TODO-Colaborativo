@@ -18,7 +18,7 @@ export function ExpensesHeader({ title, backLabel, onBack, right }: Props) {
         accessibilityRole="button"
         accessibilityLabel={backLabel}
         style={{ minWidth: minTouchTarget, minHeight: minTouchTarget }}
-        className="items-center justify-center rounded-md active:opacity-60"
+        className="items-center justify-center rounded-md active:opacity-70"
       >
         <Text className="text-2xl text-primary dark:text-primary-dark">←</Text>
       </Pressable>

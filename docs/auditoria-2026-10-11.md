@@ -3,6 +3,10 @@
 Auditoría de solo lectura. No se editó código ni se publicó nada en EAS ni en Supabase.
 Hecha sobre `main` (`cd4d1e7`) y contrastada con `origin/feat/expo-sdk-57` (`a364876`) y con EAS.
 
+> **Actualización del 2026-10-11:** la decisión 0 está tomada. `feat/expo-sdk-57` se fusionó en `main`
+> y el proyecto es SDK 57. El incremento 1 está hecho; detalle en `docs/phases/fase-15.md`, apartado 7.
+> El resto del informe describe el estado anterior a la fusión.
+
 Leyenda: **✔** lo leí yo en el código o en la salida de un comando; **○** viene solo del informe
 de un agente y no lo he contrastado.
 
@@ -253,6 +257,12 @@ runtime: quien tenga la 1.1.0 no ha recibido nunca nada, y quien tenga la 1.3.x 
   `expo-updates` lo devuelve al último que funcionó, o se queda roto. El pie lo dirá: si un móvil
   con 1.2.0 enseña el id de «Rebuild expense split UI» (el `01a0682a` de `CLAUDE.md`) en vez de
   uno más nuevo, es esto.
+  - **Corrección del 2026-10-11:** `01a0682a` no es el id de «Rebuild expense split UI» (grupo
+    `96f20bba`). Es el id de Android del grupo anterior, `1c2955a1` («Ship catalog, member PIN,
+    expense split and error codes», commit `9b5a03c`), según `docs/phases/fase-6.md` (Tarea 3). El
+    id de Android de `96f20bba` no está apuntado en el repo: lo da `eas update:view` de ese grupo.
+    Un móvil con 1.2.0 que enseñe `01a0682a` está un update por detrás del último válido, no en él.
+    Detalle en `docs/phases/fase-15.md`, apartado 8.
 - Es exactamente el caso que `docs/guias/despliegue.md:134-139` prohíbe.
 
 ### Por qué no se vio antes

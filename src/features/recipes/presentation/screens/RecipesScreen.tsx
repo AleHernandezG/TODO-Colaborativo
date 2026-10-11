@@ -40,14 +40,14 @@ export function RecipesScreen() {
       accessibilityLabel={`${item.title}, ${item.servings} raciones`}
       onPress={() => router.push(`/recipes/${item.id}` as never)}
       style={{ minHeight: minTouchTarget }}
-      className="flex-row items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 active:opacity-80 dark:border-line-dark dark:bg-surface-dark"
+      className="flex-row items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3 active:opacity-70 dark:border-line-dark dark:bg-surface-dark"
     >
       {item.imagePath ? (
         <RecipeImage
           path={item.imagePath}
           name={item.title}
           size={56}
-          borderRadius={radius.md}
+          borderRadius={radius.sm}
         />
       ) : null}
       <View className="flex-1 gap-1.5">

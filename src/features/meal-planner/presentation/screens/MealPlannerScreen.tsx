@@ -265,7 +265,7 @@ export function MealPlannerScreen() {
             return (
               <View
                 key={day.date}
-                className="rounded-2xl border border-line bg-surface p-3.5 shadow-sm dark:border-line-dark dark:bg-surface-dark"
+                className="rounded-lg border border-line bg-surface p-3.5 dark:border-line-dark dark:bg-surface-dark"
                 style={{
                   borderColor: day.isToday ? palette.primary : undefined,
                   borderWidth: day.isToday ? 1.5 : 1,
@@ -297,7 +297,7 @@ export function MealPlannerScreen() {
                   </Text>
                   <Pressable
                     onPress={() => openAssignModal(day.date, 'lunch')}
-                    className="rounded-xl border border-dashed border-line p-2.5 justify-center active:opacity-75 dark:border-line-dark"
+                    className="rounded-md border border-dashed border-line p-2.5 justify-center active:opacity-70 dark:border-line-dark"
                     style={{
                       minHeight: 48,
                       backgroundColor: lunchSlot ? `${palette.primary}08` : 'transparent',
@@ -337,7 +337,7 @@ export function MealPlannerScreen() {
                   </Text>
                   <Pressable
                     onPress={() => openAssignModal(day.date, 'dinner')}
-                    className="rounded-xl border border-dashed border-line p-2.5 justify-center active:opacity-75 dark:border-line-dark"
+                    className="rounded-md border border-dashed border-line p-2.5 justify-center active:opacity-70 dark:border-line-dark"
                     style={{
                       minHeight: 48,
                       backgroundColor: dinnerSlot ? `${palette.primary}08` : 'transparent',

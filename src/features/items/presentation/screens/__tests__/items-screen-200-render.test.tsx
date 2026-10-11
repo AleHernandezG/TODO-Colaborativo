@@ -51,8 +51,15 @@ jest.mock('react-i18next', () => ({
 }))
 
 jest.mock('@/features/community', () => ({
+  CommunitySwitcher: ({ active }: { active: { community: { name: string } } }) => {
+    const { Text } = jest.requireActual('react-native')
+    return <Text>{active.community.name}</Text>
+  },
   JoinCodeCard: () => null,
   ViewersLine: () => null,
+  useActiveMembershipSync: () => undefined,
+  useMyCommunities: () => ({ data: undefined }),
+  useOpenCommunity: () => () => true,
   useViewers: () => ['Ale', 'Beatriz'],
   useActiveCommunityStore: (selector: (state: unknown) => unknown) =>
     selector({

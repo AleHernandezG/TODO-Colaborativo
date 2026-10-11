@@ -87,7 +87,7 @@ function MembersContent({
             accessibilityRole="button"
             accessibilityLabel={t('members.back')}
             style={{ minWidth: minTouchTarget, minHeight: minTouchTarget }}
-            className="items-center justify-center rounded-md active:opacity-60"
+            className="items-center justify-center rounded-md active:opacity-70"
           >
             <Text className="text-2xl text-primary dark:text-primary-dark">←</Text>
           </Pressable>
@@ -204,7 +204,7 @@ function MembersContent({
                     accessibilityRole="button"
                     accessibilityLabel={`${t('members.removeMember')} ${item.username}`}
                     style={{ minWidth: minTouchTarget, minHeight: minTouchTarget }}
-                    className="items-center justify-center rounded-md px-2 active:opacity-60"
+                    className="items-center justify-center rounded-md px-2 active:opacity-70"
                   >
                     <Text className="text-base font-semibold text-danger dark:text-danger-dark">
                       ✕

@@ -76,6 +76,7 @@ module.exports = defineConfig([
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
       'import/no-named-as-default-member': 'off',
+      'react-hooks/set-state-in-effect': 'warn',
     },
   },
   ...featureBlocks,

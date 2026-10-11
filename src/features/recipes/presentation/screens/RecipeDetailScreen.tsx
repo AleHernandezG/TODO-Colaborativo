@@ -162,7 +162,7 @@ export function RecipeDetailScreen({ recipeId }: { recipeId: string }) {
         >
           {/* Foto de portada */}
           {recipe.imagePath ? (
-            <View className="overflow-hidden rounded-2xl border border-line dark:border-line-dark">
+            <View className="overflow-hidden rounded-lg border border-line dark:border-line-dark">
               <RecipeImage
                 path={recipe.imagePath}
                 name={recipe.title}
@@ -181,7 +181,7 @@ export function RecipeDetailScreen({ recipeId }: { recipeId: string }) {
           </View>
 
           {/* Selector interactivo de comensales */}
-          <View className="rounded-xl border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark gap-2">
+          <View className="rounded-lg border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark gap-2">
             <Text className="text-sm font-semibold text-muted dark:text-muted-dark uppercase">
               {t('recipes.servingsAdjustLabel')}
             </Text>
@@ -292,7 +292,7 @@ export function RecipeDetailScreen({ recipeId }: { recipeId: string }) {
 
           {/* Instrucciones de preparación */}
           {recipe.instructions.trim() ? (
-            <View className="gap-2 rounded-xl border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark">
+            <View className="gap-2 rounded-lg border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark">
               <Text className="text-lg font-bold text-content dark:text-content-dark">
                 📝 {t('recipes.instructionsLabel')}
               </Text>

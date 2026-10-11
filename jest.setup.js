@@ -39,4 +39,11 @@ jest.mock('expo-notifications', () => ({
   },
 }))
 
+globalThis.__workletsModuleProxy = new Proxy(
+  {},
+  {
+    get: (_target, _prop) => jest.fn(() => ({})),
+  },
+)
+
 globalThis.expo = { ...globalThis.expo, uuidv4: () => require('node:crypto').randomUUID() }

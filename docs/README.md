@@ -9,6 +9,7 @@ Organizada por **para qué sirve cada documento**, no por tema. Si buscas algo:
 | Ver qué se hizo en cada fase y cómo probarlo   | [`phases/`](./phases/)                                         |
 | Hacer una tarea concreta paso a paso           | [`guias/`](./guias/)                                           |
 | Las reglas duras que sigue el proyecto         | [`../CLAUDE.md`](../CLAUDE.md)                                 |
+| Saber qué aspecto tiene que tener una pantalla | [`../DESIGN.md`](../DESIGN.md)                                 |
 
 El criterio y sus motivos están en
 [ADR-0003](./adr/ADR-0003-estructura-del-repositorio.md).
@@ -39,6 +40,9 @@ El criterio y sus motivos están en
 | [0020](./adr/ADR-0020-notificaciones-push-con-expo.md)          | Notificaciones push colaborativas con Expo               | Aceptado y **verificado** (56/56) |
 | [0021](./adr/ADR-0021-modulo-de-recetas-y-volcado-a-lista.md)   | Módulo de recetas y volcado a lista de compra            | Aceptado y **verificado** (61/61) |
 | [0022](./adr/ADR-0022-planificador-semanal-de-menus-y-consolidacion.md) | Planificador semanal de menús y consolidación    | Aceptado y **verificado** (65/65) |
+| [0023](./adr/ADR-0023-foto-en-alta-de-articulos-y-portada-de-recetas.md) | Foto en el alta de artículos y portada de recetas | Aceptado                          |
+| [0024](./adr/ADR-0024-modo-supermercado-y-categorias-de-articulos.md)    | Modo supermercado y categorías de artículos       | Aceptado                          |
+| [0025](./adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md) | Varias listas por usuario y lista activa             | Aceptado (RLS 70/70)              |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin
@@ -68,6 +72,9 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 10 · Notificaciones push colaborativas con Expo](./phases/fase-10.md) — cerrada (código, RLS 56/56, Realtime 18/18, tests y docs completados)
 - [Fase 11 · Módulo de Recetas Compartidas y volcado a lista](./phases/fase-11.md) — cerrada (código, RLS 61/61, Realtime, tests y docs completados)
 - [Fase 12 · Planificador Semanal de Menús y consolidación](./phases/fase-12.md) — cerrada (código, RLS 65/65, Realtime, tests y docs completados)
+- [Fase 13 · Foto opcional en el alta y portada en recetas](./phases/fase-13.md) — código y tests completados
+- [Fase 14 · Modo supermercado y agrupación por categorías (RF-16)](./phases/fase-14.md) — código y tests completados
+- [Fase 15 · Varias listas a la vez](./phases/fase-15.md) — código, tests, RLS 70/70 y export completados; falta la prueba en dispositivo
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
 [la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).

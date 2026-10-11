@@ -121,7 +121,7 @@ export class SupabaseNotificationsRepository implements NotificationsRepository 
         tokens,
         notification.title,
         notification.body,
-        notification.data,
+        { ...notification.data, communityId: notification.communityId },
       )
     } catch (err) {
       captureError(err, { operation: 'notifyCommunity', communityId: notification.communityId })

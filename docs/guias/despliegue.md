@@ -1,12 +1,14 @@
 # Guía: sacar la app del PC y dejarla instalada
 
-Para pasar de "escaneo el QR con Expo Go" a "la app vive en el móvil y funciona sola". El
+Para pasar de "escaneo el QR de Metro" a "la app vive en el móvil y funciona sola". El
 resultado es un APK de Android instalable que arranca sin Metro y habla directo con Supabase.
 Sirve tanto para tu dispositivo como para repartir la beta a los demás con su código de invitación.
 
-El bucle de desarrollo diario sigue siendo Expo Go + QR (`npx expo start`). Esto es solo el
-formato de entrega. Se apoya en `eas.json`, que ya está en la raíz con tres perfiles:
-`development`, `preview` y `production`.
+El bucle de desarrollo diario es `npx expo start` contra un **development build** instalado en el
+móvil (apartado 3, opción C): hace el papel que hacía Expo Go, con el SDK y los módulos nativos de
+este proyecto. Expo Go solo sirve si el del móvil admite SDK 57. Esto es solo el formato de
+entrega. Se apoya en `eas.json`, que ya está en la raíz con tres perfiles: `development`, `preview`
+y `production`.
 
 ## Qué construye cada perfil
 
@@ -70,6 +72,15 @@ un build `--profile preview` lee el entorno **preview**, y `--profile production
 formas; la seguridad la da RLS, no esconderlas. Aun así no las metemos en `eas.json` ni en el
 repo, por la misma regla de higiene que mantiene `.env.example` sin valores.
 
+La única variable que sí vive en `eas.json` es `SENTRY_DISABLE_AUTO_UPLOAD=true`, en el perfil
+`preview`: no es un secreto, es un interruptor de build. Apaga la subida de sourcemaps para que el
+APK compile sin token de Sentry. El coste: las trazas que lleguen de un APK `preview` salen sin
+desofuscar. El perfil `production` no la lleva.
+
+**`EXPO_PUBLIC_SENTRY_DSN` es obligatoria para tener telemetría.** Sin ella la app arranca igual y
+Sentry no se inicializa, sin avisar. Comprobado el 2026-10-11: el entorno `preview` de EAS solo
+tenía las dos de Supabase, así que ningún APK repartido hasta esa fecha ha mandado un fallo.
+
 Comprueba que quedaron subidas (y que el build las lee: al arrancar imprime
 `Environment variables ... loaded from the 'preview' environment`):
 
@@ -88,6 +99,17 @@ npx eas-cli@latest build --platform android --profile preview
 ```powershell
 npx eas-cli@latest build --platform android --profile production
 ```
+
+**Opción C · Development build (para el día a día):**
+```powershell
+npx eas-cli@latest build --platform android --profile development
+```
+
+Se instala como el APK de `preview`, pero no lleva el JS dentro: al abrirlo escanea el QR de
+`npx expo start`. Las variables `EXPO_PUBLIC_*` salen de tu `.env` local, no de EAS. Hay que
+reconstruirlo solo cuando cambia algo nativo (apartado 5). Comparte `package` con el APK de
+`preview` (`com.alejandrohernandez.listacompra`), así que lo previsible es que uno sustituya al
+otro al instalarlo; a 2026-10-11 no se ha construido ninguno y eso está sin comprobar.
 
 La primera vez pregunta si quieres que EAS genere y guarde el **keystore** de firma. Di que sí:
 lo custodia Expo y no tienes que gestionar nada. No lo pierdas ni lo regeneres a la ligera; un
@@ -108,18 +130,27 @@ con el APK y un QR de **instalación** (ese QR es de un solo uso para descargar,
 Para repartir la beta: pásales a los demás esa misma URL. Instalan, abren, y entran con el
 `join_code`. No necesitan cuenta de Expo ni nada.
 
+**El enlace caduca.** EAS guarda el artefacto unas dos semanas: el del APK 1.2.0 venció el
+2026-08-17 y el del 1.3.1 vence el 2026-10-23. Para repartir después hay que lanzar otro build o
+descargar el `.apk` y colgarlo en un sitio estable.
+
 ## 5. Actualizar la app
 
 Dos caminos según qué toques:
 
-- **Cambios nativos** (una dependencia nueva con código nativo, permisos, el icono, el SDK):
-  hay que hacer **build nuevo** (paso 3) y reinstalar el APK.
+- **Cambios nativos**: `version` nueva en `app.json`, **build nuevo** (paso 3) y reinstalar el
+  APK. Cuenta como nativo: una dependencia con código nativo, permisos, el icono, el SDK,
+  **cualquier cambio en el array `plugins` de `app.json`** (un config plugin reescribe el proyecto
+  nativo) y **`npx expo install --fix`**, que mueve módulos nativos y puede añadir plugins por su
+  cuenta: el 2026-10-09 metió `expo-image`, `expo-localization` y `expo-sharing`. Antes de publicar
+  por aire, `git diff app.json package.json`: si `plugins` o una dependencia `expo-*` o
+  `react-native-*` ha cambiado desde el último build, no es un update.
 - **Cambios solo de JS/TS** (casi todo lo que tocamos): se pueden enviar por aire con **EAS
   Update**, sin reinstalar. El móvil se los descarga al reabrir la app.
 
 EAS Update **ya está montado**. `expo-updates` quedó instalado y `app.json` tiene el
 `runtimeVersion` con `policy: appVersion` y la `updates.url` apuntando al proyecto. Los canales
-(`preview`/`production`) ya estaban en `eas.json`. Para publicar un cambio de JS al APK de la
+(`development`, `preview` y `production`) están en `eas.json`, uno por perfil. Para publicar un cambio de JS al APK de la
 beta sin reconstruir:
 
 ```powershell
@@ -130,6 +161,13 @@ El `runtimeVersion` va atado a la `version` de `app.json` (`appVersion`): mientr
 partes nativas y la `version` sea la misma, el update es compatible con el APK instalado. Si
 tocas algo nativo (dependencia con código nativo, permisos, icono, SDK) sube la `version` y haz
 **build nuevo** (paso 3); un update de JS no puede arreglar un cambio nativo.
+
+**Estado a 2026-10-11.** `app.json` está en 1.3.1 (SDK 57). Un `eas update` desde `main` solo lo
+reciben los APK 1.3.1. Los 1.2.0 (SDK 54) no reciben nada más, y su runtime tiene publicados dos
+updates que ese APK no puede ejecutar (grupos `5b55fc8d` y `b318117c`): se publicaron sin subir la
+`version` después de añadir `expo-print`, `expo-sharing`, `expo-notifications` y `expo-device`, que
+es justo lo que el párrafo de abajo prohíbe. Detalle en `docs/auditoria-2026-10-11.md` (apartado 4)
+y en `docs/phases/fase-15.md` (apartado 7).
 
 **Subir la `version` no es opcional en ese caso, es lo que protege al APK viejo.** Si añades una
 dependencia nativa y publicas un update dejando la `version` como estaba, EAS considera ese

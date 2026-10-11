@@ -1,6 +1,6 @@
 ---
 name: expo-stack
-description: Convenciones del stack móvil de este proyecto — Expo Router, TanStack Query, Zustand, AsyncStorage, NetInfo y la arquitectura domain/data/presentation. Úsala SIEMPRE que vayas a crear o editar cualquier cosa dentro de src/ — pantallas, rutas, hooks, casos de uso, repositorios, stores o componentes de UI — y también cuando tengas que decidir dónde vive un estado, cómo escribir una mutación, cómo se propaga un cambio en tiempo real o cómo se comporta la app sin red. Aplica aunque el usuario solo diga "añade una pantalla", "haz un hook" o "guarda esto".
+description: Convenciones del stack móvil de este proyecto — Expo Router, TanStack Query, Zustand, AsyncStorage, NetInfo y la arquitectura domain/data/presentation. Úsala SIEMPRE que vayas a crear o editar cualquier cosa dentro de src/ — pantallas, rutas, hooks, casos de uso, repositorios, stores o componentes de UI — y también cuando tengas que decidir dónde vive un estado, cómo escribir una mutación, cómo se propaga un cambio en tiempo real, cómo se comporta la app sin red o qué aspecto y qué animación lleva un componente. Aplica aunque el usuario solo diga "añade una pantalla", "haz un hook" o "guarda esto".
 ---
 
 # Stack móvil: Expo + Query + Zustand
@@ -167,6 +167,40 @@ Pregúntate: **¿este dato podría cambiarlo otra persona desde su móvil?**
 Copiar la lista de artículos a un store de Zustand parece cómodo y rompe la app en cuanto
 llega un evento Realtime: tendrías dos copias divergiendo. La caché de Query ya es un store
 global, con invalidación y refetch incluidos.
+
+### La lista activa es del cliente; mis listas, del servidor
+
+Una persona puede estar en varias listas ([ADR-0025](../../../docs/adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md)).
+Son dos datos distintos y cada uno vive donde le toca:
+
+- **A qué listas pertenezco** lo puede cambiar otra persona (un admin me quita), así que es la
+  query `['my-communities']` de `useMyCommunities()`.
+- **Cuál estoy mirando** no lo cambia nadie más: es `useActiveCommunityStore`, que guarda la
+  `membership` entera para poder pintar el título sin red.
+
+Ese store lleva una copia del nombre y del código, y por eso `useActiveMembershipSync()` lo
+reconcilia con cada respuesta fresca del servidor. Dos reglas al tocarlo:
+
+```ts
+const enterCommunity = useEnterCommunity()
+
+onSuccess: async (result) => {
+  if (result.status === 'ok') {
+    await enterCommunity(result.membership)
+  }
+}
+```
+
+Al crear o unirse **no se llama a `setMembership` a secas**. `useEnterCommunity` cancela la query,
+mete la lista nueva en la caché y solo entonces la deja activa. Sin ese orden, una carga que iba
+en vuelo aterriza sin la lista recién creada y la reconciliación echa al usuario de ella.
+
+Y la reconciliación **no decide con la copia persistida**: espera a `isFetchedAfterMount`. Lo
+guardado en disco puede ser anterior a la última lista creada.
+
+Una pantalla que dependa de la lista activa y tenga estado local se monta con
+`key={community.id}`, como `ItemsView`. Lo que no deba repetirse en cada cambio (registrar el
+token de push, la propia reconciliación) va en el componente de fuera.
 
 ### Stores persistidos: espera a la hidratación
 
@@ -776,6 +810,143 @@ El estado vive en `src/shared/hooks/use-snackbar.ts` y el componente en
 
 Montarlo por pantalla parece más simple hasta que navegas: el snackbar se desmonta con la
 pantalla y el aviso del error desaparece justo cuando el usuario iba a leerlo.
+
+## Pulido visual y movimiento
+
+Qué colores, tamaños y radios existen está en [`DESIGN.md`](../../../DESIGN.md), en la raíz. Léelo
+antes de pintar una pantalla. Esta sección es cómo se aplica en React Native lo que no cabe en una
+tabla de tokens.
+
+Las reglas son una adaptación de
+[make-interfaces-feel-better](https://github.com/jakubkrehel/make-interfaces-feel-better) de Jakub
+Krehel (MIT). El original está escrito para CSS; aquí solo están las que sobreviven sin DOM, ya
+traducidas. Las que dependen de `text-wrap`, `will-change`, `transition: all` o `:hover` no aplican
+y no se echan de menos.
+
+### Cuándo no animar
+
+Es la regla que más pesa en esta app. Marcar un artículo, sumar una cantidad o escribir en el campo
+de añadir son cosas que alguien hace cuarenta veces en una compra: cambian al instante. Una
+animación de 200 ms en cada una son ocho segundos esperando a la interfaz.
+
+Se anima lo que ayuda a entender qué ha pasado: una fila que entra porque otra persona la añadió, la
+lista que se recoloca al borrar, un panel que se abre. Y nunca la carga inicial: una lista que llega
+de la caché aparece puesta, no entra fila a fila.
+
+Todo movimiento va acompañado de una señal que no se mueve (texto, icono, color). Quien tenga
+"Quitar animaciones" activado en Android tiene que enterarse igual.
+
+### Entradas, salidas y recolocación
+
+Reanimated, con los builders de layout. Es lo que hace `ItemRow`:
+
+```tsx
+const appear = FadeIn.duration(180)
+const reflow = LinearTransition.duration(180)
+
+<Animated.View entering={appear} layout={reflow}>
+```
+
+- **180 ms** es la duración de la casa. Si un segundo componente la necesita, se saca a
+  `src/theme` en ese cambio en vez de escribir el número otra vez.
+- Los builders se crean **fuera del componente**. Dentro se recrean en cada render y una lista
+  memoizada deja de serlo.
+- La salida es más discreta que la entrada: `FadeOut` solo, o con un desplazamiento fijo de pocos
+  puntos. Nada de salir volando por un lado.
+- El escalonado (`.delay(i * 60)`) se reserva para algo que el usuario ve una vez, como el resumen
+  al terminar la compra. En una lista que se actualiza por Realtime no va.
+- Los builders respetan el ajuste de movimiento reducido del sistema por defecto. No lo fuerces con
+  `.reduceMotion(ReduceMotion.Never)`.
+
+### Animaciones que se pueden interrumpir
+
+Si el valor depende de un gesto o de un estado que puede cambiar a mitad, se anima un shared value
+con `withTiming` o `withSpring`. Arrancan desde donde esté el valor en ese momento, así que un
+segundo toque no hace saltar nada:
+
+```tsx
+const pressed = useSharedValue(0)
+const style = useAnimatedStyle(() => ({
+  transform: [{ scale: 1 - pressed.value * 0.04 }],
+}))
+
+<Pressable
+  onPressIn={() => (pressed.value = withTiming(1, { duration: 90 }))}
+  onPressOut={() => (pressed.value = withTiming(0, { duration: 140 }))}
+>
+  <Animated.View style={style}>…</Animated.View>
+</Pressable>
+```
+
+Solo `transform` y `opacity`. Animar `height`, `width` o un margen recalcula el layout en cada
+fotograma y en el Android de gama baja se nota; para eso está `layout={LinearTransition}`.
+
+### Respuesta al pulsar
+
+Por defecto, opacidad con la variante `active:` de NativeWind, que no necesita Reanimated:
+`active:opacity-70` en filas, iconos y controles sin relleno, `active:opacity-80` en botones con
+relleno.
+
+La escala del ejemplo de arriba es para **tarjetas enteras que se pulsan** (una receta, un día del
+menú), donde bajar la opacidad de una foto queda sucio. El valor es 0.96: por debajo de 0.95 parece
+un fallo y por encima de 0.98 no se percibe. O escala u opacidad, no las dos.
+
+### Radio concéntrico
+
+El radio de dentro es el de fuera menos el padding que los separa. Con los tokens (6, 10, 16):
+
+```tsx
+<View className="rounded-lg bg-surface p-2 dark:bg-surface-dark">
+  <Image className="rounded-sm" … />
+</View>
+```
+
+`rounded-lg` (16) menos `p-2` (8) da 8, y el token más cercano es `rounded-sm`. Repetir
+`rounded-lg` dentro deja la esquina interior más gruesa que la exterior, que es lo que hace que una
+tarjeta parezca mal cortada sin que se sepa decir por qué. Con padding de 16 o más la relación deja
+de verse y vale cualquiera.
+
+### Alineación óptica
+
+Centrar por caja no siempre centra a la vista. Un glifo como `✕` o `✓` dentro de un `Text` trae el
+espacio de su línea y suele quedar medio punto bajo; un triángulo de "play" cae a la izquierda de
+donde parece. Se corrige a mano con `lineHeight` igual al tamaño de la fuente o con un
+`translateY`/`translateX` de uno o dos puntos, y se comprueba en el móvil, no en el código.
+
+Android añade relleno vertical a las fuentes. Si un texto de una sola línea no se centra en su
+botón, `includeFontPadding: false` en su estilo antes de tocar el padding del contenedor.
+
+### Cifras que no bailan
+
+Un importe o un contador que se actualiza cambia de ancho con cada dígito y arrastra lo que tenga al
+lado. Va con cifras tabulares, con `tabularNums` de `@/theme`. NativeWind no convierte la clase
+`tabular-nums` de Tailwind, así que va por `style`; si el `Text` ya tiene uno, en array
+(`style={[tabularNums, { … }]}`):
+
+```tsx
+<Text style={tabularNums} className="text-base font-medium">
+  {formatCents(total)}
+</Text>
+```
+
+Aplica a importes de gastos, cantidades con `×`, el progreso del modo compra y cualquier columna de
+números.
+
+### Borde para estructura, nada para relieve
+
+La app es plana (ver "Elevación" en `DESIGN.md`). Un borde separa o marca un estado; `line` para
+separar, `line-strong` para el contorno de algo que se pulsa. No uses `shadow-*`: en Android se
+convierte en `elevation`, que no se ve en oscuro.
+
+Una foto sobre una superficie de su mismo tono se funde con ella. Lleva un borde de un punto,
+`border border-line dark:border-line-dark`, que no se tiñe de ningún otro color.
+
+### Glifos e iconos
+
+No hay librería de iconos: son glifos dentro de `Text` y heredan color y peso. El peso del glifo
+acompaña al del texto de al lado (`font-medium` con `font-medium`), porque un `✕` fino junto a una
+etiqueta seminegrita parece de otra app. Un mismo glifo cambia de color según el estado; no se
+cambia por otro dibujo.
 
 ## Accesibilidad
 

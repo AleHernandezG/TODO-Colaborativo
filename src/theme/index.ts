@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native'
+import { type TextStyle, useColorScheme } from 'react-native'
 import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper'
 
 import tokens from './tokens'
@@ -24,6 +24,8 @@ export type ThemeColors = {
   danger: string
   success: string
 }
+
+export const tabularNums: TextStyle = { fontVariant: ['tabular-nums'] }
 
 export function usePalette(): ThemeColors {
   return useColorScheme() === 'dark' ? colors.dark : colors.light

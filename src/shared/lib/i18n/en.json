@@ -77,8 +77,6 @@
     "shareCodeHint": "Opens your phone's share menu",
     "shareMessage": "Join my shopping list \"{{name}}\" with the code {{code}}",
     "shareFailed": "Couldn't share the code.",
-    "leave": "Leave this list",
-    "leaveHint": "Goes back to the home screen on this phone",
     "realtime": {
       "connecting": "Connecting to see changes as they happen…",
       "disconnected": "Other people's changes aren't coming through on their own. Pull down to refresh."
@@ -95,6 +93,27 @@
       "andMore_one": "{{names}} and one more person are viewing the list",
       "andMore_other": "{{names}} and {{count}} more people are viewing the list"
     }
+  },
+  "lists": {
+    "title": "Your lists",
+    "switcher": "List {{name}}",
+    "switcherHint": "Opens your lists so you can switch between them",
+    "option": "{{name}}, you are {{username}}",
+    "optionHint": "Opens this list",
+    "as": "As {{username}}",
+    "openNow": "Open",
+    "create": "Create another list",
+    "createHint": "Opens the form to create a new list",
+    "join": "Join with a code",
+    "joinHint": "Opens the form to join someone else's list",
+    "close": "Close",
+    "loading": "Loading your lists…",
+    "loadError": "Your lists could not be loaded.",
+    "onlyOne": "For now this is your only list.",
+    "switched": "You are now in {{name}}",
+    "removed": "You are no longer in “{{name}}”.",
+    "removedAndMoved": "You are no longer in “{{name}}”. We moved you to “{{next}}”.",
+    "backToYours": "Go back to one of your lists"
   },
   "items": {
     "add": {

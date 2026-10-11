@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useActiveCommunityStore, useCommunityMembers } from '@/features/community'
 import { useSessionStore } from '@/features/session'
 import { Button } from '@/shared/ui/Button'
+import { tabularNums } from '@/theme'
 
 import { formatCents } from '../../domain/money'
 import { dayOf, timeOf } from '../../domain/movements'
@@ -103,7 +104,10 @@ function ExpenseDetail({ communityId, expenseId }: { communityId: string; expens
           >
             {expense.description}
           </Text>
-          <Text className="text-4xl font-bold text-content dark:text-content-dark">
+          <Text
+            style={tabularNums}
+            className="text-4xl font-bold text-content dark:text-content-dark"
+          >
             {formatCents(expense.amountCents, expense.currency)}
           </Text>
         </View>
@@ -153,7 +157,10 @@ function ExpenseDetail({ communityId, expenseId }: { communityId: string; expens
               >
                 {nameOf(share.memberId)}
               </Text>
-              <Text className="text-base font-semibold text-content dark:text-content-dark">
+              <Text
+                style={tabularNums}
+                className="text-base font-semibold text-content dark:text-content-dark"
+              >
                 {formatCents(share.shareCents, expense.currency)}
               </Text>
             </View>

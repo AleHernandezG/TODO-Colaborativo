@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
 import type { CommunityMember } from '@/features/community'
-import { minTouchTarget } from '@/theme'
+import { minTouchTarget, tabularNums } from '@/theme'
 
 import { formatCents } from '../../domain/money'
 import type { Movement } from '../../domain/movements'
@@ -47,7 +47,10 @@ export function MovementRow({ movement, members, onOpen, onDelete }: Props) {
           </Text>
         </View>
 
-        <Text className="text-base font-bold text-success dark:text-success-dark">
+        <Text
+          style={tabularNums}
+          className="text-base font-bold text-success dark:text-success-dark"
+        >
           {formatCents(settlement.amountCents)}
         </Text>
 
@@ -58,7 +61,7 @@ export function MovementRow({ movement, members, onOpen, onDelete }: Props) {
             accessibilityLabel={t('expenses.deleteSettlement')}
             accessibilityHint={t('expenses.deleteExpenseHint')}
             style={{ minWidth: minTouchTarget, minHeight: minTouchTarget }}
-            className="items-center justify-center rounded-md active:opacity-60"
+            className="items-center justify-center rounded-md active:opacity-70"
           >
             <Text className="text-lg text-danger dark:text-danger-dark">✕</Text>
           </Pressable>
@@ -97,7 +100,7 @@ export function MovementRow({ movement, members, onOpen, onDelete }: Props) {
         </Text>
       </View>
 
-      <Text className="text-base font-bold text-content dark:text-content-dark">
+      <Text style={tabularNums} className="text-base font-bold text-content dark:text-content-dark">
         {formatCents(expense.amountCents)}
       </Text>
 

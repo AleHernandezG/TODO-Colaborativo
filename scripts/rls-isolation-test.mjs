@@ -184,6 +184,17 @@ async function expireJoinCode(communityId) {
   return res.status
 }
 
+function authUserId(token) {
+  return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8')).sub
+}
+
+function myListsPath(token) {
+  return (
+    'members?select=username,communities(id,name,join_code)' +
+    `&auth_user_id=eq.${authUserId(token)}&removed_at=is.null`
+  )
+}
+
 async function cleanup(communityIds, imagePaths) {
   if (!secretKey) {
     console.log('\nSin SUPABASE_SECRET_KEY: las comunidades de prueba se quedan en la base.')
@@ -534,6 +545,69 @@ async function main() {
     'Un miembro se puede recuperar desde otro dispositivo con el PIN correcto',
     reclaimed.body?.[0]?.status === 'ok' && reclaimed.body?.[0]?.community_id === communityB,
     reclaimed.body?.[0]?.status ?? `HTTP ${reclaimed.status}`,
+  )
+
+  const tokenMulti = await signInAnonymously()
+  const tokenHost = await signInAnonymously()
+  const multiOwn = await rpc(tokenMulti, 'create_community', {
+    p_name: `rls-test-multi-${stamp}`,
+    p_username: 'marta',
+    p_pin: '1234',
+  })
+  const hostOwn = await rpc(tokenHost, 'create_community', {
+    p_name: `rls-test-host-${stamp}`,
+    p_username: 'hugo',
+    p_pin: '1234',
+  })
+  const communityMulti = multiOwn.body?.[0]?.community_id ?? null
+  const communityHost = hostOwn.body?.[0]?.community_id ?? null
+  const multiJoin = await rpc(tokenMulti, 'join_community', {
+    p_join_code: hostOwn.body?.[0]?.join_code,
+    p_username: 'marta-invitada',
+    p_pin: '1234',
+  })
+  check(
+    'Una misma sesión puede estar en dos listas a la vez',
+    multiJoin.body?.[0]?.status === 'ok',
+    multiJoin.body?.[0]?.status ?? `HTTP ${multiJoin.status}`,
+  )
+
+  const multiLists = await select(tokenMulti, myListsPath(tokenMulti))
+  const multiSeen = (multiLists.body ?? [])
+    .map((row) => `${row.communities?.id}:${row.username}:${Boolean(row.communities?.join_code)}`)
+    .sort()
+  const multiExpected = [
+    `${communityMulti}:marta:true`,
+    `${communityHost}:marta-invitada:true`,
+  ].sort()
+  check(
+    'Mis listas trae las dos, cada una con su nombre de usuario y su código',
+    multiLists.status === 200 && JSON.stringify(multiSeen) === JSON.stringify(multiExpected),
+    `HTTP ${multiLists.status}, ${multiSeen.length} filas`,
+  )
+
+  const hostLists = await select(tokenHost, myListsPath(tokenHost))
+  check(
+    'Mis listas no incluye la de un compañero en la que yo no estoy',
+    hostLists.status === 200 &&
+      hostLists.body.length === 1 &&
+      hostLists.body[0].communities?.id === communityHost,
+    `HTTP ${hostLists.status}, ${hostLists.body?.length} filas`,
+  )
+
+  const peekFromPeer = await select(tokenHost, myListsPath(tokenMulti))
+  check(
+    'Un compañero de una lista no ve mis otras listas',
+    peekFromPeer.status === 200 &&
+      peekFromPeer.body.every((row) => row.communities?.id === communityHost),
+    `HTTP ${peekFromPeer.status}, ${peekFromPeer.body?.length} filas`,
+  )
+
+  const peekFromStranger = await select(tokenA, myListsPath(tokenMulti))
+  check(
+    'Un desconocido no ve ninguna de mis listas',
+    peekFromStranger.status === 200 && peekFromStranger.body.length === 0,
+    `HTTP ${peekFromStranger.status}, ${peekFromStranger.body?.length} filas`,
   )
 
   let rateLimited = null
@@ -940,10 +1014,10 @@ async function main() {
     'comida vaciada',
   )
 
-  await cleanup([communityA, communityB, communityLegacy].filter(Boolean), [
-    imagePathB,
-    imagePathIntruso,
-  ])
+  await cleanup(
+    [communityA, communityB, communityLegacy, communityMulti, communityHost].filter(Boolean),
+    [imagePathB, imagePathIntruso],
+  )
 
   const failed = results.filter((r) => !r.passed)
   console.log(`\n${results.length - failed.length}/${results.length} comprobaciones correctas`)

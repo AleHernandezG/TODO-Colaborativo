@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
+import { tabularNums } from '@/theme'
+
 import type { MemberBalance } from '../../domain/expense'
 import { formatCents } from '../../domain/money'
 
@@ -47,7 +49,9 @@ export function BalanceSummaryCard({ myBalance, totalSpentCents }: Props) {
             <Text className={`text-2xl font-bold ${tone}`}>{caption}</Text>
           ) : (
             <>
-              <Text className={`text-4xl font-bold ${tone}`}>{amount}</Text>
+              <Text style={tabularNums} className={`text-4xl font-bold ${tone}`}>
+                {amount}
+              </Text>
               <Text className={`text-base font-medium ${tone}`}>{caption}</Text>
             </>
           )}
@@ -58,7 +62,10 @@ export function BalanceSummaryCard({ myBalance, totalSpentCents }: Props) {
 
       <View className="flex-row items-center justify-between">
         <Text className="text-sm text-muted dark:text-muted-dark">{t('expenses.totalSpent')}</Text>
-        <Text className="text-sm font-semibold text-content dark:text-content-dark">
+        <Text
+          style={tabularNums}
+          className="text-sm font-semibold text-content dark:text-content-dark"
+        >
           {formatCents(totalSpentCents)}
         </Text>
       </View>

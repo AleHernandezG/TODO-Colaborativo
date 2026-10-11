@@ -21,6 +21,7 @@ const rpc = supabase.rpc as jest.Mock
 const from = supabase.from as jest.Mock
 const channel = supabase.channel as jest.Mock
 const removeChannel = supabase.removeChannel as jest.Mock
+const getSession = supabase.auth.getSession as jest.Mock
 const netInfoFetch = NetInfo.fetch as jest.Mock
 
 function mockCommunityRow(row: unknown, error: unknown = null) {
@@ -55,6 +56,11 @@ describe('sin conexión', () => {
 
   it('no llega a leer el código de invitación', async () => {
     await expect(supabaseCommunityRepository.getJoinCode('c1')).rejects.toBeInstanceOf(OfflineError)
+    expect(from).not.toHaveBeenCalled()
+  })
+
+  it('no llega a leer mis listas', async () => {
+    await expect(supabaseCommunityRepository.listMine()).rejects.toBeInstanceOf(OfflineError)
     expect(from).not.toHaveBeenCalled()
   })
 
@@ -175,6 +181,71 @@ describe('join', () => {
       supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana', pin: '1234' }),
     ).resolves.toEqual({ status: 'expired_join_code' })
     expect(from).not.toHaveBeenCalled()
+  })
+})
+
+describe('listMine', () => {
+  function mockMyRows(rows: unknown, error: unknown = null) {
+    const isMock = jest.fn().mockResolvedValue({ data: rows, error })
+    const eqMock = jest.fn().mockReturnValue({ is: isMock })
+    const selectMock = jest.fn().mockReturnValue({ eq: eqMock })
+    from.mockReturnValue({ select: selectMock })
+    return { selectMock, eqMock, isMock }
+  }
+
+  it('devuelve una pertenencia por cada lista en la que estoy', async () => {
+    const { selectMock } = mockMyRows([
+      { username: 'Ana', communities: { id: 'c1', name: 'Casa', join_code: 'PAN-42XK' } },
+      { username: 'Anita', communities: { id: 'c2', name: 'Piso', join_code: 'SAL-77QR' } },
+    ])
+
+    await expect(supabaseCommunityRepository.listMine()).resolves.toEqual([
+      { community: { id: 'c1', name: 'Casa', joinCode: 'PAN-42XK' }, username: 'Ana' },
+      { community: { id: 'c2', name: 'Piso', joinCode: 'SAL-77QR' }, username: 'Anita' },
+    ])
+    expect(from).toHaveBeenCalledWith('members')
+    expect(selectMock).toHaveBeenCalledWith('username, communities(id, name, join_code)')
+  })
+
+  it('pide solo mis filas y deja fuera las listas de las que me quitaron', async () => {
+    const { eqMock, isMock } = mockMyRows([])
+
+    await supabaseCommunityRepository.listMine()
+
+    expect(eqMock).toHaveBeenCalledWith('auth_user_id', 'u1')
+    expect(isMock).toHaveBeenCalledWith('removed_at', null)
+  })
+
+  it('devuelve una lista vacía si no estoy en ninguna', async () => {
+    mockMyRows(null)
+
+    await expect(supabaseCommunityRepository.listMine()).resolves.toEqual([])
+  })
+
+  it('falla sin preguntar al servidor si no hay sesión', async () => {
+    getSession.mockResolvedValueOnce({ data: { session: null } })
+
+    await expect(supabaseCommunityRepository.listMine()).rejects.toMatchObject({
+      operation: 'members.selectMine',
+    })
+    expect(from).not.toHaveBeenCalled()
+  })
+
+  it('envuelve el error del servidor con su operación y su código', async () => {
+    mockMyRows(null, { message: 'permission denied', code: '42501' })
+
+    await expect(supabaseCommunityRepository.listMine()).rejects.toMatchObject({
+      operation: 'members.selectMine',
+      code: '42501',
+    })
+  })
+
+  it('lanza si una fila llega sin su comunidad en vez de inventarse una lista', async () => {
+    mockMyRows([{ username: 'Ana', communities: null }])
+
+    await expect(supabaseCommunityRepository.listMine()).rejects.toMatchObject({
+      operation: 'members.selectMine',
+    })
   })
 })
 

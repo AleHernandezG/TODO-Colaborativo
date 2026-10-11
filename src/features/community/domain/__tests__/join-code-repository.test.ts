@@ -6,6 +6,7 @@ function fakeRepository(): jest.Mocked<CommunityRepository> {
   return {
     create: jest.fn(),
     join: jest.fn(),
+    listMine: jest.fn(),
     getJoinCode: jest
       .fn()
       .mockResolvedValue({ code: 'PAN-42XK', expiresAt: '2026-08-12T10:00:00Z' }),

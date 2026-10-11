@@ -7,8 +7,8 @@
 **Una lista, varias personas, en tiempo real.**
 Se entra con un código de invitación y un nombre. Sin registro y sin contraseñas.
 
-![Expo SDK 54](https://img.shields.io/badge/Expo_SDK-54-000020?style=flat-square&logo=expo&logoColor=white)
-![React Native 0.81](https://img.shields.io/badge/React_Native-0.81-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![Expo SDK 57](https://img.shields.io/badge/Expo_SDK-57-000020?style=flat-square&logo=expo&logoColor=white)
+![React Native 0.86](https://img.shields.io/badge/React_Native-0.86-20232A?style=flat-square&logo=react&logoColor=61DAFB)
 ![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres_·_Realtime_·_RLS-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
 
@@ -62,12 +62,12 @@ todavía no existe.
 ## Arranque
 
 Necesitas Node 22+, un `.env` con las claves de Supabase (los nombres están en `.env.example`) y
-un móvil con **Expo Go 54**. La versión del SDK está fijada: Expo Go solo abre proyectos de su
-misma major.
+un móvil con un **Expo Go que admita SDK 57** o con el APK de `preview` instalado
+(`docs/guias/despliegue.md`). Expo Go solo abre proyectos de su misma major.
 
 ```bash
 npm install
-npx expo start            # QR para Expo Go
+npx expo start            # QR para el development build; --go para Expo Go
 npx expo start --tunnel   # si el móvil y el PC no comparten Wi-Fi
 ```
 
@@ -77,8 +77,8 @@ npx expo start --tunnel   # si el móvil y el PC no comparten Wi-Fi
 | ------------------------------------ | ------------------------------------------------------------------- |
 | `npm run lint`                       | ESLint sobre `src/`                                                 |
 | `npm run typecheck`                  | `tsc --noEmit`, TypeScript en modo estricto                         |
-| `npm test`                           | Jest. 58 suites, 408 tests verdes (cobertura > 96%)                 |
-| `npm run test:rls`                   | Aislamiento entre comunidades contra el proyecto real. Da **65/65** |
+| `npm test`                           | Jest. 66 suites, 483 tests verdes (cobertura de dominio y datos: 91 %) |
+| `npm run test:rls`                   | Aislamiento entre comunidades contra el proyecto real. Da **70/70** |
 | `npm run test:realtime`              | Eventos, filtro por comunidad y presencia. Da **18/18**             |
 | `npm run test:e2e`                   | Maestro sobre el APK instalado. Necesita `adb` y el CLI de Maestro  |
 | `npm run users`                      | Cuántos usuarios anónimos hay y cuáles quedaron huérfanos           |
@@ -117,7 +117,7 @@ Ninguna decisión vive solo en la cabeza de alguien. Estas son las que más cond
 | ------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
 | [0002](docs/adr/ADR-0002-modelo-de-sesion-y-rls.md)                 | Sesión anónima y RLS por función `security definer` | Sin cuentas pero con aislamiento real. Tiene dos trampas contadas        |
 | [0004](docs/adr/ADR-0004-libreria-de-ui.md)                         | NativeWind propio, Paper solo para overlays         | El aspecto es nuestro; de la librería solo lo accesible que cuesta       |
-| [0008](docs/adr/ADR-0008-persistencia-local-de-la-cache.md)         | AsyncStorage y no MMKV                              | MMKV es nativo y no arranca en Expo Go, que es como se prueba esto       |
+| [0008](docs/adr/ADR-0008-persistencia-local-de-la-cache.md)         | AsyncStorage y no MMKV                              | Decisión de cuando se probaba en Expo Go; vigente hasta un ADR nuevo     |
 | [0009](docs/adr/ADR-0009-cola-de-mutaciones-offline.md)             | Cola con `setMutationDefaults`                      | Una función no se serializa. Al rehidratar solo quedan variables         |
 | [0010](docs/adr/ADR-0010-id-del-articulo-generado-en-el-cliente.md) | El id del artículo lo pone el móvil                 | Un alta offline y su edición posterior tienen que apuntar al mismo sitio |
 | [0011](docs/adr/ADR-0011-caducidad-y-rotacion-del-join-code.md)     | El código de invitación caduca y se puede rotar     | Es el único secreto que protege una lista                                |
@@ -129,7 +129,7 @@ Ninguna decisión vive solo en la cabeza de alguien. Estas son las que más cond
 | [0021](docs/adr/ADR-0021-modulo-de-recetas-y-volcado-a-lista.md)   | Módulo de recetas y volcado a lista de compra       | Planificación culinaria, catálogo y volcado en bloque con alerta push    |
 | [0022](docs/adr/ADR-0022-planificador-semanal-de-menus-y-consolidacion.md) | Planificador semanal de menús y consolidación | Menú semanal, suma de ingredientes acumulados y volcado por lotes       |
 
-Los 22 ADRs, con su estado, en [`docs/README.md`](docs/README.md). Un ADR no se edita para cambiar de
+Los 25 ADR, con su estado, en [`docs/README.md`](docs/README.md). Un ADR no se edita para cambiar de
 opinión: se escribe uno nuevo que supersede al viejo.
 
 ## Accesibilidad
@@ -154,7 +154,9 @@ se comprueba a mano con TalkBack. La última pasada fue el 2026-08-16 y salió l
 
 ## Estado
 
-**Fases 0 a 12 completadas · Requisitos funcionales (RF-1 a RF-15), observabilidad, recetas y menús.**
+**Expo SDK 57, versión 1.3.1 · Fases 0 a 14 con código y tests · Fase 15 en curso.** Las fases 7 a
+15 no tienen todavía prueba registrada en un Android real; qué falta, en
+[`docs/auditoria-2026-10-11.md`](docs/auditoria-2026-10-11.md).
 
 - **MVP (Fases 0 a 4):** cerrado, probado con dos móviles reales y 100% operativo.
 - **Fase 5 (Endurecimiento):** sesión protegida, TalkBack verificado y expiración de códigos.
@@ -165,6 +167,9 @@ se comprueba a mano con TalkBack. La última pasada fue el 2026-08-16 y salió l
 - **Fase 10 (Notificaciones Push):** alertas push colaborativas con `expo-notifications`, RPCs con filtro anti auto-notificación y RLS.
 - **Fase 11 (Recetas Compartidas):** creación y edición de recetas con ingredientes de catálogo, escalador de comensales y volcado en bloque a la lista (RF-14).
 - **Fase 12 (Planificador Semanal de Menús):** comidas y cenas por día de la semana, consolidación agregada de ingredientes y volcado a lista en un toque (RF-15).
+- **Fase 13 (Foto en el alta):** foto opcional al añadir un artículo y portada en recetas.
+- **Fase 14 (Modo supermercado):** agrupación por categorías y pasillos (RF-16).
+- **Fase 15 (Varias listas a la vez):** selector de listas en el título; código y tests hechos, falta la prueba en dispositivo.
 - **Auditoría final (§11) y Checklist (§16):** 100% completado (arranque en frío < 3s, virtualización fluida con 200 ítems y 51 dependencias auditadas sin librerías obsoletas).
 
 Se distribuye como APK con EAS Build y se parchea por aire con `eas update`.

@@ -6,7 +6,8 @@ código de invitación + nombre de usuario (sin cuentas, versión beta).
 
 > Especificación completa (léela antes de decisiones grandes):
 > `docs/especificacion-y-roadmap.md`
-> Trabaja SIEMPRE por fases (0 → 4). No saltes de fase sin cerrar la anterior.
+> Trabaja SIEMPRE por fases. El MVP fueron las fases 0 → 4; la fase en curso está más abajo, en
+> «Flujo de trabajo». No saltes de fase sin cerrar la anterior.
 
 ---
 
@@ -19,7 +20,8 @@ funcionar, pero no manda.
 En la práctica:
 
 - Verifica en Android. Un incremento no está terminado porque compile: está terminado cuando se
-  ha visto en el Android real vía Expo Go.
+  ha visto en el Android real, con el APK del perfil `preview` o con Expo Go si el del móvil
+  admite el SDK del proyecto.
 - `npx expo export --platform android` es la comprobación de build por defecto.
 - Ante una decisión que beneficie a una plataforma y perjudique a la otra, gana Android. Si el
   coste para iOS es alto, dímelo antes de aplicarla.
@@ -29,15 +31,17 @@ En la práctica:
 ## Stack
 
 - **Expo (React Native)** + **Expo Router** (navegación por ficheros) + **TypeScript (strict)**.
-  - **SDK fijado en 54. No lo subas.** El Expo Go del Android de pruebas es cliente **54.0.8** y solo admite **SDK 54**, y ese dispositivo no puede actualizar Expo Go desde el Play Store. Un proyecto en SDK 55+ no arranca ahí: da "Project is incompatible with this version of Expo Go" y no hay forma de sortearlo sin development build.
-  - Antes de tocar la versión del SDK, **pregunta qué SDK admite el Expo Go del dispositivo real**. No lo deduzcas de lo que devuelva `create-expo-app@latest`, que siempre da la última. Se comprueba abriendo Expo Go: muestra "Client version" y "Supported SDK".
-  - **La skill `upgrading-expo` del plugin `expo` no se usa en este repo.** El plugin está habilitado por sus skills de despliegue y EAS, pero trae una que se autocarga en cuanto alguien menciona subir de versión y cuya única recomendación posible es lo contrario de la regla de arriba. Si se carga sola, ignórala y dilo. Subir el SDK es una decisión del usuario con el móvil de pruebas delante, nunca una sugerencia de una skill genérica.
+  - **SDK 57 desde octubre de 2026** (RN 0.86, React 19.2). Estuvo fijado en 54 mientras el Expo Go del Android de pruebas solo admitía ese; se subió por decisión del usuario cuando se actualizaron los dispositivos. **No lo vuelvas a subir por tu cuenta.**
+  - Subir el SDK es un cambio nativo: lleva **`version` nueva en `app.json` y build nuevo**. El `runtimeVersion` sale de esa `version`, así que un `eas update` con el SDK cambiado y la `version` igual se lo traga el APK viejo y revienta. La 1.2.0 es el último APK de SDK 54; la 1.3.0 fue el primero de SDK 57 y la 1.3.1 lo sustituye con los parches de Expo al día. Lo mismo vale para `npx expo install --fix`: toca módulos nativos y puede añadir config plugins a `app.json`, así que también es `version` nueva y build. Detalle en `docs/guias/despliegue.md` (apartado 5).
+  - Antes de tocar la versión del SDK, **pregunta qué SDK admiten los dispositivos de prueba**. No lo deduzcas de lo que devuelva `create-expo-app@latest`, que siempre da la última. En Expo Go se comprueba al abrirlo: muestra "Client version" y "Supported SDK".
+  - **`package-lock.json` se commitea en el mismo cambio que `package.json`.** EAS instala con `npm ci`, que falla en cuanto no cuadran; el primer build de la 1.3.0 murió por eso. Se comprueba con `npm ci --dry-run`.
+  - **La skill `upgrading-expo` del plugin `expo` no se usa en este repo.** El plugin está habilitado por sus skills de despliegue y EAS, pero trae una que se autocarga en cuanto alguien menciona subir de versión y que recomienda subir siempre a la última, que es justo lo que aquí no se hace sin preguntar. Si se carga sola, ignórala y dilo. Subir el SDK es una decisión del usuario con el móvil de pruebas delante, nunca una sugerencia de una skill genérica.
 - **Estado servidor:** TanStack Query (caché, refetch, mutaciones, optimistic updates).
 - **Estado cliente:** Zustand (sesión local, tema, UI). **Nunca dupliques el estado del servidor en Zustand.**
 - **Backend (BaaS):** Supabase → Postgres + Realtime + Storage + RLS.
 - **UI:** NativeWind (Tailwind para RN) + componentes propios en `src/shared/ui`. Tokens de diseño en `src/theme`.
   - **React Native Paper solo para `Snackbar`, `Dialog` y `Portal`.** Nada más. El aspecto de la app es nuestro; Paper aporta las superposiciones accesibles, que son las que cuesta hacer bien a mano. Un import de `react-native-paper` fuera de `src/shared/ui` es un error de revisión. Razonado en [ADR-0004](docs/adr/ADR-0004-libreria-de-ui.md).
-- **Persistencia local:** `@react-native-async-storage/async-storage`, para la caché de Query y para los stores persistidos de Zustand. **No react-native-mmkv**: es un módulo nativo de terceros y no arranca en Expo Go, que es como se prueba este proyecto. Razonado en [ADR-0008](docs/adr/ADR-0008-persistencia-local-de-la-cache.md). Como es asíncrono, **nada que dependa de un valor persistido puede decidir en el primer render**: hay que esperar a la hidratación. **Conectividad:** @react-native-community/netinfo.
+- **Persistencia local:** `@react-native-async-storage/async-storage`, para la caché de Query y para los stores persistidos de Zustand. **No react-native-mmkv**: es la decisión de [ADR-0008](docs/adr/ADR-0008-persistencia-local-de-la-cache.md), tomada cuando el proyecto se probaba en Expo Go, donde un módulo nativo de terceros no arranca. Ese motivo ya no aplica (se prueba con APK propio), pero la regla sigue hasta que un ADR nuevo la supersede. Como es asíncrono, **nada que dependa de un valor persistido puede decidir en el primer render**: hay que esperar a la hidratación. **Conectividad:** @react-native-community/netinfo.
 - **Imágenes:** expo-image, expo-image-picker, expo-image-manipulator (comprimir antes de subir).
 - **Sesión:** `@react-native-async-storage/async-storage` como almacén de la sesión de Supabase. **No expo-secure-store**: tiene un límite de ~2048 bytes por valor y la sesión de Supabase (access + refresh token) lo supera, así que falla de forma intermitente y difícil de diagnosticar. Ver `docs/phases/fase-0.md`.
 - **i18n** desde el inicio (ES por defecto, preparado para EN). Nada de textos hardcodeados.
@@ -48,7 +52,7 @@ En la práctica:
 
 ```
 src/
-├── app/                      # Rutas (Expo Router): landing, join/[code], list
+├── app/                      # Rutas (Expo Router): index, create, join, list, members, shopping-mode, expenses/, recipes/, meal-planner/
 ├── features/                 # Una carpeta por feature, autocontenida
 │   └── <feature>/
 │       ├── domain/           # Entidades + casos de uso. SIN React ni Supabase.
@@ -61,13 +65,15 @@ src/
 └── theme/                    # tokens: color, spacing, tipografía, radios
 ```
 
-Features previstas: `community`, `items`, `session`.
+Features: `catalog`, `community`, `expenses`, `items`, `meal-planner`, `notifications`, `recipes`
+y `session`. La lista que manda es el array `features` de `eslint.config.js`.
 
 Y el reparto de la raíz:
 
 ```
 README.md          qué es esto y cómo arrancarlo
 CLAUDE.md          este fichero: las reglas duras
+DESIGN.md          cómo se ve la app: papel de cada color, tamaños, radios y qué no se hace
 .env.example       nombres de variables, sin valores
 docs/              ver abajo
 scripts/           herramientas de CLI/CI, fuera del bundle de la app
@@ -142,6 +148,22 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
     puede adivinar (el `join_code` de `create_community`). Ahí el botón se queda en carga y se
     espera. Si dudas, la mutación sí puede ser optimista. Razonado en `docs/phases/fase-1.md`.
 
+### Varias listas por usuario
+
+- **A qué listas pertenezco es server state**: la query `['my-communities']`
+  (`useMyCommunities()`). **Cuál estoy mirando es client state**: `useActiveCommunityStore`.
+  El store guarda la `membership` entera para pintar sin red y `useActiveMembershipSync()` lo
+  corrige con cada respuesta del servidor. No añadas más datos de la comunidad a ese store.
+- **Al crear o unirse se entra con `useEnterCommunity()`, nunca con `setMembership` directo.**
+  Mete la lista en la caché antes de activarla; sin eso, una carga en vuelo expulsa al usuario de
+  la lista que acaba de crear.
+- **No hay botón de "salir de la lista".** Se cambia desde el título (`CommunitySwitcher`). El
+  botón antiguo solo borraba el dato local y la persona seguía siendo miembro en el servidor.
+- **Una notificación push lleva `communityId` en sus datos**, que añade `notifyCommunity`. No lo
+  quites: es lo que permite abrir la lista correcta al tocarla.
+
+Razonado en [ADR-0025](docs/adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md).
+
 ## Reglas de errores
 
 - **`data/` no escribe mensajes para el usuario.** Todo error de Supabase se envuelve con
@@ -164,6 +186,10 @@ Razonado en [ADR-0016](docs/adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-u
 - Cada control nuevo: `accessibilityLabel` + `accessibilityRole`, **contraste AA**, área táctil **≥ 44×44 pt**.
 - Estados no dependientes solo del color (icono + texto para "comprado").
 - Soporta **modo claro/oscuro** desde los tokens y respeta el tamaño de fuente del sistema.
+- **Antes de pintar una pantalla o tocar el aspecto de una, lee [`DESIGN.md`](DESIGN.md).** Dice qué
+  colores, tamaños y radios existen y para qué es cada uno; lo que no esté ahí no se usa sin
+  añadirlo antes a `src/theme/tokens.js`. El cómo (animación, respuesta al pulsar, alineación) está
+  en la skill `expo-stack`, sección "Pulido visual y movimiento".
 
 ## Reglas de datos y sincronización
 
@@ -333,7 +359,12 @@ descartó y a costa de qué) y **qué implica** para quien toque eso después.
 Si una decisión no encaja en ninguna, va en `docs/phases/fase-N.md` bajo "Decisiones sobre la
 marcha". Nunca se queda sin escribir.
 
-**Fase actual: 6 (catálogo y reparto de gastos), abierta el 2026-08-07.** El MVP (fases 0 → 4) está
+**Fase en curso: 15 (varias listas a la vez), abierta el 2026-10-05.** Código, tests, RLS 70/70 y
+export hechos; falta recorrer el guion en el Android real. Detalle en `docs/phases/fase-15.md`.
+Los párrafos de abajo cuentan las fases 5 y 6 tal como se escribieron entonces; las fases 7 a 14
+están en `docs/phases/` y en `docs/README.md`.
+
+**Fase 6 (catálogo y reparto de gastos), abierta el 2026-08-07.** El MVP (fases 0 → 4) está
 cerrado y probado en dispositivo con dos móviles; su diario está en `docs/phases/`. Las dos últimas
 se cerraron el 2026-08-05 de una sentada; qué se probó y con qué resultado, en
 `docs/guias/prueba-de-cierre-en-dispositivo.md`.
@@ -360,8 +391,8 @@ otro. Los dos JSON viven en `src/shared/lib/i18n/` y hay un test que falla si se
 Un `throw new Error` sigue llevando su mensaje en español porque no se pinta nunca: si uno acaba en
 pantalla, el fallo es que llegue. Detalle en el incremento 3 de `docs/phases/fase-5.md`.
 
-La versión que corre en el móvil se ve al pie de la pantalla de lista (`v1.2.0 · base` si es el
-bundle del APK, `v1.2.0 · <id>` si es un update por aire). Compruébala ahí antes de dar por
+La versión que corre en el móvil se ve al pie de la pantalla de lista (`v1.3.1 · base` si es el
+bundle del APK, `v1.3.1 · <id>` si es un update por aire). Compruébala ahí antes de dar por
 hecho que un cambio llegó al dispositivo.
 
 RF-8 (PDF), RF-9 (reparto de gastos) y RF-10 (catálogo de productos de supermercado) son
@@ -432,7 +463,8 @@ fuente, en `docs/guias/fuentes-de-datos-del-catalogo.md`.
 
 ```bash
 # Desarrollo
-npx expo start                 # QR para Expo Go; 'a' = Android emulador, 'i' = iOS Simulator (Mac)
+npx expo start                 # QR para el development build (expo-dev-client está instalado)
+npx expo start --go            # fuerza Expo Go; solo sirve si el del móvil admite SDK 57
 npx expo start --tunnel        # si el móvil y el PC no están en la misma Wi-Fi
 
 # Calidad
@@ -451,12 +483,13 @@ npx expo start
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
 # Aislamiento entre comunidades (RLS + Storage + rotación del código), lectura y búsqueda del
-# catálogo (la única tabla compartida) y el alta idempotente de gastos. Debe dar 39/39
-# (38/39 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
+# catálogo (la única tabla compartida), el alta idempotente de gastos y que una sesión en varias
+# listas solo ve las suyas. Debe dar 70/70
+# (69/70 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
 npm run test:rls
 
-# Realtime: eventos de artículos y de gastos, filtro por comunidad, aislamiento y presencia.
-# Debe dar 15/15
+# Realtime: eventos de artículos, de gastos y de miembros, filtro por comunidad, aislamiento y
+# presencia. Debe dar 18/18
 npm run test:realtime
 
 # Fuentes del catálogo (RF-10): cuántos artículos reales encuentra cada una.

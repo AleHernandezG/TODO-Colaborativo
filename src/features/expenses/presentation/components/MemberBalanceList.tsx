@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
 import type { CommunityMember } from '@/features/community'
+import { tabularNums } from '@/theme'
 
 import type { MemberBalance } from '../../domain/expense'
 import { formatCents } from '../../domain/money'
@@ -69,7 +70,7 @@ export function MemberBalanceList({ balances, members }: Props) {
             </View>
 
             <View className="items-end">
-              <Text className={`text-base font-bold ${tone}`}>
+              <Text style={tabularNums} className={`text-base font-bold ${tone}`}>
                 {mark} {net === 0 ? '' : formatCents(Math.abs(net))}
               </Text>
               <Text className={`text-xs ${tone}`}>{caption}</Text>
