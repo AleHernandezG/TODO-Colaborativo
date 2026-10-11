@@ -3,7 +3,16 @@ const expoConfig = require('eslint-config-expo/flat')
 const prettierConfig = require('eslint-config-prettier')
 const simpleImportSort = require('eslint-plugin-simple-import-sort')
 
-const features = ['catalog', 'community', 'expenses', 'items', 'session']
+const features = [
+  'catalog',
+  'community',
+  'expenses',
+  'items',
+  'meal-planner',
+  'notifications',
+  'recipes',
+  'session',
+]
 
 const domainPurity = {
   group: ['react', 'react-native', 'react-native-*', '@supabase/*', 'expo*', '**/data/**'],

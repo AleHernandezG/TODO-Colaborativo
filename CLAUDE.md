@@ -121,6 +121,10 @@ la raíz que van en mayúsculas por convención (`README.md`, `CLAUDE.md`).
   fusiona, así que **un bloque nuevo de `no-restricted-imports` apaga en silencio los de `domain/` y
   los de Paper**. Si tocas esa regla, repite los patrones que ya llevaba el fichero y comprueba con
   una sonda que los viejos siguen disparando. Razonado en `docs/phases/fase-6.md` (Tarea 2, E2).
+  - **Una feature nueva se añade al array `features` de ese fichero en el mismo cambio que crea su
+    carpeta.** El bucle solo genera bloques para lo que está en la lista: `meal-planner`,
+    `notifications` y `recipes` estuvieron fuera desde su creación hasta el 2026-10-11, sin pureza de
+    `domain/` ni puerta de `index.ts`, y el lint salía en verde. Detalle en `docs/phases/fase-14.md`.
 - **En la raíz de `presentation/` no va ningún fichero suelto.** Todo cuelga de `screens/`,
   `components/`, `hooks/`, `stores/` o `mutations/`, y **solo se crea la carpeta que tenga contenido**:
   nada de directorios vacíos por simetría. `screens/` es el cuerpo de una ruta, lo que renderiza un
@@ -249,18 +253,36 @@ es el resumen, ellas tienen el detalle con ejemplos de código.
 | `supabase-data` | Esquema, RLS, RPCs, Realtime, `db.types.ts`, claves                                 |
 | `qa-runner`     | Cerrar un incremento o una fase                                                     |
 
+## Agentes del proyecto
+
+En `.claude/agents/`, commiteados. Son nuestros: markdown del repo, sin código de terceros. Los tres
+**solo leen e informan**; quien arregla es la sesión principal, con el informe delante.
+
+| Agente               | Cuándo se lanza                                                          | Skill que precarga |
+| -------------------- | ------------------------------------------------------------------------ | ------------------ |
+| `architecture-guard` | Tras tocar `src/` y antes de cerrar un incremento                        | `expo-stack`       |
+| `migration-reviewer` | Con el diseño de un cambio de esquema y antes de cada `supabase db push` | `supabase-data`    |
+| `docs-drift-auditor` | Al cerrar una fase y antes de planificar la siguiente                    | —                  |
+
+Un agente no sustituye a `npm run lint`, `npm run test:rls` ni a la prueba en el Android real: ve
+lo que esos no ven (un `assertOnline()` que falta, un `drop function` olvidado, un documento que ya
+no describe el código), y nada más. Si una regla de este fichero cambia, se cambia también en el
+agente que la comprueba. Por qué estos tres y no una colección de fuera, en
+`docs/phases/fase-14.md`.
+
 ## Plugins de Claude Code
 
 Los que este proyecto necesita están declarados en `.claude/settings.json`, que **sí se commitea**
 (el que no se commitea es `settings.local.json`). Así viajan con el repo y no cargan contexto en
 otros proyectos de la máquina.
 
-| Plugin                                   | Para qué                                                    |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `supabase@claude-plugins-official`       | Buenas prácticas de Postgres y Supabase                     |
-| `expo@claude-plugins-official`           | Despliegue, EAS Update y CI de Expo                         |
-| `context7@claude-plugins-official`       | Docs de la versión exacta de cada librería, no de la última |
-| `typescript-lsp@claude-plugins-official` | Diagnósticos de tipos mientras se edita                     |
+| Plugin                                      | Para qué                                                                            |
+| ------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `supabase@claude-plugins-official`          | Buenas prácticas de Postgres y Supabase                                             |
+| `expo@claude-plugins-official`              | Despliegue, EAS Update y CI de Expo                                                 |
+| `context7@claude-plugins-official`          | Docs de la versión exacta de cada librería, no de la última                         |
+| `typescript-lsp@claude-plugins-official`    | Diagnósticos de tipos mientras se edita                                             |
+| `pr-review-toolkit@claude-plugins-official` | Agentes de revisión genéricos: fallos silenciosos, diseño de tipos, huecos de tests |
 
 **Solo plugins del marketplace oficial de Anthropic.** Un plugin de la comunidad es código de un
 tercero ejecutándose con tus permisos, igual que un paquete de npm pero sin que nadie lo audite.
@@ -287,6 +309,13 @@ Elegidos el 2026-08-05 mirando el catálogo entero; qué se descartó y por qué
    pierde, el repo no. Vale igual para las decisiones pequeñas que tomes sobre la marcha sin
    preguntarme.
 5. No inventes claves ni valores; pídemelos si faltan. No hagas commits de secretos.
+6. **El plan de una fase o funcionalidad nueva trae sus prompts.** Yo te cuento la idea; tú me
+   devuelves el plan partido en incrementos y, para cada uno, el prompt listo para pegar. Cada
+   prompt se sostiene solo (qué construir, en qué ficheros, qué regla o ADR aplica, cómo se
+   verifica) y **nombra al agente que toca**: `migration-reviewer` si hay SQL, `architecture-guard`
+   al terminar de tocar `src/`, `silent-failure-hunter` si hay manejo de errores, y
+   `docs-drift-auditor` en el prompt de cierre de la fase. Un agente que nadie invoca no revisa
+   nada. Pedido el 2026-10-11.
 
 ### Dónde va cada cosa
 

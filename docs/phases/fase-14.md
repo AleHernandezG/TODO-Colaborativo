@@ -90,3 +90,94 @@ El requisito RF-16 del roadmap y la especificación de funcionalidades establece
    - `npm run test:rls`: **65/65 comprobaciones correctas**.
 4. **Empaquetado Android de Producción**:
    - `npx expo export --platform android`: **Éxito (7.44 MB hbc bundle, 0 errores)**.
+
+---
+
+## Utillaje · Agentes del proyecto y `pr-review-toolkit` (2026-10-11)
+
+No es un incremento de la fase, es una decisión de herramienta, como la de plugins del 2026-08-05
+(`docs/phases/fase-5.md`, «Utillaje · Qué plugins de Claude Code usa el repo»). Se escribe aquí
+porque es el diario abierto más reciente.
+
+### Qué se cambió
+
+1. **`eslint.config.js` cubre las ocho features.** El array `features` tenía cinco; faltaban
+   `meal-planner`, `notifications` y `recipes`.
+2. **Tres agentes propios en `.claude/agents/`**: `architecture-guard`, `migration-reviewer` y
+   `docs-drift-auditor`. De solo lectura (`tools: Read, Grep, Glob, Bash`), los dos primeros con la
+   skill del área precargada por el campo `skills:` del frontmatter.
+3. **Plugin oficial `pr-review-toolkit`** declarado en `.claude/settings.json`, instalado con
+   `claude plugin install pr-review-toolkit@claude-plugins-official --scope project`.
+4. **Regla nueva en `CLAUDE.md`** (punto 6 del flujo de trabajo): el plan de cada fase trae los
+   prompts de cada incremento, y cada prompt nombra al agente que le toca.
+
+### Por qué
+
+**El hueco del lint.** El bucle de `eslint.config.js` genera un bloque de `no-restricted-imports`
+por cada feature de la lista y nada para las demás. Las tres features de las fases 10 a 12 se
+crearon sin añadirse, así que estuvieron sin la regla de pureza de `domain/` y sin la puerta de
+`index.ts`, con `npm run lint` en verde. Al añadirlas el lint siguió limpio: no había ninguna
+violación dentro, pero tampoco nada que la hubiera impedido. Sonda del 2026-10-11, con cinco
+ficheros temporales ya borrados: disparan `react` en `recipes/domain`, `@supabase/supabase-js` en
+`items/domain`, un import al interior de `items` desde `meal-planner`, y Paper más un import al
+interior de `recipes` desde un `.tsx` de `notifications`. Las reglas viejas siguen vivas y las
+nuevas existen.
+
+**Agentes propios y no una colección.** Se miraron las colecciones conocidas el 2026-10-11:
+`wshobson/agents` (40k estrellas), `VoltAgent/awesome-claude-code-subagents` (25k),
+`obra/superpowers` y `affaan-m/ECC`. Se descartan por dos motivos. El primero es la regla de «solo
+marketplace oficial», que sigue en pie. El segundo pesa más: son genéricos. El
+`expo-react-native-expert` de VoltAgent asume «SDK 52+» y config plugins, y no sabe nada del SDK
+fijado en 54, de `assertOnline()` ni de ningún ADR; un revisor así propone lo contrario de lo que
+este repo ha decidido por escrito. Un agente nuestro es un markdown commiteado que carga `CLAUDE.md`
+solo y precarga la skill del área, así que revisa contra las reglas de aquí. A cambio hay que
+mantenerlo: si cambia una regla, se cambia en el agente.
+
+**`docs-drift-auditor` cubre la deuda que dejó `sync-docs`.** `fase-5.md` la dejó anotada como
+abierta. Hoy es visible: `CLAUDE.md` dice «Fase actual: 6» y `test:rls` 39/39, con el repo en la
+Fase 14 y 65/65, y los diarios de las fases 7 a 14 tienen unas 90 líneas frente a las 600–1.600 de
+los anteriores. **Esa puesta al día no se ha hecho en este cambio**; es lo primero que hay que
+pedirle al agente.
+
+**`pr-review-toolkit` sí entra** porque es de Anthropic y está en el marketplace oficial. Aporta
+agentes que no dependen de conocer el proyecto: `silent-failure-hunter` (el fallo que ADR-0016
+existe para evitar), `type-design-analyzer` (las uniones discriminadas de los casos de uso) y
+`pr-test-analyzer`. Trae también un `code-reviewer` y un `code-simplifier` genéricos; para revisar
+contra las reglas del repo se usa `architecture-guard`, no esos.
+
+### Qué se miró y se dejó fuera
+
+- `feature-dev` (oficial): sus `code-explorer` y `code-architect` solapan con los agentes Explore y
+  Plan que ya trae Claude Code.
+- `commit-commands` (oficial): hace commits y push, lo contrario de «Quién publica en el repo».
+- `superpowers`: ahora está en el marketplace oficial, pero el motivo del 2026-08-05 no era ese, era
+  que trae su propio flujo de trabajo. Sigue fuera.
+- `security-guidance`, `hookify` (oficiales): el primero instala dependencias de Python al arrancar
+  cada sesión y `/security-review` ya viene de serie; el segundo genera hooks, y los de este repo se
+  escriben a mano en `scripts/`.
+- `callstack/agent-device` (4,9k estrellas, de Callstack): CLI por ADB con árbol de accesibilidad,
+  capturas y logs, que exporta a YAML de Maestro. Es el sustituto serio del
+  `android-emulator-qa-plugin` apuntado en `fase-5.md`. No es un plugin sino un paquete de npm, y no
+  se pudo confirmar que funcione con Expo Go ni en Windows. Queda apuntado, no instalado.
+- `callstackincubator/agent-skills`: su skill `react-native-testing` documenta la API de RNTL v14,
+  que es la que usa el repo. Fuera del marketplace oficial.
+
+### Pendiente de decidir
+
+- **Plugin `sentry`.** Se descartó el 2026-08-05 porque Sentry estaba fuera del alcance. Desde
+  ADR-0019 es una dependencia, así que el motivo caducó. No se ha instalado: es decisión del usuario.
+- **La skill del plugin `expo` que recomienda subir de SDK** se llama `expo-upgrade` en
+  `expo/skills` a fecha de hoy; `CLAUDE.md` la nombra como `upgrading-expo`. No se ha comprobado qué
+  nombre lleva la versión instalada.
+- **`src/theme/index.ts` importa `MD3DarkTheme` y `MD3LightTheme` de `react-native-paper`**, fuera
+  de `src/shared/ui`. La regla de lint de Paper solo cubre `.tsx`, así que no lo ve. Puede ser
+  legítimo (el tema de Paper se construye desde los tokens), pero entonces la excepción falta en
+  ADR-0004 o en `CLAUDE.md`.
+
+### Cómo probarlo
+
+1. `npm run lint` → limpio.
+2. Reiniciar Claude Code en el repo; `/agents` debe listar los tres del proyecto y los seis de
+   `pr-review-toolkit`.
+3. Pedir «usa docs-drift-auditor sobre CLAUDE.md»: debe devolver, como mínimo, la fase actual y el
+   recuento de `test:rls`.
