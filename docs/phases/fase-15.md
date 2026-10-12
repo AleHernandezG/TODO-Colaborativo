@@ -492,3 +492,192 @@ Republicado el 2026-10-12 por el usuario.
 **Falta la prueba en dispositivo.** Nadie ha abierto todavía un Android con el APK 1.2.0 después de
 republicar. Hasta que se haga el paso 2 de «Cómo verificarlo» y el pie enseñe `v1.2.0 · 01a12d00`,
 que el update arregla esos móviles sigue siendo una deducción.
+
+## 9. El PIN sale de `members`: migración A de ADR-0026 (2026-10-12)
+
+Incremento 3 del plan de `docs/auditoria-2026-10-11.md`. **Escrita y sin aplicar.**
+
+### Qué se hizo
+
+- [ADR-0026](../adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md): el diseño, sus
+  alternativas descartadas y lo que deja sin arreglar.
+- `supabase/migrations/20261012120000_member_secrets_and_identity_hardening.sql`: la migración A.
+- `scripts/rls-isolation-test.mjs`: de 70 a 93 comprobaciones. Dos de las antiguas exigían que el
+  hash fuera legible y ahora no lo piden; otra usaba un código de invitación después de dos
+  expulsiones y ahora lo relee, porque expulsar lo rota.
+- `docs/guias/ensayar-una-migracion.md`: cómo pasarla por un proyecto de prueba antes del real.
+- `.gitignore`: `.env.ensayo`, que llevará una secret key.
+- Skill `supabase-data`: el esquema real de `members`, `member_secrets`, los seis estados de
+  `join_community`, las funciones internas y la trampa del `lock table`.
+- `CLAUDE.md`: la regla de dónde vive el hash y el recuento nuevo de `test:rls`.
+
+### Cómo se llegó al diseño
+
+1. Primer diseño, una sola migración. `migration-reviewer` lo devolvió con cinco bloqueantes: tres
+   funciones que nombraban la columna a eliminar y habrían reventado en su primera llamada; adoptar
+   una fila teniendo ya otra acababa en un `23505`; el límite de intentos se saltaba con peticiones
+   en paralelo; el cálculo del riesgo de fuerza bruta partía de que el atacante pierde el código a
+   los 7 días, y un compañero de lista no lo pierde nunca; y un admin único sin PIN se quedaba sin
+   forma de recuperar su lista.
+2. Cuatro decisiones del usuario, el 2026-10-12: invalidar los PIN que han sido legibles; no
+   activar la regla de «fila sin PIN no reclamable» hasta que la app avise; añadir un tope de 20
+   fallos por miembro; y ensayar en un proyecto de prueba.
+3. Las dos primeras, aplicadas a la vez, se pisaban: invalidar con la regla vieja activa dejaría a
+   todos reclamables. Se partió en dos migraciones, A ahora y B con la pantalla. Está razonado al
+   principio de «Decisión» en el ADR.
+4. Segunda pasada de `migration-reviewer`, ya sobre el `.sql`: lista para ensayar tras corregir el
+   `lock table`. Se aplicaron además sus otras correcciones (ver abajo).
+
+### Decisiones sobre la marcha
+
+- **Se bloquea la fila de la comunidad, no la del miembro.** El ADR decía `for update` sobre el
+  miembro. Bloquear la comunidad es el mismo bloqueo que ya necesitaban `remove_member`,
+  `set_member_admin` y `reset_member_pin`; con uno solo y siempre el primero no hay orden que
+  pueda cruzarse. Es `for no key update` para no frenar las altas de artículos y gastos.
+- **El fallo de PIN de la dueña de la fila no se anota contra el miembro.** Si no, quien se
+  equivoca en su propio móvil se gastaría sus propios intentos de recuperación.
+- **`reset_member_pin` desliga los intentos del miembro en vez de borrarlos.** Borrarlos le
+  devolvía al atacante sus diez intentos por sesión.
+- **La limpieza de intentos de más de 30 días usa `for update skip locked`.** Corre antes de tomar
+  el bloqueo de la comunidad y podía cruzarse con `reset_member_pin`.
+- **`remove_member` borra los push tokens del expulsado.** No estaba en el ADR; es la misma regla
+  que al cambiar una fila de manos.
+- **El umbral por sesión (10 en 15 minutos) sigue escrito como literal**, repetido en
+  `join_community` y `set_member_pin`. El ADR pedía los umbrales en funciones; se hizo con los dos
+  nuevos y no con el antiguo. Deuda menor.
+- **Las tres RPC nuevas no tienen adaptador en `data/`.** A propósito: su pantalla es el
+  incremento 6. Hasta entonces solo se pueden llamar a mano.
+
+### Lo que el test no cubre
+
+El tope de 20 fallos (el límite de 5 por hora salta antes); soltar una fila con historial y la
+herencia del rol de admin; un PIN mal formado en `join_community`; `set_member_pin` sobre una fila
+sin PIN; los estados `none` y `exposed` de `my_member_pin_state`; `cannot_reset_self`; que expulsar
+a un invitado que nunca entró no rota el código; y la copia de hashes, que en un ensayo vacío corre
+con cero filas (la guía dice cómo ejercerla).
+
+### Verificación
+
+| Comprobación                         | Resultado                                              |
+| ------------------------------------ | ------------------------------------------------------ |
+| `migration-reviewer` sobre el diseño | Listo con cambios; incorporados                        |
+| `migration-reviewer` sobre el `.sql` | Lista para ensayar; correcciones aplicadas             |
+| `node --check` del test              | Sintaxis correcta                                      |
+| `npm run lint` y `npm run typecheck`  | Limpios (0 errores, 9 avisos que ya estaban)           |
+| `npm test`                           | Sin repetir: el incremento no toca `src/`              |
+| Ejecutar la migración                | **No hecho.** Sin Docker ni proyecto enlazado          |
+| `npm run test:rls`                   | **No ejecutado.** Falta `.env` y la migración aplicada. Con las dos migraciones del día, 102/102 |
+| `db.types.ts`                        | **Sin regenerar.** Sigue declarando `members.pin_hash` |
+
+### Qué falta, en orden
+
+1. Crear el proyecto de ensayo y seguir `docs/guias/ensayar-una-migracion.md`.
+2. En el editor SQL del proyecto real, las tres consultas previas del ADR («Lo que no se ha podido
+   comprobar»).
+3. `npx supabase db push` al real, `test:rls`, `test:realtime`, regenerar `db.types.ts`.
+4. Anotar aquí los resultados.
+5. Incremento 6 (pantalla) y, con él, la migración B. **Hasta la B, una fila sin PIN sigue siendo
+   reclamable por cualquiera con el código y los PIN antiguos siguen valiendo.**
+
+**Mientras la migración no esté aplicada al proyecto real, `npm run test:rls` contra él falla** en
+las comprobaciones nuevas, que llaman a funciones que todavía no existen. No es una regresión.
+
+## 10. Recetas entre comunidades, miembros archivados y permisos (2026-10-12)
+
+Incremento 4 del plan de `docs/auditoria-2026-10-11.md` (fallos 3, 12 y 24). **Escrita y sin
+aplicar.** Se ensaya y se aplica junto con la del apartado 9, en ese orden.
+
+### Qué se hizo
+
+`supabase/migrations/20261012130000_recipes_isolation_and_archived_members.sql`. Ninguna firma
+cambia.
+
+| Problema                                                                          | Arreglo                                                                    |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `save_recipe` sobrescribía la receta de otra comunidad sabiendo su uuid           | `where r.community_id = excluded.community_id` en el `do update`, y 42501 si no devuelve fila |
+| Un archivado seguía creando gastos y creando, editando o borrando recetas         | `removed_at is null` en `create_expense_with_shares`, `save_recipe` y `delete_recipe` |
+| Un gasto aceptaba como pagador, en sus cuotas o como artículo ids de otra lista   | Validación antes del insert: `member_not_in_community`, `item_not_in_community` (23503) |
+| Un hueco del menú aceptaba una receta de otra lista                               | Validación en `upsert_meal_slot`: `recipe_not_in_community` (23503)        |
+| Siete funciones `security definer` sin `revoke`/`grant`                           | Añadidos, con su firma exacta                                              |
+| `recipe_ingredients` publicada en Realtime sin `community_id`                     | Fuera de la publicación                                                    |
+
+`scripts/rls-isolation-test.mjs` pasa de 93 a 102 comprobaciones (las cuatro últimas son las de
+la escritura directa, más abajo). Las cinco primeras: el secuestro de una receta con un
+id ajeno y la comunidad propia (antes solo se probaba un id nuevo en comunidad ajena), un archivado
+que intenta escribir, una receta ajena en el menú, un pagador de otra lista, y que `anon` recibe
+`permission denied` en las siete funciones.
+
+### Decisiones sobre la marcha
+
+- **Dos validaciones que no estaban en el plan** (pagador, cuotas y artículo del gasto; receta del
+  menú). Son el mismo agujero que el de `save_recipe` y `migration-reviewer` las había señalado
+  como menores en la auditoría. Los APK instalados no se ven afectados: sacan esos ids de las
+  listas de su propia comunidad, y un id inexistente ya daba 23503 por la clave foránea.
+- **Un miembro archivado sí puede figurar como pagador o en una cuota.** La validación mira que sea
+  de la comunidad, no que esté activo: sus gastos antiguos siguen siendo suyos.
+- **`save_recipe` y `delete_recipe` llevan ahora `errcode = '42501'`** en sus excepciones de
+  permiso, que antes salían como P0001. El cliente las clasifica igual (`rejected`); solo cambia el
+  código que se enseña entre paréntesis.
+- **No se documenta en un ADR.** No cambia el modelo de datos: son comprobaciones que las reglas
+  existentes ya pedían. El detalle va en la skill `supabase-data`, apartado «Una RPC `security
+  definer` comprueba tres cosas a mano».
+
+### La escritura directa en las tablas también se cierra
+
+La primera versión de la migración cerraba la vía de las RPC y dejaba otra abierta: `expenses`,
+`expense_shares`, `meal_plan_slots` y `settlements` tenían políticas de `insert` y `update` que
+solo miraban `community_id`, así que un cliente modificado podía hacer `POST /rest/v1/expenses` con
+un pagador de otra lista y saltarse la validación. Sin fuga de lectura; el daño era enganchar a un
+miembro ajeno a un gasto falso (`on delete restrict`), que ya no se podría borrar físicamente.
+
+**El usuario decidió cerrarla el 2026-10-12**, siguiendo la recomendación. Sección 7 de la migración:
+
+| Tabla             | Qué se hace                                   | Por qué                                                         |
+| ----------------- | --------------------------------------------- | --------------------------------------------------------------- |
+| `expenses`        | Fuera las políticas de `insert` y `update`    | Los clientes solo crean gastos por `create_expense_with_shares` |
+| `expense_shares`  | Fuera las de `insert` y `delete`              | Nacen con su gasto y mueren con él en cascada                   |
+| `meal_plan_slots` | Fuera las de `insert` y `update`              | Los clientes solo usan `upsert_meal_slot`                       |
+| `settlements`     | La de `insert` se queda, endurecida           | Los APK instalados insertan directo; quitarla los rompería      |
+
+Cómo se comprobó que no rompe a nadie: en `src/` y en el commit `f7349b3`, que es el JS que corre
+en la runtime 1.2.0, las únicas escrituras directas sobre estas tablas son `expenses.delete`,
+`settlements.insert` y `settlements.delete`. `meal_plan_slots` no ha tenido nunca una escritura
+directa en todo el historial. Las políticas de `delete` de `expenses`, `settlements` y
+`meal_plan_slots` no se tocan.
+
+**Alternativas descartadas:**
+
+- **Una RPC `create_settlement` y quitar la política.** Era lo que se iba a hacer. Obligaba a
+  mantener la política vieja hasta que no quedara ningún APK que insertara directo. Endurecerla con
+  un `exists` por cada extremo cierra lo mismo hoy y sin tocar el cliente.
+- **Clave foránea compuesta** `(paid_by_member_id, community_id) references members (id,
+  community_id)`. La invariante quedaría en la base y no en una política, pero pide un `unique`
+  nuevo en `members` y reescribir cuatro claves foráneas.
+- **Dejarlo como deuda.**
+
+**Qué implica:** quien quiera escribir en `expenses`, `expense_shares` o `meal_plan_slots` desde
+la app tiene que hacerlo por una RPC. Un `supabase.from('expenses').insert(...)` en `data/` da
+42501. Cuatro comprobaciones nuevas en `test:rls` lo vigilan.
+
+**Deuda que queda, mismo patrón:** `recipes`, `recipe_ingredients` y `member_push_tokens` tienen
+RPC y además políticas de `insert` y `update`. En HEAD ningún cliente escribe directo en ellas. No
+se tocaron en esta migración: `recipes.community_id` sí lo comprueba la política, y lo que se salta
+es la validación de título y raciones, que no es un problema de aislamiento.
+
+### Lo que el test no cubre
+
+`delete_recipe` por un archivado; un `member_id` ajeno dentro de `p_shares` (solo se prueba el
+pagador); `item_not_in_community`; un `update` directo en `expenses` o `meal_plan_slots`; y un
+`insert` o `delete` directo en `expense_shares`. Estas tres últimas dependen de que el nombre de la
+política borrada esté bien escrito: se comprobó leyendo, y tras aplicar lo confirma la consulta de
+`pg_policies` que hay en `docs/traspaso-2026-10-12.md`.
+
+### Verificación
+
+| Comprobación                         | Resultado                                               |
+| ------------------------------------ | ------------------------------------------------------- |
+| `migration-reviewer` sobre el `.sql` | Dos pasadas (la segunda, sobre el cierre de la escritura directa): lista para ensayar |
+| `node --check` del test              | Sintaxis correcta                                       |
+| Ejecutar la migración                | **No hecho.** Sin Docker ni proyecto enlazado           |
+| `npm run test:rls` (102/102)         | **No ejecutado.** Falta `.env` y las migraciones aplicadas |
+| `db.types.ts`                        | Ninguna firma cambia; al regenerar no debería haber diff por esta migración |

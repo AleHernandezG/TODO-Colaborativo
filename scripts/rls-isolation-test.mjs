@@ -818,29 +818,81 @@ async function main() {
     `${carlaForbiddenRead.body?.length ?? '?'} filas devueltas`,
   )
 
+  // Incremento 4: las RPC security definer se saltan la RLS, así que comprueban a mano que
+  // quien llama sigue siendo miembro activo.
+  const archivedExpense = await rpc(tokenC, 'create_expense_with_shares', {
+    p_community_id: communityB,
+    p_description: 'Gasto de una expulsada',
+    p_amount_cents: 500,
+    p_paid_by_member_id: memberBruno.id,
+    p_item_id: null,
+    p_shares: [{ member_id: memberBruno.id, share_cents: 500 }],
+  })
+  const archivedRecipe = await rpc(tokenC, 'save_recipe', {
+    p_id: crypto.randomUUID(),
+    p_community_id: communityB,
+    p_title: 'Receta de una expulsada',
+    p_servings: 2,
+    p_instructions: '',
+    p_ingredients: [],
+  })
+  check(
+    'Un miembro archivado no puede crear gastos ni recetas por RPC',
+    archivedExpense.status >= 400 && archivedRecipe.status >= 400,
+    `HTTP ${archivedExpense.status}, ${archivedRecipe.status}`,
+  )
+
   // RF-12: Creación de invitado y adopción posterior
   const guestCreated = await rpc(tokenB, 'add_guest_member', {
     p_community_id: communityB,
     p_username: 'marcos_invitado',
   })
   const guestId = guestCreated.body?.[0]?.id
-  const guestRow = await select(tokenB, `members?select=id,auth_user_id,pin_hash&id=eq.${guestId}`)
+  const guestRow = await select(tokenB, `members?select=id,auth_user_id&id=eq.${guestId}`)
   check(
     'Un admin puede añadir un participante invitado (auth_user_id = null)',
     guestCreated.status === 200 && Boolean(guestId) && guestRow.body?.[0]?.auth_user_id === null,
     guestCreated.body?.[0]?.username ?? `HTTP ${guestCreated.status}`,
   )
 
+  // Expulsar a alguien que tuvo sesión rota el código (ADR-0026), así que el de antes ya no vale.
+  const codeAfterRemovals = await select(
+    tokenB,
+    `communities?select=join_code&id=eq.${communityB}`,
+  )
+  const currentCodeB = codeAfterRemovals.body?.[0]?.join_code
+  check(
+    'Expulsar a un miembro con sesión cambia el código de invitación',
+    Boolean(currentCodeB) && currentCodeB !== activeCodeB,
+    currentCodeB === activeCodeB ? 'el código no cambió' : 'código nuevo',
+  )
+
+  const staleCode = await rpc(tokenD, 'join_community', {
+    p_join_code: activeCodeB,
+    p_username: 'vuelve_el_expulsado',
+    p_pin: '1234',
+  })
+  check(
+    'El código anterior a la expulsión deja de servir',
+    staleCode.body?.[0]?.status === 'invalid_join_code',
+    staleCode.body?.[0]?.status ?? `HTTP ${staleCode.status}`,
+  )
+
   const tokenMarcos = tokenLegacy
   const marcosAdopts = await rpc(tokenMarcos, 'join_community', {
-    p_join_code: activeCodeB,
+    p_join_code: currentCodeB,
     p_username: 'marcos_invitado',
     p_pin: '9876',
   })
-  const marcosRow = await select(tokenB, `members?select=id,auth_user_id,pin_hash&id=eq.${guestId}`)
+  const marcosRow = await select(tokenB, `members?select=id,auth_user_id&id=eq.${guestId}`)
+  const marcosPinState = await rpc(tokenMarcos, 'my_member_pin_state', {
+    p_community_id: communityB,
+  })
   check(
     'Un invitado es adoptado al unirse con ese nombre y PIN (hereda la fila)',
-    marcosAdopts.body?.[0]?.status === 'ok' && marcosRow.body?.[0]?.auth_user_id !== null && Boolean(marcosRow.body?.[0]?.pin_hash),
+    marcosAdopts.body?.[0]?.status === 'ok' &&
+      marcosRow.body?.[0]?.auth_user_id !== null &&
+      marcosPinState.body === 'set',
     marcosAdopts.body?.[0]?.status ?? `HTTP ${marcosAdopts.status}`,
   )
 
@@ -955,6 +1007,145 @@ async function main() {
     `${readIngredientsB.body?.length ?? 0} ingredientes ajenos`,
   )
 
+  const hijackRecipe = await rpc(tokenB, 'save_recipe', {
+    p_id: recipeIdA,
+    p_community_id: communityB,
+    p_title: 'Receta secuestrada',
+    p_servings: 1,
+    p_instructions: 'Hack',
+    p_ingredients: [],
+  })
+  const recipeAfterHijack = await select(
+    tokenA,
+    `recipes?select=title,community_id,recipe_ingredients(name)&id=eq.${recipeIdA}`,
+  )
+  check(
+    'B no puede sobrescribir una receta de A llamando a save_recipe con su id y su propia comunidad',
+    hijackRecipe.status >= 400 &&
+      recipeAfterHijack.body?.[0]?.title === 'Tortilla de patatas' &&
+      recipeAfterHijack.body?.[0]?.community_id === communityA &&
+      recipeAfterHijack.body?.[0]?.recipe_ingredients?.length === 2,
+    `HTTP ${hijackRecipe.status}, título «${recipeAfterHijack.body?.[0]?.title}»`,
+  )
+
+  const foreignSlot = await rpc(tokenB, 'upsert_meal_slot', {
+    p_community_id: communityB,
+    p_date: '2026-12-24',
+    p_meal_type: 'dinner',
+    p_recipe_id: recipeIdA,
+  })
+  check(
+    'No se puede poner en el menú de B una receta de A',
+    foreignSlot.status >= 400,
+    `HTTP ${foreignSlot.status}`,
+  )
+
+  const membersOfB = await select(tokenB, `members?select=id&community_id=eq.${communityB}&limit=1`)
+  const membersOfA = await select(tokenA, `members?select=id&community_id=eq.${communityA}&limit=1`)
+  const foreignPayer = await rpc(tokenA, 'create_expense_with_shares', {
+    p_community_id: communityA,
+    p_description: 'Paga alguien de otra lista',
+    p_amount_cents: 300,
+    p_paid_by_member_id: membersOfB.body?.[0]?.id,
+    p_item_id: null,
+    p_shares: [{ member_id: membersOfA.body?.[0]?.id, share_cents: 300 }],
+  })
+  check(
+    'Un gasto no puede tener como pagador a un miembro de otra comunidad',
+    Boolean(membersOfB.body?.[0]?.id) &&
+      Boolean(membersOfA.body?.[0]?.id) &&
+      foreignPayer.status >= 400,
+    `HTTP ${foreignPayer.status}`,
+  )
+
+  // Lo que la RPC valida no se puede saltar escribiendo directo en la tabla.
+  const twoOfA = await select(tokenA, `members?select=id&community_id=eq.${communityA}&limit=2`)
+  const firstOfA = twoOfA.body?.[0]?.id
+  const secondOfA = twoOfA.body?.[1]?.id
+  const outsider = membersOfB.body?.[0]?.id
+
+  const directExpense = await post(tokenA, 'expenses', {
+    community_id: communityA,
+    paid_by_member_id: firstOfA,
+    amount_cents: 700,
+    description: 'Gasto escrito directo en la tabla',
+  })
+  check(
+    'Un gasto solo se crea por la RPC: el insert directo está cerrado, también en la comunidad propia',
+    Boolean(firstOfA) && directExpense.status >= 400,
+    `HTTP ${directExpense.status}`,
+  )
+
+  const directSlot = await post(tokenA, 'meal_plan_slots', {
+    community_id: communityA,
+    date: '2026-12-26',
+    meal_type: 'lunch',
+    recipe_id: recipeIdA,
+    servings: 2,
+  })
+  check(
+    'Un hueco del menú solo se crea por la RPC: el insert directo está cerrado',
+    Boolean(firstOfA) && directSlot.status >= 400,
+    `HTTP ${directSlot.status}`,
+  )
+
+  const validSettlement = await post(tokenA, 'settlements', {
+    community_id: communityA,
+    from_member_id: firstOfA,
+    to_member_id: secondOfA,
+    amount_cents: 100,
+  })
+  check(
+    'Una liquidación entre dos miembros de la misma lista se sigue pudiendo insertar directo',
+    Boolean(firstOfA) && Boolean(secondOfA) && validSettlement.status === 201,
+    `HTTP ${validSettlement.status} ${validSettlement.status === 201 ? '' : JSON.stringify(validSettlement.body)}`,
+  )
+
+  const foreignSettlement = await post(tokenA, 'settlements', {
+    community_id: communityA,
+    from_member_id: firstOfA,
+    to_member_id: outsider,
+    amount_cents: 100,
+  })
+  const foreignSettlementFrom = await post(tokenA, 'settlements', {
+    community_id: communityA,
+    from_member_id: outsider,
+    to_member_id: firstOfA,
+    amount_cents: 100,
+  })
+  check(
+    'Una liquidación no puede apuntar a un miembro de otra comunidad, ni como origen ni como destino',
+    Boolean(outsider) &&
+      Boolean(firstOfA) &&
+      foreignSettlement.status >= 400 &&
+      foreignSettlementFrom.status >= 400,
+    `HTTP ${foreignSettlement.status}, ${foreignSettlementFrom.status}`,
+  )
+
+  // Se exige el mensaje y no solo el código: sin el revoke, anon entraría en la función y
+  // fallaría igual por su comprobación interna, con otro error que también es >= 400.
+  const anonCalls = [
+    ['save_recipe', { p_id: recipeIdA, p_community_id: communityA, p_title: 'x x', p_servings: 1, p_instructions: '', p_ingredients: [] }],
+    ['delete_recipe', { p_id: recipeIdA }],
+    ['upsert_meal_slot', { p_community_id: communityA, p_date: '2026-12-25', p_meal_type: 'lunch' }],
+    ['delete_meal_slot', { p_community_id: communityA, p_date: '2026-12-25', p_meal_type: 'lunch' }],
+    ['register_push_token', { p_community_id: communityA, p_expo_push_token: 'ExponentPushToken[nadie]' }],
+    ['unregister_push_token', { p_expo_push_token: 'ExponentPushToken[nadie]' }],
+    ['get_community_push_tokens', { p_community_id: communityA }],
+  ]
+  const anonOpen = []
+  for (const [name, args] of anonCalls) {
+    const res = await rpcWithoutSession(name, args)
+    if (!/permission denied for function/i.test(JSON.stringify(res.body ?? ''))) {
+      anonOpen.push(`${name} (HTTP ${res.status})`)
+    }
+  }
+  check(
+    'Sin sesión no se ejecuta ninguna de las siete RPC de recetas, menús y push',
+    anonOpen.length === 0,
+    anonOpen.length === 0 ? 'permission denied en las siete' : `abiertas: ${anonOpen.join(', ')}`,
+  )
+
   const deleteRecipeA = await rpc(tokenA, 'delete_recipe', { p_id: recipeIdA })
   const readAfterDelete = await select(tokenA, `recipes?id=eq.${recipeIdA}`)
   const readIngredientsAfterDelete = await select(tokenA, `recipe_ingredients?recipe_id=eq.${recipeIdA}`)
@@ -1012,6 +1203,281 @@ async function main() {
     (deleteSlotA.status === 200 || deleteSlotA.status === 204) &&
       readAfterDeleteSlot.body.length === 0,
     'comida vaciada',
+  )
+
+  // ADR-0026: el PIN fuera de members. Se usa la lista de hugo (tokenHost, admin) y marta
+  // (tokenMulti, miembro con PIN 1234) para no descuadrar los recuentos de la comunidad B.
+  const hostCode = hostOwn.body?.[0]?.join_code
+
+  const pinHashRead = await select(
+    tokenHost,
+    `members?select=pin_hash&community_id=eq.${communityHost}`,
+  )
+  check(
+    'members ya no tiene la columna pin_hash',
+    pinHashRead.status === 400,
+    `HTTP ${pinHashRead.status}`,
+  )
+
+  const secretsRead = await select(tokenHost, 'member_secrets?select=member_id,pin_hash')
+  check(
+    'Un miembro no puede leer member_secrets',
+    secretsRead.status >= 400 || (Array.isArray(secretsRead.body) && secretsRead.body.length === 0),
+    `HTTP ${secretsRead.status}`,
+  )
+
+  const pinStateAnon = await rpcWithoutSession('my_member_pin_state', {
+    p_community_id: communityHost,
+  })
+  const setPinAnon = await rpcWithoutSession('set_member_pin', {
+    p_community_id: communityHost,
+    p_new_pin: '1111',
+  })
+  const resetPinAnon = await rpcWithoutSession('reset_member_pin', {
+    p_community_id: communityHost,
+    p_member_id: communityHost,
+  })
+  check(
+    'Sin sesión no se ejecuta ninguna de las tres RPC del PIN',
+    pinStateAnon.status >= 400 && setPinAnon.status >= 400 && resetPinAnon.status >= 400,
+    `HTTP ${pinStateAnon.status}, ${setPinAnon.status}, ${resetPinAnon.status}`,
+  )
+
+  const martaState = await rpc(tokenMulti, 'my_member_pin_state', {
+    p_community_id: communityHost,
+  })
+  check(
+    'my_member_pin_state dice que quien entró con PIN lo tiene puesto',
+    martaState.status === 200 && martaState.body === 'set',
+    JSON.stringify(martaState.body),
+  )
+
+  const setPinWrongCurrent = await rpc(tokenMulti, 'set_member_pin', {
+    p_community_id: communityHost,
+    p_new_pin: '4321',
+    p_current_pin: '0000',
+  })
+  check(
+    'set_member_pin no cambia el PIN si el actual no coincide',
+    setPinWrongCurrent.body?.[0]?.status === 'wrong_pin',
+    setPinWrongCurrent.body?.[0]?.status ?? `HTTP ${setPinWrongCurrent.status}`,
+  )
+
+  const setPinMalformed = await rpc(tokenMulti, 'set_member_pin', {
+    p_community_id: communityHost,
+    p_new_pin: 'abcd',
+    p_current_pin: '1234',
+  })
+  check(
+    'set_member_pin rechaza un PIN que no son cuatro cifras',
+    setPinMalformed.body?.[0]?.status === 'invalid_pin',
+    setPinMalformed.body?.[0]?.status ?? `HTTP ${setPinMalformed.status}`,
+  )
+
+  const setPinOk = await rpc(tokenMulti, 'set_member_pin', {
+    p_community_id: communityHost,
+    p_new_pin: '4321',
+    p_current_pin: '1234',
+  })
+  check(
+    'set_member_pin cambia el PIN con el actual correcto',
+    setPinOk.body?.[0]?.status === 'ok',
+    setPinOk.body?.[0]?.status ?? `HTTP ${setPinOk.status}`,
+  )
+
+  const malformedCreate = await rpc(tokenMulti, 'create_community', {
+    p_name: `rls-test-pin-malo-${stamp}`,
+    p_username: 'marta',
+    p_pin: '12',
+  })
+  check(
+    'create_community rechaza un PIN mal formado',
+    malformedCreate.status >= 400,
+    `HTTP ${malformedCreate.status}`,
+  )
+
+  const renameWrongPin = await rpc(tokenMulti, 'join_community', {
+    p_join_code: hostCode,
+    p_username: 'marta-renombrada',
+    p_pin: '0000',
+  })
+  check(
+    'Renombrarse con otro PIN no sobrescribe el que había',
+    renameWrongPin.body?.[0]?.status === 'invalid_pin',
+    renameWrongPin.body?.[0]?.status ?? `HTTP ${renameWrongPin.status}`,
+  )
+
+  const renameOk = await rpc(tokenMulti, 'join_community', {
+    p_join_code: hostCode,
+    p_username: 'marta-renombrada',
+    p_pin: '4321',
+  })
+  check(
+    'Renombrarse con el PIN propio funciona',
+    renameOk.body?.[0]?.status === 'ok',
+    renameOk.body?.[0]?.status ?? `HTTP ${renameOk.status}`,
+  )
+
+  const hostGuest = await rpc(tokenHost, 'add_guest_member', {
+    p_community_id: communityHost,
+    p_username: 'invitada',
+  })
+  const hostGuestId = hostGuest.body?.[0]?.id
+  check(
+    'add_guest_member sigue funcionando sin la columna pin_hash',
+    hostGuest.status === 200 && Boolean(hostGuestId),
+    `HTTP ${hostGuest.status}`,
+  )
+
+  const promoteGuest = await rpc(tokenHost, 'set_member_admin', {
+    p_community_id: communityHost,
+    p_member_id: hostGuestId,
+    p_is_admin: true,
+  })
+  check(
+    'Un invitado sin sesión no puede ser admin',
+    promoteGuest.status >= 400,
+    `HTTP ${promoteGuest.status}`,
+  )
+
+  await rpc(tokenD, 'join_community', {
+    p_join_code: hostCode,
+    p_username: 'temporal',
+    p_pin: '1111',
+  })
+  const adoptWithOwnRow = await rpc(tokenD, 'join_community', {
+    p_join_code: hostCode,
+    p_username: 'invitada',
+    p_pin: '2222',
+  })
+  const temporalLeft = await select(
+    tokenHost,
+    `members?select=id&community_id=eq.${communityHost}&username=eq.temporal`,
+  )
+  check(
+    'Adoptar una fila teniendo ya otra en la lista suelta la anterior en vez de fallar',
+    adoptWithOwnRow.body?.[0]?.status === 'ok' &&
+      Array.isArray(temporalLeft.body) &&
+      temporalLeft.body.length === 0,
+    adoptWithOwnRow.body?.[0]?.status ?? `HTTP ${adoptWithOwnRow.status} ${JSON.stringify(adoptWithOwnRow.body)}`,
+  )
+
+  const hostMembers = await select(
+    tokenHost,
+    `members?select=id,username,auth_user_id&community_id=eq.${communityHost}`,
+  )
+  const hugoId = hostMembers.body?.find((m) => m.username === 'hugo')?.id
+  const martaId = hostMembers.body?.find((m) => m.username === 'marta-renombrada')?.id
+
+  const guesses = []
+  for (const [token, pin] of [
+    [tokenC, '0000'],
+    [tokenC, '0001'],
+    [tokenC, '0002'],
+    [tokenD, '0003'],
+    [tokenD, '0004'],
+  ]) {
+    const guess = await rpc(token, 'join_community', {
+      p_join_code: hostCode,
+      p_username: 'marta-renombrada',
+      p_pin: pin,
+    })
+    guesses.push(guess.body?.[0]?.status ?? `HTTP ${guess.status}`)
+  }
+  const lockedOut = await rpc(tokenLegacy, 'join_community', {
+    p_join_code: hostCode,
+    p_username: 'marta-renombrada',
+    p_pin: '4321',
+  })
+  check(
+    'Cinco fallos contra un miembro desde dos sesiones bloquean a una tercera, aunque acierte',
+    guesses.every((status) => status === 'invalid_pin') &&
+      lockedOut.body?.[0]?.status === 'too_many_attempts',
+    `${guesses.join(', ')} → ${lockedOut.body?.[0]?.status ?? `HTTP ${lockedOut.status}`}`,
+  )
+
+  const ownerReenters = await rpc(tokenMulti, 'join_community', {
+    p_join_code: hostCode,
+    p_username: 'marta-renombrada',
+    p_pin: '4321',
+  })
+  check(
+    'El bloqueo por miembro no afecta a la dueña que reentra desde su sesión',
+    ownerReenters.body?.[0]?.status === 'ok',
+    ownerReenters.body?.[0]?.status ?? `HTTP ${ownerReenters.status}`,
+  )
+
+  const internalCall = await rpc(tokenHost, 'store_member_pin', {
+    p_member_id: hugoId,
+    p_pin: '0000',
+  })
+  check(
+    'Una sesión no puede llamar a las funciones internas del PIN',
+    internalCall.status >= 400,
+    `HTTP ${internalCall.status}`,
+  )
+
+  const resetByNonAdmin = await rpc(tokenMulti, 'reset_member_pin', {
+    p_community_id: communityHost,
+    p_member_id: hugoId,
+  })
+  check(
+    'Un miembro que no es admin no puede restablecer el PIN de otro',
+    resetByNonAdmin.status >= 400,
+    `HTTP ${resetByNonAdmin.status}`,
+  )
+
+  await rpc(tokenMulti, 'register_push_token', {
+    p_community_id: communityHost,
+    p_expo_push_token: 'ExponentPushToken[marta-movil-viejo]',
+    p_device_name: 'Móvil viejo',
+  })
+  const tokensBeforeReset = await rpc(tokenHost, 'get_community_push_tokens', {
+    p_community_id: communityHost,
+  })
+  const resetByAdmin = await rpc(tokenHost, 'reset_member_pin', {
+    p_community_id: communityHost,
+    p_member_id: martaId,
+  })
+  const tempPin = resetByAdmin.body?.[0]?.temp_pin
+  const martaAfterReset = await select(tokenHost, `members?select=auth_user_id&id=eq.${martaId}`)
+  check(
+    'Un admin restablece el PIN y recibe uno temporal de cuatro cifras',
+    /^[0-9]{4}$/.test(tempPin ?? '') && martaAfterReset.body?.[0]?.auth_user_id === null,
+    resetByAdmin.status === 200 ? 'PIN temporal recibido' : `HTTP ${resetByAdmin.status}`,
+  )
+
+  const martaLockedOut = await select(
+    tokenMulti,
+    `members?select=id&community_id=eq.${communityHost}`,
+  )
+  check(
+    'La sesión anterior pierde el acceso al restablecer',
+    Array.isArray(martaLockedOut.body) && martaLockedOut.body.length === 0,
+    `${martaLockedOut.body?.length ?? '?'} filas devueltas`,
+  )
+
+  const recover = await rpc(tokenLegacy, 'join_community', {
+    p_join_code: hostCode,
+    p_username: 'marta-renombrada',
+    p_pin: tempPin,
+  })
+  const martaRecovered = await select(tokenHost, `members?select=id,auth_user_id&id=eq.${martaId}`)
+  check(
+    'Con el PIN temporal se recupera la misma fila desde otra sesión, y el bloqueo se levanta',
+    recover.body?.[0]?.status === 'ok' && Boolean(martaRecovered.body?.[0]?.auth_user_id),
+    recover.body?.[0]?.status ?? `HTTP ${recover.status}`,
+  )
+
+  const hugoSeesTokens = await rpc(tokenHost, 'get_community_push_tokens', {
+    p_community_id: communityHost,
+  })
+  check(
+    'Al cambiar una fila de manos se borran sus push tokens',
+    JSON.stringify(tokensBeforeReset.body ?? null).includes('marta-movil-viejo') &&
+      Array.isArray(hugoSeesTokens.body) &&
+      !JSON.stringify(hugoSeesTokens.body).includes('marta-movil-viejo'),
+    `HTTP ${hugoSeesTokens.status}`,
   )
 
   await cleanup(

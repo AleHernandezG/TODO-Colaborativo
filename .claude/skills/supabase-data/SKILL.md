@@ -25,10 +25,23 @@ create table members (
   id            uuid primary key default gen_random_uuid(),
   community_id  uuid not null references communities(id) on delete cascade,
   username      text not null,
-  auth_user_id  uuid not null references auth.users(id) on delete cascade,
+  auth_user_id  uuid references auth.users(id) on delete cascade,  -- nulo = invitado sin sesión
+  is_admin      boolean not null default false,
+  removed_at    timestamptz,                                       -- no nulo = archivado
   created_at    timestamptz not null default now(),
-  unique (community_id, username),
-  unique (community_id, auth_user_id)
+  check (not is_admin or auth_user_id is not null)
+);
+-- La unicidad es solo entre miembros activos (ADR-0017):
+create unique index on members (community_id, username) where removed_at is null;
+create unique index on members (community_id, auth_user_id)
+  where removed_at is null and auth_user_id is not null;
+
+-- El hash del PIN NO está en members (ADR-0026). Sin políticas: solo lo leen las RPC.
+create table member_secrets (
+  member_id   uuid primary key references members(id) on delete cascade,
+  pin_hash    text not null,
+  exposed     boolean not null default false,
+  updated_at  timestamptz not null default now()
 );
 
 create table items (
@@ -195,7 +208,9 @@ Ver `supabase/migrations/` para la versión completa con el rate limit.
 deshace la transacción entera, incluido el `insert` en `join_attempts` que lleva la cuenta de
 intentos. Un rate limit que lanza excepciones no cuenta nada, porque cada intento fallido se
 borra a sí mismo al fallar. Estados: `ok`, `invalid_join_code`, `expired_join_code`,
-`username_taken`, `too_many_attempts`.
+`username_taken`, `invalid_pin`, `too_many_attempts`. **Son los seis que conocen los APK
+instalados; un séptimo lo tratan como error desconocido.** Si hace falta decir algo nuevo, se
+reutiliza uno de estos o se añade una RPC aparte.
 
 **`#variable_conflict use_column` no es decorativo.** El parámetro de salida se llama
 `community_id` y `members` tiene una columna con ese nombre, así que sin esa línea el `insert`
@@ -288,6 +303,407 @@ seis argumentos va en esa misma migración, por lo de arriba.
 Las validaciones (`not_a_member`, `invalid_amount`, `shares_sum_mismatch`) van **antes** del insert,
 no dentro de un `on conflict`: un reenvío de algo que ya se guardó vuelve a pasar por ellas y tiene
 que dar el mismo resultado.
+
+### El PIN: dónde vive y qué no hacer con él
+
+Desde `20261012120000` (ADR-0026) el hash está en `member_secrets`, que tiene RLS activada, ninguna
+política y `revoke all ... from anon, authenticated`. Antes estaba en `members.pin_hash`, y como
+`members_select` es una política por fila, cualquier miembro leía el hash de los demás. Un bcrypt de
+cuatro cifras se rompe en segundos.
+
+- **Un secreto no va en una tabla que tenga política de `select`**, aunque el cliente «no lo pida».
+  RLS filtra filas, no columnas.
+- Las RPC del PIN: `set_member_pin` (el propio miembro; estados `ok`, `invalid_pin`, `wrong_pin`,
+  `too_many_attempts`), `my_member_pin_state` (`none`, `exposed`, `set`) y `reset_member_pin` (un
+  admin; devuelve un PIN temporal y deja la fila sin sesión).
+- **`invalid_pin` no significa lo mismo en las dos funciones**: en `join_community` es «no
+  coincide»; en `set_member_pin` es «no son cuatro cifras», y «no coincide» es `wrong_pin`.
+- El formato se valida con `^[0-9]{4}---
+name: supabase-data
+description: Esquema Postgres, políticas RLS, Realtime, RPCs y generación de tipos para el Supabase de este proyecto. Úsala SIEMPRE que toques la base de datos o el backend — crear o alterar tablas, escribir o depurar políticas RLS, añadir una función/RPC, activar Realtime, regenerar db.types.ts, configurar el cliente de Supabase o implementar el flujo de unirse a una comunidad por código. Aplica también si el usuario solo dice "guarda esto en Supabase", "no me deja leer la tabla", "falla la query" o "añade un campo".
+---
+
+# Datos: Supabase, RLS y Realtime
+
+El modelo de sesión de esta app es raro y condiciona todo lo demás: **no hay cuentas**.
+Se entra con un `join_code` y un nombre de usuario. Eso significa que las políticas RLS no
+pueden apoyarse en un `auth.uid()` que se corresponda con una persona registrada, y hay que
+construir el puente a mano. Esta skill existe sobre todo para eso.
+
+## Esquema
+
+```sql
+create table communities (
+  id                    uuid primary key default gen_random_uuid(),
+  name                  text not null,
+  join_code             text not null unique,
+  join_code_expires_at  timestamptz not null default now() + join_code_lifetime(),
+  created_at            timestamptz not null default now()
+);
+
+create table members (
+  id            uuid primary key default gen_random_uuid(),
+  community_id  uuid not null references communities(id) on delete cascade,
+  username      text not null,
+  auth_user_id  uuid references auth.users(id) on delete cascade,  -- nulo = invitado sin sesión
+  is_admin      boolean not null default false,
+  removed_at    timestamptz,                                       -- no nulo = archivado
+  created_at    timestamptz not null default now(),
+  check (not is_admin or auth_user_id is not null)
+);
+-- La unicidad es solo entre miembros activos (ADR-0017):
+create unique index on members (community_id, username) where removed_at is null;
+create unique index on members (community_id, auth_user_id)
+  where removed_at is null and auth_user_id is not null;
+
+-- El hash del PIN NO está en members (ADR-0026). Sin políticas: solo lo leen las RPC.
+create table member_secrets (
+  member_id   uuid primary key references members(id) on delete cascade,
+  pin_hash    text not null,
+  exposed     boolean not null default false,
+  updated_at  timestamptz not null default now()
+);
+
+create table items (
+  id                 uuid primary key default gen_random_uuid(),
+  community_id       uuid not null references communities(id) on delete cascade,
+  name               text not null check (char_length(name) between 1 and 120),
+  quantity           int not null default 1 check (quantity >= 1),
+  image_path         text,
+  is_purchased       boolean not null default false,
+  created_by         uuid references members(id) on delete set null,
+  catalog_product_id uuid references catalog_products(id) on delete set null,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+create index on items (community_id, is_purchased);
+create index on members (community_id);
+create index on members (auth_user_id);
+```
+
+Postgres no indexa las claves foráneas por su cuenta. Los índices de arriba son los caminos
+que la app consulta de verdad: la lista de una comunidad y la resolución de identidad.
+
+`updated_at` es la base del last-write-wins, así que no puede depender de que el cliente se
+acuerde de mandarlo:
+
+```sql
+create or replace function touch_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end $$;
+
+create trigger items_touch_updated_at
+  before update on items
+  for each row execute function touch_updated_at();
+```
+
+Por eso el adaptador **nunca** mete `updated_at` en un `update` (ni en `setPurchased` ni en
+nada): mandarlo desde el cliente lo único que hace es competir con el trigger. La columna es
+del servidor.
+
+## Identidad: sesión anónima + fila de miembro
+
+Al abrir la app por primera vez se llama a `supabase.auth.signInAnonymously()`. Eso da un
+`auth.uid()` real y persistente en el dispositivo, sin pedirle nada al usuario. La tabla
+`members` liga ese uid con una comunidad y un nombre.
+
+A partir de ahí, "¿de qué comunidades soy miembro?" tiene respuesta en SQL, y eso es lo que
+usan todas las políticas:
+
+```sql
+create or replace function member_community_ids()
+returns setof uuid
+language sql stable security definer set search_path = public as $$
+  select community_id from members where auth_user_id = auth.uid()
+$$;
+```
+
+`security definer` aquí no es opcional. Sin él, consultar `members` desde una política de
+`members` provoca recursión infinita y Postgres aborta la query. Con `definer` la función
+se salta RLS, por eso está acotada a `auth.uid()` y no acepta parámetros: no hay forma de
+pedirle las comunidades de otro.
+
+`set search_path = public` evita que alguien con permiso de crear objetos secuestre la
+resolución de nombres dentro de una función privilegiada.
+
+## Políticas
+
+```sql
+alter table communities enable row level security;
+alter table members     enable row level security;
+alter table items       enable row level security;
+
+create policy items_select on items for select
+  using (community_id in (select member_community_ids()));
+
+create policy items_insert on items for insert
+  with check (community_id in (select member_community_ids()));
+
+create policy items_update on items for update
+  using (community_id in (select member_community_ids()))
+  with check (community_id in (select member_community_ids()));
+
+create policy items_delete on items for delete
+  using (community_id in (select member_community_ids()));
+
+create policy members_select on members for select
+  using (community_id in (select member_community_ids()));
+
+create policy communities_select on communities for select
+  using (id in (select member_community_ids()));
+```
+
+Fíjate en que `items_update` lleva `using` **y** `with check`. Solo con `using` se controla
+qué filas puedes tocar, pero no en qué se convierten: alguien podría mover un artículo suyo
+a otra comunidad con un `update community_id`. El `with check` cierra esa puerta.
+
+No hay política de insert en `communities` ni en `members`. Es deliberado: esas dos escrituras
+solo ocurren dentro de las RPC de abajo.
+
+### Las tablas del catálogo son la excepción: no llevan `community_id`
+
+`supermarkets` y `catalog_products` (migración `20260807120000_catalog_schema.sql`) son las únicas
+tablas del proyecto que **no pertenecen a nadie**. Son el mismo contenido para todo el mundo, así
+que filtrarlas por comunidad sería copiar 4.000 filas por lista. Su política no se parece a ninguna
+de las de arriba:
+
+```sql
+create policy catalog_products_select on catalog_products for select to authenticated using (true);
+```
+
+Tres cosas que hay que leer juntas o se entiende mal:
+
+- **`to authenticated` es lo único que separa esto de una tabla pública.** Con `using (true)` y sin
+  `to`, la lee `anon`, o sea cualquiera con la publishable key y sin sesión. El test de aislamiento
+  tiene una comprobación dedicada solo a eso.
+- **Ninguna política de insert, update ni delete.** Escribe únicamente el script de ingesta con la
+  secret key, que se salta RLS por definición. Es el mismo criterio que `communities` y `members`:
+  si algún día hace falta escribir desde la app, la respuesta es una RPC.
+- **No entran en `supabase_realtime`.** Se reingieren una vez por semana; no hay nada que empujar a
+  los móviles.
+
+Y la consecuencia para quien escriba la siguiente política: **«toda tabla se filtra por
+`community_id`» ya no es universal en este proyecto.** Copiar la política de `items` a una tabla de
+catálogo la deja ilegible para todos; copiar la del catálogo a una tabla de comunidad la deja
+legible para todos. Mira primero de quién son los datos.
+
+El detalle del esquema y por qué cada columna, en
+[ADR-0012](../../../docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md); de dónde salen los
+datos, en [ADR-0013](../../../docs/adr/ADR-0013-fuente-del-catalogo-mercadona.md).
+
+## Crear y unirse: por qué son RPC
+
+Unirse tiene un problema de huevo y gallina. Para validar un `join_code` hay que leer
+`communities`, pero la política de `communities` exige ser ya miembro. Se resuelve con una
+función `security definer` que hace la comprobación por dentro y devuelve lo justo:
+
+```sql
+create or replace function join_community(p_join_code text, p_username text, p_pin text default null)
+returns table (status text, community_id uuid)
+language plpgsql security definer set search_path = public as $$
+#variable_conflict use_column
+declare
+  v_community_id uuid;
+begin
+  select id into v_community_id
+    from communities
+   where join_code = upper(trim(p_join_code));
+
+  if v_community_id is null then
+    insert into join_attempts (auth_user_id, succeeded) values (auth.uid(), false);
+    return query select 'invalid_join_code'::text, null::uuid;
+    return;
+  end if;
+  ...
+end $$;
+```
+
+Ver `supabase/migrations/` para la versión completa con el rate limit.
+
+**Devuelve un `status`, no lanza excepciones.** No es una preferencia de estilo: una excepción
+deshace la transacción entera, incluido el `insert` en `join_attempts` que lleva la cuenta de
+intentos. Un rate limit que lanza excepciones no cuenta nada, porque cada intento fallido se
+borra a sí mismo al fallar. Estados: `ok`, `invalid_join_code`, `expired_join_code`,
+`username_taken`, `invalid_pin`, `too_many_attempts`. **Son los seis que conocen los APK
+instalados; un séptimo lo tratan como error desconocido.** Si hace falta decir algo nuevo, se
+reutiliza uno de estos o se añade una RPC aparte.
+
+**`#variable_conflict use_column` no es decorativo.** El parámetro de salida se llama
+`community_id` y `members` tiene una columna con ese nombre, así que sin esa línea el `insert`
+y el `on conflict` fallan con `column reference "community_id" is ambiguous` (SQLSTATE 42702).
+Si añades parámetros de salida que coincidan con nombres de columna, acuérdate.
+
+En una función `language sql` no existe ese pragma, así que el choque se evita a mano: **alias en
+la tabla y todas las columnas cualificadas**, nunca `select *`. `search_catalog` devuelve `id`,
+`name` y `similarity`, tres nombres que también son columnas, y por eso su `select` final va
+columna a columna con el prefijo del alias.
+
+El `on conflict` hace que reentrar desde el mismo dispositivo sea idempotente en vez de
+reventar por la clave única. El bloque `exception` traduce el choque contra
+`unique (community_id, username)` a `username_taken`: son dos errores distintos para el
+usuario y confundirlos es una mala experiencia en la primera pantalla que ve.
+
+Crear comunidad es RPC por lo mismo, más un motivo propio: el `join_code` se genera dentro de
+la base de datos (`generate_join_code()`), que es el único sitio donde se puede comprobar la
+unicidad en la misma transacción que inserta. Generarlo en el cliente admite colisiones.
+
+Consecuencia de todo esto: **`communities` y `members` no tienen política de insert, update ni
+delete.** Si necesitas escribir en ellas, la respuesta casi siempre es una RPC nueva, no una
+política nueva. Ver `supabase/migrations/` para el SQL vigente.
+
+### Cambiar la firma de una función expuesta por PostgREST
+
+**`create or replace function` con un parámetro nuevo no reemplaza nada: crea otra función.** La
+firma forma parte de la identidad de la función en Postgres, así que `join_community(text, text)` y
+`join_community(text, text, text)` son dos funciones distintas y las dos quedan vivas.
+
+Un `default null` en el parámetro nuevo hace que la de tres argumentos pueda atender llamadas de dos,
+y ahí está la trampa: entonces hay **dos candidatas** para la misma llamada, PostgREST no elige y
+devuelve `PGRST203` con `Could not choose the best candidate function between...`. Todo cliente que no
+mande el parámetro nuevo deja de funcionar de golpe: la versión anterior de la app instalada en un
+móvil, un script, cualquier cosa.
+
+Pasó el 2026-08-24 con el PIN y estuvo cuatro días roto. Ni `db push` ni `gen types` ni la app dan
+ningún aviso; `gen types` incluso lo deja a la vista, con las dos firmas unidas en un tipo `|`, y
+compila igual.
+
+Así que **la migración que cambia la firma borra la anterior en el mismo fichero**:
+
+```sql
+create or replace function join_community(p_join_code text, p_username text, p_pin text default null)
+returns table (status text, community_id uuid)
+language plpgsql security definer set search_path = public as $$
+  ...
+$$;
+
+drop function if exists join_community(text, text);
+```
+
+Y con ella se revisan los `grant` y los `revoke`, que también van por firma: los de la función vieja
+se van con ella, los de la nueva hay que escribirlos.
+
+Dos formas de verlo antes de que lo vea el usuario:
+
+```sql
+select oid::regprocedure from pg_proc where proname = 'join_community';
+```
+
+y una comprobación en `scripts/rls-isolation-test.mjs` que llame a la RPC **sin** el parámetro nuevo y
+exija que resuelva. Las dos que hay (`create_community` y `join_community`) están ahí por esto.
+
+### Un alta que se puede reenviar: id del cliente y `on conflict do nothing`
+
+Una RPC de alta que puede llegar dos veces (la cola offline reenvía; ADR-0009 y ADR-0010) no puede
+crear dos filas. El id lo pone el cliente y la función lo acepta como último parámetro, con
+`default null` para que las llamadas antiguas sigan resolviendo:
+
+```sql
+insert into expenses (id, community_id, ...)
+values (coalesce(p_expense_id, gen_random_uuid()), p_community_id, ...)
+on conflict (id) do nothing
+returning id into v_expense_id;
+
+if v_expense_id is null then
+  return p_expense_id;
+end if;
+```
+
+**El `if` de después es la mitad que se olvida.** Con `do nothing`, el `returning` no devuelve nada
+cuando la fila ya estaba, así que `v_expense_id` queda a `null` y todo lo que venga detrás (aquí, el
+`insert` de las cuotas) se ejecutaría con un `expense_id` nulo o duplicaría filas hijas. Salir ahí
+devolviendo el id que mandó el cliente es lo que hace que reenviar sea gratis.
+
+`create_expense_with_shares` es el ejemplo, en `20260828150000`. Y su `drop function` de la firma de
+seis argumentos va en esa misma migración, por lo de arriba.
+
+Las validaciones (`not_a_member`, `invalid_amount`, `shares_sum_mismatch`) van **antes** del insert,
+no dentro de un `on conflict`: un reenvío de algo que ya se guardó vuelve a pasar por ellas y tiene
+que dar el mismo resultado.
+
+, no con `\d`, que en Postgres admite dígitos no ASCII.
+- El límite de intentos es doble: por sesión (10 en 15 minutos) y por miembro atacado (5 por hora y
+  20 desde el último acierto). El segundo es el que importa: una sesión anónima nueva es gratis.
+- `join_community`, `remove_member`, `set_member_admin` y `reset_member_pin` empiezan por
+  `perform 1 from communities where id = ... for no key update`. Es lo que impide saltarse el
+  límite con peticiones en paralelo y que dos admins se degraden a la vez.
+- Queda una **migración B** sin escribir: hasta entonces una fila sin PIN que tiene dueño sigue
+  siendo reclamable por cualquiera con el código. No des el problema por cerrado.
+
+### Funciones internas: `revoke` también a `authenticated`
+
+Una función auxiliar que solo llaman otras funciones (`store_member_pin`, `member_has_history`,
+`is_valid_pin`) no lleva `grant` a nadie, y su `revoke` nombra a `authenticated` además de a
+`public` y `anon`. Los privilegios por defecto de Supabase conceden `execute` a `authenticated` de
+forma directa en toda función nueva de `public`, y `revoke ... from public, anon` no se lo quita.
+Se dejan en `security invoker`: si alguien llegara a llamarlas, correrían con sus permisos, que no
+alcanzan a `member_secrets`. Cuando las llama una RPC `security definer` corren como su dueño.
+
+### `lock table` en una migración va dentro de un `do`
+
+`lock table ... in access exclusive mode` como sentencia suelta falla con `LOCK TABLE can only be
+used in transaction blocks`: `supabase db push` manda el fichero como un lote, que es una
+transacción implícita pero no un bloque. Envuelto en `do $ begin lock table ...; end $;` funciona
+y el bloqueo dura hasta el final del lote. Deducido leyendo, pendiente de confirmar en el ensayo de
+`20261012120000`; si allí se comporta distinto, corrige este párrafo.
+
+### Una RPC `security definer` comprueba tres cosas a mano
+
+Se salta la RLS, así que nada la protege salvo lo que escriba dentro. Las tres salieron mal a la
+vez en las fases 10 a 12 y se corrigieron en `20261012130000`:
+
+1. **Que quien llama es miembro activo**: `and removed_at is null`, o directamente
+   `p_community_id in (select member_community_ids())`, que ya lo filtra. Sin eso un expulsado con
+   historial, que conserva su sesión, sigue escribiendo.
+2. **Que la fila que va a tocar es de esa comunidad, no solo que quien llama pertenece a la que
+   dice.** `save_recipe` comprobaba la pertenencia contra `p_community_id` y luego hacía
+   `on conflict (id) do update` sin mirar de quién era la receta que ya existía: con el uuid de una
+   receta ajena y tu propia comunidad, la sobrescribías. El arreglo es el `where` del `do update`:
+
+   ```sql
+   on conflict (id) do update set ...
+     where r.community_id = excluded.community_id
+   returning r.id into v_saved_id;
+
+   if v_saved_id is null then
+     raise exception 'forbidden' using errcode = '42501';
+   end if;
+   ```
+
+   Si el `where` no se cumple no hay fila devuelta y `into` deja la variable a nulo, sin error.
+3. **Que cada id que recibe como argumento es de esa comunidad**: el pagador y los miembros de las
+   cuotas en `create_expense_with_shares`, el artículo, la receta en `upsert_meal_slot`. La clave
+   foránea solo comprueba que el id existe, no de quién es.
+
+El test tiene que probar el caso cruzado en los dos sentidos: un id nuevo en comunidad ajena **y**
+un id ajeno en comunidad propia. Solo estaba el primero.
+
+**Lo que la RPC valida, la tabla no.** Si la tabla tiene además política de `insert` o `update`,
+un cliente modificado puede escribir directo y saltarse esas comprobaciones. Por eso, desde
+`20261012130000`:
+
+- `expenses`, `expense_shares` y `meal_plan_slots` **no tienen política de `insert` ni de
+  `update`**. Se escribe solo por `create_expense_with_shares` y `upsert_meal_slot`. Sí conservan
+  la de `delete` (salvo `expense_shares`, cuyas filas mueren en cascada con su gasto).
+- `settlements` conserva la de `insert` porque los APK instalados insertan directo, pero con un
+  `exists` sobre `members` para cada extremo. Una política puede validar ids así cuando no se
+  puede obligar a pasar por una RPC:
+
+  ```sql
+  and exists (select 1 from members m
+               where m.id = settlements.from_member_id
+                 and m.community_id = settlements.community_id)
+  ```
+
+  El `exists` pasa por la RLS de `members`, que deja ver a todos los de tus comunidades,
+  archivados e invitados incluidos; a uno de otra lista ni lo ve.
+
+**Antes de añadir una política de `insert` o `update` a una tabla que ya tiene RPC, pregúntate qué
+valida la RPC que la política no.** Siguen con las dos cosas `recipes`, `recipe_ingredients` y
+`member_push_tokens`; anotado como deuda en `docs/phases/fase-15.md`, apartado 10.
 
 ## Permisos de las funciones
 
@@ -536,7 +952,9 @@ publicación.** Es el caso de `expense_shares`: no tiene por dónde filtrar, y s
 borrados de todas las comunidades (ver el párrafo de arriba). No se denormaliza la columna para
 arreglarlo: las cuotas se escriben en la misma transacción que su gasto y se borran en cascada con
 él, así que el evento de `expenses` ya avisa de todo lo que cambió. La publicación lleva `expenses` y
-`settlements`; `expense_shares` no, a propósito (`20260828140000`).
+`settlements`; `expense_shares` no, a propósito (`20260828140000`). **`recipe_ingredients` es el
+mismo caso** y salió de la publicación en `20261012130000`: `save_recipe` siempre toca
+`recipes.updated_at`, así que el evento de `recipes` avisa también de un cambio de ingredientes.
 
 **Tras `SUBSCRIBED` hay una ventana de en torno a un segundo en la que los eventos se pierden.**
 El canal dice que está suscrito antes de que el servidor tenga registrada la suscripción a los

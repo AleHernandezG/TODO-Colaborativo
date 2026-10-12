@@ -43,6 +43,7 @@ El criterio y sus motivos están en
 | [0023](./adr/ADR-0023-foto-en-alta-de-articulos-y-portada-de-recetas.md) | Foto en el alta de artículos y portada de recetas | Aceptado                          |
 | [0024](./adr/ADR-0024-modo-supermercado-y-categorias-de-articulos.md)    | Modo supermercado y categorías de artículos       | Aceptado                          |
 | [0025](./adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md) | Varias listas por usuario y lista activa             | Aceptado (RLS 70/70)              |
+| [0026](./adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md) | El PIN sale de `members`; identidad sin PIN no reclamable | Aceptado; migración A escrita y sin aplicar, B pendiente |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin

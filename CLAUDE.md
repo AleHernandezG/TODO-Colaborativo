@@ -250,6 +250,12 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...   # publishable key (pública, 
 
 - **Usa la publishable key** (`sb_publishable_...`) en el cliente. Es de bajo privilegio y segura para incrustar en la app; la seguridad real la dan las políticas RLS.
 - **NUNCA** uses ni commitees la _secret key_ (`sb_secret_...`) ni la _service key_: se saltan RLS y son solo de servidor.
+- **El hash del PIN vive en `member_secrets`, una tabla sin políticas que solo leen las RPC.** No
+  lo devuelvas nunca desde una función ni lo metas en una tabla con política de `select`: `members`
+  lo tuvo en una columna legible por toda la lista hasta el 2026-10-12. Un PIN se fija con
+  `set_member_pin` y lo restablece un admin con `reset_member_pin`, que devuelve uno temporal.
+  Razonado en [ADR-0026](docs/adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md),
+  que tiene una segunda migración pendiente: léelo antes de tocar `join_community`.
 - `join_code`: aleatorio, legible, sin caracteres ambiguos (`O/0`, `I/1`). Rate limit en "unirse".
   **Caduca a los 7 días** (`communities.join_code_expires_at`, plazo en `join_code_lifetime()`) y
   cualquier miembro puede cambiarlo con `rotate_join_code`, que mata al anterior en el acto. Como
@@ -484,8 +490,11 @@ npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
 # Aislamiento entre comunidades (RLS + Storage + rotación del código), lectura y búsqueda del
 # catálogo (la única tabla compartida), el alta idempotente de gastos y que una sesión en varias
-# listas solo ve las suyas. Debe dar 70/70
-# (69/70 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código)
+# listas solo ve las suyas, el PIN fuera de `members` (ADR-0026) y que las RPC de recetas, gastos
+# y menús no cruzan comunidades ni se saltan escribiendo directo en la tabla. Debe dar 102/102
+# (101/102 si no hay SUPABASE_SECRET_KEY en .env: sin ella no se puede envejecer un código).
+# OJO: 32 de esas comprobaciones necesitan las migraciones 20261012120000 y 20261012130000
+# aplicadas. Contra un proyecto que aún no las tenga fallan; el script anterior daba 70/70.
 npm run test:rls
 
 # Realtime: eventos de artículos, de gastos y de miembros, filtro por comunidad, aislamiento y

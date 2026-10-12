@@ -78,7 +78,7 @@ npx expo start --tunnel   # si el móvil y el PC no comparten Wi-Fi
 | `npm run lint`                       | ESLint sobre `src/`                                                 |
 | `npm run typecheck`                  | `tsc --noEmit`, TypeScript en modo estricto                         |
 | `npm test`                           | Jest. 66 suites, 483 tests verdes (cobertura de dominio y datos: 91 %) |
-| `npm run test:rls`                   | Aislamiento entre comunidades contra el proyecto real. Da **70/70** |
+| `npm run test:rls`                   | Aislamiento entre comunidades contra el proyecto real. Da **102/102** con las migraciones `20261012120000` y `20261012130000` aplicadas (70/70 antes) |
 | `npm run test:realtime`              | Eventos, filtro por comunidad y presencia. Da **18/18**             |
 | `npm run test:e2e`                   | Maestro sobre el APK instalado. Necesita `adb` y el CLI de Maestro  |
 | `npm run users`                      | Cuántos usuarios anónimos hay y cuáles quedaron huérfanos           |
