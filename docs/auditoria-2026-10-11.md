@@ -5,7 +5,8 @@ Hecha sobre `main` (`cd4d1e7`) y contrastada con `origin/feat/expo-sdk-57` (`a36
 
 > **Actualización del 2026-10-11:** la decisión 0 está tomada. `feat/expo-sdk-57` se fusionó en `main`
 > y el proyecto es SDK 57. El incremento 1 está hecho; detalle en `docs/phases/fase-15.md`, apartado 7.
-> El resto del informe describe el estado anterior a la fusión.
+> El resto del informe describe el estado anterior a la fusión, salvo el apartado 7, que se
+> reescribió el 2026-10-12 con los prompts al día.
 
 Leyenda: **✔** lo leí yo en el código o en la salida de un comando; **○** viene solo del informe
 de un agente y no lo he contrastado.
@@ -371,184 +372,541 @@ migraciones no se han podido confirmar una a una.
 
 ## 7. Plan de arreglos
 
-Ninguno se empieza sin OK. Orden propuesto: el 2 cuanto antes, luego 1, 3 y 4 juntos (son la
-seguridad), 5, y el resto detrás.
+> **Reescrito el 2026-10-12.** Los prompts de abajo sustituyen a los originales: están puestos al día
+> con lo que ya se hizo (fusión a SDK 57, migraciones del PIN y de recetas escritas) y cada uno se
+> puede pegar tal cual en una sesión nueva de Claude Code, sin más contexto.
 
-### Decisión 0: cuál es la línea buena
+### Estado y orden
 
-O se fusiona `feat/expo-sdk-57` en `main` (y el SDK pasa a ser 57, con el `CLAUDE.md` de la rama),
-o se descarta y los móviles con 1.3.1 se quedan con un APK huérfano. Los prompts de abajo suponen
-la fusión, porque es lo que ya está instalado; si se elige lo contrario, cambian el 1 y el 5.
+| Orden | Incremento                                    | Estado                                                    |
+| ----- | --------------------------------------------- | --------------------------------------------------------- |
+| —     | 1. Unificar las ramas                         | Hecho (`febae87`)                                         |
+| —     | 2. Dejar de servir el bundle roto a la 1.2.0  | Hecho en EAS (grupo `c3353939`); falta verlo en un móvil  |
+| 1.º   | 3 y 4. Aplicar las dos migraciones            | Escritas y revisadas, **sin aplicar**                     |
+| 2.º   | 6. Pantalla del PIN y migración B             | Sin empezar. Va antes que el 5                            |
+| 3.º   | 5. Updates por aire y aviso de versión        | Sin empezar                                               |
+| 4.º   | 7. Realtime duplicado y navegación            | Sin empezar                                               |
+| 5.º   | 8. Mutaciones, i18n y accesibilidad           | Sin empezar                                               |
+| 6.º   | 9. Cobertura                                  | Sin empezar                                               |
+| 7.º   | 10. Cierre: documentación y dispositivo       | Sin empezar                                               |
+| 8.º   | 11. Play Store en prueba interna              | Sin empezar                                               |
 
-### Incremento 1. Unificar las ramas
+El 6 va antes que el 5 porque, hasta que exista la migración B, una fila sin PIN la puede reclamar
+cualquiera con el código de la lista (ADR-0026). El 7 y el 8 se pueden intercambiar; el 9 va después
+de los dos porque ambos cambian código que hay que cubrir.
 
-Agente: `docs-drift-auditor`
+### Cómo usar los prompts
 
-```
-Fusiona origin/feat/expo-sdk-57 en main sin commitear (el commit lo hago yo). Antes de tocar
-nada enséñame el plan: qué ficheros entran en conflicto (CLAUDE.md, docs/phases/fase-14.md,
-eslint.config.js como mínimo) y cómo resuelves cada uno. Reglas: gana el texto de la rama en
-todo lo que hable de SDK y versión; gana main en agentes, plugin pr-review-toolkit y el array
-`features` de eslint.config.js, que debe acabar con las 8 features. Después corre npm ci,
-lint, typecheck, npm test y `npx expo export --platform android`. Al terminar lanza
-docs-drift-auditor sobre CLAUDE.md y docs/guias/despliegue.md y dame la lista de lo que sigue
-sin coincidir con el código. No publiques ningún update ni lances ningún build.
-```
+- **Una sesión nueva por incremento.** Copia el bloque entero y pégalo.
+- Cada prompt nombra las skills, los agentes y los plugins que le tocan. Los agentes solo leen e
+  informan; quien corrige es la sesión principal.
+- **Ninguno hace commit, push, `eas update`, `eas build` ni `supabase db push`.** Te dejan el
+  comando preparado.
+- Todos piden plan antes de tocar nada, y terminan con la skill `qa-runner` y con la documentación
+  escrita en el repo.
+- Si al abrir la sesión `git status` no está limpio o `main` no está al día, páralo antes de seguir.
 
-### Incremento 2. Dejar de servir un bundle roto a la 1.2.0
+---
 
-Lo lanza el usuario.
+### Incrementos 3 y 4. Aplicar las dos migraciones
 
-```
-Dame el comando exacto de `eas update:republish` para volver a poner como último update de la
-rama `preview`, runtime 1.2.0, el grupo 96f20bba-9b89-42f7-af7f-a56f09441436 ("Rebuild expense
-split UI"), que es el último anterior a expo-print y expo-notifications. Antes confirma con
-`git log` y `git show <commit>:package.json` que el commit de ese grupo no importa ningún
-módulo que falte en el package.json del APK del 2026-08-03. No lo ejecutes: lo lanzo yo.
-Documenta en docs/phases/fase-15.md qué pasó con los grupos 5b55fc8d y b318117c y por qué.
-```
-
-### Incremento 3. PIN: diseño de esquema
-
-Agente: `migration-reviewer`
-
-```
-Diseña, sin escribir todavía el .sql, la corrección del PIN por miembro y espera mi OK.
-Problemas a resolver, todos en supabase/migrations/20260904120000_member_roles_and_guests.sql
-y 20260824130000_member_pin.sql: (1) pin_hash se lee por la API porque members_select es por
-fila; (2) un miembro con pin_hash nulo y auth_user_id de otra sesión lo reclama cualquiera
-(líneas 166-174); (3) el servidor acepta PIN nulo o de cualquier formato; (4) no hay RPC para
-fijar o restablecer el PIN; (5) el rate limit es por sesión y no por miembro atacado; (6)
-remove_member no rota el join_code. Quiero el diseño con tablas, on delete, políticas, firma de
-cada RPC con su drop de la anterior, y para cada punto la alternativa que descartas y su coste.
-Dime qué le pasa a un miembro antiguo que perdió la sesión y nunca fijó PIN, y qué le pasa a un
-APK ya instalado que no conozca los estados nuevos. Pasa el diseño por migration-reviewer antes
-de enseñármelo. Va en un ADR nuevo que supersede a ADR-0015; no edites ADR-0015. Añade a
-scripts/rls-isolation-test.mjs las comprobaciones que hoy faltan, empezando por cambiar la de
-la línea 753, que exige que pin_hash sea legible.
-```
-
-### Incremento 4. Recetas, archivados y permisos
-
-Agente: `migration-reviewer`
+Requisito: el ordenador que tiene `.env`. Agentes: `migration-reviewer` si hay que corregir el SQL.
 
 ```
-Migración correctora, con diseño previo y mi OK. (1) save_recipe: el `on conflict (id) do
-update` de 20260907170000_recipe_cover_photo.sql:124-130 no comprueba que la receta sea de
-p_community_id; añade la condición y lanza 42501 si no. (2) create_expense_with_shares,
-save_recipe y delete_recipe comprueban la pertenencia sin `removed_at is null`: usa
-member_community_ids(). (3) revoke/grant con firma exacta en register_push_token,
-unregister_push_token, get_community_push_tokens, save_recipe, delete_recipe, upsert_meal_slot
-y delete_meal_slot. (4) saca recipe_ingredients de la publicación de Realtime. Ninguna firma
-cambia. Añade a test:rls un caso por cada punto. Pasa el .sql por migration-reviewer antes del
-db push, que lanzo yo. Documenta en la skill supabase-data.
+Vas a aplicar a Supabase dos migraciones que están escritas y revisadas pero no se han ejecutado
+nunca. Trabajas en el repo de la lista de la compra colaborativa (Expo SDK 57 + Supabase).
+
+ANTES DE NADA lee entero docs/traspaso-2026-10-12.md y sigue su apartado 4 paso a paso (pasos 0 a
+4). Lee también docs/guias/ensayar-una-migracion.md, que es el procedimiento del paso 1.
+
+Las migraciones, en este orden:
+- supabase/migrations/20261012120000_member_secrets_and_identity_hardening.sql (ADR-0026, A)
+- supabase/migrations/20261012130000_recipes_isolation_and_archived_members.sql
+
+Carga la skill `supabase-data` antes de tocar nada de base de datos.
+
+Reglas de esta sesión:
+- Primero al proyecto de ENSAYO, nunca directo al real. Yo creo el proyecto de prueba en
+  supabase.com y relleno .env.ensayo; dime cuándo lo necesitas y qué claves pedir.
+- Antes de cada comando que escriba en Supabase (`supabase link`, `supabase db push`, los tests,
+  que crean listas de prueba) enséñame el comando exacto y contra qué proyecto va, y espera mi OK.
+- Si `db push` falla en el ensayo: copia el error literal, NO toques el proyecto real, corrige el
+  .sql (todavía se puede editar: no está aplicado en ningún sitio), pásalo por el agente
+  `migration-reviewer` y repite el ensayo.
+- Ensaya también la copia de hashes con datos (apartado «Si la migración mueve datos» de la guía):
+  es el único paso irreversible.
+- Esperado en el ensayo y después en el real: `npm run test:rls` 102/102 (101/102 sin
+  SUPABASE_SECRET_KEY) y `npm run test:realtime` 18/18. Si una comprobación falla solo por el
+  código HTTP y el comportamiento es el correcto, ajusta el test, no el SQL, y dímelo.
+- Antes de aplicar al real lanza conmigo las consultas del paso 2 del traspaso y enséñame los
+  resultados. Si alguna no da lo esperado, para.
+- Tras aplicar al real: regenera src/shared/lib/db.types.ts con `gen types --linked` DESDE GIT
+  BASH, y corre typecheck, lint y `npm test`.
+
+Al terminar:
+- Anota los resultados, con fecha, en docs/phases/fase-15.md (apartados 9 y 10, tablas
+  «Verificación»), cambia el estado del ADR-0026 a «migración A aplicada el <fecha>», actualiza su
+  fila en docs/README.md y quita de CLAUDE.md (sección «Comandos») el aviso de que 32
+  comprobaciones necesitan las migraciones.
+- Dime cómo probar a mano con el APK 1.3.1: crear una lista, unirse con código y PIN, añadir un
+  gasto, registrar una liquidación y guardar una receta.
+- No hagas commit ni push: dime qué ficheros y con qué mensaje.
 ```
 
-### Incremento 5. Updates y aviso de versión
+---
 
-Agentes: `silent-failure-hunter`, `architecture-guard`
+### Incremento 6. Pantalla del PIN, mensajes de unirse y migración B
 
-```
-Plan primero, luego código. (1) ADR nuevo: runtimeVersion con policy `fingerprint` en vez de
-`appVersion`, con lo que cuesta. (2) src/shared/lib/updates.ts como único fichero que importe
-expo-updates para comprobar y aplicar, y src/shared/hooks/use-ota-updates.ts que compruebe en
-frío y al volver a primer plano (useAppForeground), mande los fallos a observability y enseñe
-un snackbar persistente "Actualización lista" con "Reiniciar". No recargues solo si hay
-mutaciones en cola: query-persister.ts tira la caché al cambiar de update. (3) build-info.ts:
-distingue desarrollo, embebido, update y arranque de emergencia (Updates.isEmergencyLaunch), y
-que BuildTag lo pinte. (4) Aviso de versión mínima: diseña la tabla compartida de solo lectura
-(como supermarkets: select para authenticated, sin políticas de escritura) con versión mínima,
-última versión y URL del APK, y una pantalla que bloquee por debajo de la mínima; el diseño de
-la tabla pasa por migration-reviewer. Textos en es.json y en.json. Añade EXPO_PUBLIC_SENTRY_DSN
-a la guía de despliegue como variable obligatoria del entorno preview. Al terminar lanza
-silent-failure-hunter sobre el código de updates y architecture-guard sobre src/shared.
-```
-
-### Incremento 6. Mensajes de la pantalla de unirse
-
-Agente: `silent-failure-hunter`. Depende del incremento 3.
+Requisito: las migraciones `20261012120000` y `20261012130000` aplicadas al proyecto real.
+Agentes: `architecture-guard`, `pr-review-toolkit:silent-failure-hunter`, `migration-reviewer`.
 
 ```
-Depende del incremento 3. En src/features/community: quita `username_taken` de
-failedJoinStatuses, de JoinOutcome, de JoinCommunityScreen.tsx:58 y de los dos JSON, porque el
-servidor ya no lo devuelve. Sustituye el mensaje de PIN incorrecto por uno que cubra los dos
-casos reales (soy yo con el PIN mal, o el nombre es de otro) y diga qué hacer si se ha olvidado.
-Cuando el servidor fije un PIN sobre un miembro que ya existía, la pantalla lo confirma. El
-aviso de demasiados intentos dice el plazo (15 minutos) y se pinta en línea. `submit` no hace
-nada si isPending. Separa en dos el throw de supabase-community-repository.ts:91-93. Tests de
-dominio y del adaptador. Al terminar lanza silent-failure-hunter sobre el flujo.
+Vas a darle pantalla a las tres RPC del PIN que ya existen en el servidor, arreglar los mensajes de
+la pantalla de unirse, y después escribir la segunda migración de ADR-0026. Repo: lista de la
+compra colaborativa (Expo SDK 57, TypeScript strict, TanStack Query, Zustand, Supabase).
+
+LEE PRIMERO, enteros:
+- docs/adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md (el diseño; la «Migración
+  B» es lo que cierras al final)
+- docs/phases/fase-15.md, apartados 9 y 10
+- docs/auditoria-2026-10-11.md, apartado 3 y los fallos 2, 8 y 9 del apartado 6
+- docs/adr/ADR-0016-clasificacion-de-errores-y-mensaje-al-usuario.md y DESIGN.md
+
+Comprueba antes de empezar que las migraciones 20261012120000 y 20261012130000 están aplicadas
+(`npx supabase migration list --linked`). Si no lo están, para y dímelo: este incremento depende
+de ellas.
+
+Carga la skill `expo-stack` antes de tocar src/ y la skill `supabase-data` antes de tocar SQL. Usa
+el plugin `context7` si necesitas la API exacta de una librería en la versión instalada.
+
+ENSÉÑAME UN PLAN Y ESPERA MI OK antes de escribir código. Hazlo en estos incrementos, cada uno con
+lint, typecheck y tests en verde antes de pasar al siguiente:
+
+A. Datos y dominio (src/features/community)
+- Puerto y adaptador para `set_member_pin`, `my_member_pin_state` y `reset_member_pin`. Cada
+  método empieza por `await assertOnline()` y envuelve con `serverError('<operacion>', error)`.
+- OJO: `invalid_pin` en `set_member_pin` significa «no son cuatro cifras» y «no coincide» es
+  `wrong_pin`; en `join_community` `invalid_pin` significa «no coincide». Que el dominio no los
+  confunda.
+- Casos de uso puros en domain/ con sus tests. Reutiliza domain/pin.ts.
+
+B. Pantallas (presentation/)
+- Aviso en la lista según `my_member_pin_state`: `none` → «ponte un PIN»; `exposed` → «cambia tu
+  PIN» (explica en una frase por qué); `set` → nada. Es una query, no estado en Zustand.
+- Pantalla o diálogo para fijar y cambiar el PIN. Fijarlo NO es optimista: la respuesta la decide
+  el servidor. Documéntalo como excepción a la regla de mutaciones, igual que `create_community`.
+- En la pantalla de miembros, solo para admins: «Restablecer PIN», con confirmación que avise de
+  que esa persona sale de la lista hasta que vuelva a entrar, y que enseñe el PIN temporal de
+  forma que se pueda copiar y dictar.
+- En esa misma pantalla, no ofrezcas «hacer admin» a un invitado sin sesión: el servidor lo
+  rechaza con P0005.
+- `use-remove-member` invalida `['join-code', communityId]`: expulsar a alguien con sesión rota el
+  código de invitación.
+
+C. Pantalla de unirse (JoinCommunityScreen)
+- El mensaje de PIN incorrecto cubre los dos casos reales, porque el servidor no los distingue:
+  «soy yo con el PIN mal» y «ese nombre es de otra persona». Di qué hacer en cada uno y qué hacer
+  si se ha olvidado (pedir a un admin que lo restablezca).
+- `username_taken` SIGUE VIVO: la migración A lo devuelve otra vez y la B lo usará más. No lo
+  borres, aunque la auditoría original lo diera por código muerto.
+- «Demasiados intentos» dice el plazo y se pinta en línea, no en un snackbar que desaparece.
+- `submit` no hace nada si `isPending` (hoy el teclado puede lanzar una segunda petición).
+- Separa en dos el `throw` de supabase-community-repository.ts que dice «estado desconocido: ok».
+
+Reglas que aplican a A, B y C: textos en es.json y en.json (hay un test que falla si se
+desincronizan); `accessibilityLabel` y `accessibilityRole` en cada control, área táctil de 44 pt,
+contraste AA, estado no solo por color; errores con `showError(cause)` o `useFailureMessage()`,
+nunca inspeccionando el error en presentation/; nada de imports de react-native-paper fuera de
+src/shared/ui.
+
+Al terminar A, B y C lanza en paralelo los agentes `architecture-guard` (sobre
+src/features/community) y `pr-review-toolkit:silent-failure-hunter` (sobre el flujo de unirse y
+el del PIN), y corrige lo que encuentren.
+
+D. Migración B de ADR-0026 (solo cuando A, B y C estén probados en un móvil)
+- Diseño primero, en una nota del ADR o en un ADR nuevo si cambia algo respecto a lo escrito;
+  pásalo por `migration-reviewer` y espera mi OK antes del .sql.
+- Contenido: borrar los secretos con `exposed = true`; la fila sin PIN que es de otra sesión deja
+  de ser reclamable y devuelve `username_taken`; adoptar un invitado exige un PIN válido.
+- `join_community` solo puede devolver estos seis estados, que son los que conocen los APK
+  instalados: ok, invalid_join_code, expired_join_code, username_taken, invalid_pin,
+  too_many_attempts. Ni uno más.
+- Antes de aplicarla, lanza conmigo la consulta del final del ADR que cuenta las listas con un
+  único admin sin PIN: a esas personas hay que avisarlas antes.
+- Añade a scripts/rls-isolation-test.mjs las comprobaciones de la B.
+- Ensayo en el proyecto de prueba (docs/guias/ensayar-una-migracion.md) y, con mi OK, al real. El
+  `db push` lo lanzo yo.
+
+Para probar en el móvil: esto es solo JS, así que llega por aire a los APK 1.3.1. Dame el comando
+de `eas update --branch preview --environment preview` con su mensaje; lo lanzo yo. Antes
+comprueba con `git diff` que no ha cambiado `plugins` de app.json ni ninguna dependencia nativa.
+
+Cierre: skill `qa-runner`. Escribe en docs/phases/fase-15.md qué se hizo, las decisiones sobre la
+marcha y un guion de prueba con dos móviles (fijar PIN, cambiarlo, restablecerlo desde el admin y
+recuperar la fila en el otro móvil, intentar reclamar una fila ajena). Actualiza la skill
+`expo-stack` o `supabase-data` si aparece una regla nueva. No hagas commit ni push.
 ```
+
+---
+
+### Incremento 5. Updates por aire y aviso de versión
+
+Agentes: `pr-review-toolkit:silent-failure-hunter`, `architecture-guard`, `migration-reviewer`.
+
+```
+Vas a hacer que la app se entere de que hay una versión nueva y que los updates por aire lleguen
+sin depender de dos arranques en frío. Repo: lista de la compra colaborativa (Expo SDK 57).
+
+LEE PRIMERO:
+- docs/auditoria-2026-10-11.md, apartado 4 entero y los fallos 4, 6 y 7 del apartado 6
+- docs/guias/despliegue.md entero
+- docs/phases/fase-15.md, apartados 7 y 8
+- src/shared/lib/build-info.ts, src/shared/lib/query-persister.ts, src/shared/lib/observability.ts
+  y src/shared/ui/BuildTag.tsx
+
+Contexto que tienes que respetar:
+- El proyecto es SDK 57 y `app.json` está en la versión 1.3.1. NO subas el SDK. La skill
+  `upgrading-expo` del plugin `expo` no se usa en este repo: si se carga sola, ignórala y dímelo.
+- Hay móviles con un APK 1.2.0 (SDK 54) que no pueden ejecutar nada de lo que hay en main. No
+  publiques nada contra la runtime 1.2.0.
+- Hoy el único uso de expo-updates es leer el id para el pie de la pantalla. No hay código que
+  compruebe ni aplique updates: todo va por los valores por defecto.
+
+Carga la skill `expo-stack` antes de tocar src/ y `supabase-data` antes del SQL. Usa el plugin
+`context7` para la API de expo-updates en la versión instalada (mira package.json), no la de la
+última. Las skills de despliegue y EAS del plugin `expo` sirven para los comandos de build y
+update.
+
+ENSÉÑAME UN PLAN Y ESPERA MI OK. Incrementos:
+
+A. ADR nuevo (el siguiente número libre en docs/adr/): pasar `runtimeVersion` de la política
+`appVersion` a `fingerprint`, para que un cambio nativo cambie la runtime solo. Tiene que decir
+qué alternativa se descarta, qué cuesta (cada cambio nativo es build nuevo; el APK 1.3.1 deja de
+recibir updates en cuanto cambie el fingerprint) y cómo se comprueba antes de publicar. NO cambies
+app.json hasta que yo apruebe el ADR: cambiar la política es un cambio nativo y pide build nuevo.
+
+B. Comprobar y aplicar updates
+- src/shared/lib/updates.ts: el único fichero que importa expo-updates para comprobar, descargar
+  y recargar. Sale pronto y lo deja dicho si `__DEV__` o `!Updates.isEnabled`.
+- src/shared/hooks/use-ota-updates.ts: comprueba en frío y al volver a primer plano
+  (`useAppForeground` ya existe), con un mínimo entre comprobaciones. Los fallos van a
+  observability, sin snackbar para el caso sin red.
+- Cuando haya un update descargado: aviso persistente «Actualización lista» con la acción
+  «Reiniciar». NO recargues solo si hay mutaciones en cola: query-persister.ts tira la caché al
+  cambiar de update y se perderían escrituras hechas sin conexión. Dime cómo lo resuelves.
+
+C. El pie dice la verdad
+- build-info.ts distingue cuatro orígenes: desarrollo, bundle del APK, update por aire y arranque
+  de emergencia (`Updates.isEmergencyLaunch`). Hoy «base» sale igual en Expo Go, en un APK recién
+  instalado y tras un update revertido.
+- BuildTag lo pinta, y una pulsación larga enseña canal y runtime, para que una captura de
+  pantalla valga como diagnóstico.
+- Un arranque de emergencia se manda a observability.
+
+D. Aviso de versión mínima
+- Diseño de una tabla compartida de solo lectura (como `supermarkets`: `select` para
+  `authenticated`, ninguna política de escritura, fuera de Realtime) con versión mínima admitida,
+  última versión y URL de descarga del APK. Pásalo por `migration-reviewer` y espera mi OK antes
+  del .sql. Se ensaya en el proyecto de prueba (docs/guias/ensayar-una-migracion.md).
+- Puerto y adaptador en una feature o en shared, con `assertOnline()`; la comparación de versiones
+  es una función pura en domain/ con tests.
+- Por debajo de la mínima: pantalla que bloquea, con el botón de descarga. Entre la mínima y la
+  última: aviso que se puede cerrar.
+- Dime dónde propones colgar el APK para que el enlace no caduque: los de EAS duran dos semanas.
+
+E. Guía de despliegue: `EXPO_PUBLIC_SENTRY_DSN` como variable obligatoria del entorno `preview`
+(hoy falta y ningún APK manda fallos), con el comando para añadirla, que lanzo yo.
+
+Textos en es.json y en.json. Accesibilidad completa en lo que se pinte.
+
+Al terminar lanza `pr-review-toolkit:silent-failure-hunter` sobre el código de updates y
+`architecture-guard` sobre src/shared y lo que hayas tocado.
+
+Para probar: B, C y D son JS y llegan por aire a los APK 1.3.1; dame el comando de `eas update`.
+Si apruebo el cambio a `fingerprint`, eso es build nuevo: dame el comando de `eas build` y dime
+qué les pasa a los APK ya instalados.
+
+Cierre: skill `qa-runner`, guion de prueba en un Android real escrito en docs/phases/fase-15.md
+(publicar un update y verlo llegar al volver a primer plano; bajar la versión mínima y ver el
+bloqueo) y docs/guias/despliegue.md al día. No hagas commit, push, build ni update.
+```
+
+---
 
 ### Incremento 7. Realtime duplicado y navegación
 
-Agente: `architecture-guard`
+Agente: `architecture-guard`.
 
 ```
-Reproduce primero, en un test, que abrir dos veces el canal `members:<id>` falla. Saca la
-suscripción de use-community-members.ts a un hook `useMembersRealtime` que se monte una sola
-vez por pantalla, y deja useCommunityMembers como lectura pura. En ShoppingModeScreen.tsx:74 y
-RecipeDetailScreen.tsx:115 navega con useGoToList() en vez de replace/push de '/list'. En
-use-push-notifications.ts no hagas push de la ruta en la que ya se está. Maneja de forma
-explícita el botón atrás de Android en ShoppingModeScreen y di en el diario qué hace. Regla:
-skill expo-stack, "La pila y el botón atrás". Lanza architecture-guard al terminar y dime cómo
-probarlo en el Android real.
+Vas a arreglar un fallo de Realtime que puede lanzar una excepción al abrir la pantalla de gastos,
+y tres problemas de navegación relacionados. Repo: lista de la compra colaborativa (Expo SDK 57,
+Expo Router, TanStack Query, Supabase Realtime).
+
+LEE PRIMERO:
+- docs/auditoria-2026-10-11.md, fallo 10 del apartado 6 y el punto «Atrás de Android» del
+  apartado 5
+- La skill `expo-stack`, que tienes que cargar: secciones de Realtime y «La pila y el botón atrás»
+- src/features/community/presentation/hooks/use-community-members.ts
+- src/features/expenses/presentation/screens/ExpensesScreen.tsx y hooks/use-expense-summary.ts
+
+El problema: `useCommunityMembers` abre el canal `members:<id>` dentro del propio hook de lectura,
+y ese hook se usa en seis sitios. ExpensesScreen lo llama directamente y otra vez a través de
+`useExpenseSummary`, así que el mismo canal se abre dos veces en el mismo componente. Un agente
+comprobó en Node que la segunda apertura lanza «cannot add callbacks after subscribe()»; nadie lo
+ha visto en un móvil.
+
+ENSÉÑAME UN PLAN Y ESPERA MI OK. Después:
+
+1. Reproduce primero el fallo en un test, antes de arreglar nada. Si no se reproduce, dímelo y
+   paramos a pensar: no arregles a ciegas.
+2. Saca la suscripción a un hook `useMembersRealtime` que se monte una sola vez por pantalla, y
+   deja `useCommunityMembers` como lectura pura. La suscripción sigue siendo un método del
+   repositorio, con `filter: community_id=eq.<id>`.
+3. Revisa si `items:<id>`, `presence:<id>` y los canales de recetas y menús tienen el mismo
+   problema cuando hay dos pantallas de lista apiladas.
+4. `ShoppingModeScreen` («Finalizar compra») y `RecipeDetailScreen` navegan con `useGoToList()`
+   (dismissAll + replace) en vez de `router.replace('/list')` o `router.push('/list')`, que dejan
+   dos pantallas de lista montadas.
+5. En `use-push-notifications`, tocar una notificación no hace `push` de la ruta en la que ya se
+   está.
+6. Maneja de forma explícita el botón atrás de Android en `ShoppingModeScreen` y escribe en el
+   diario qué hace. Android es la plataforma prioritaria y su comportamiento propio no se deja al
+   valor por defecto.
+7. Las suscripciones nuevas de recetas, menús y miembros no tienen los respaldos que pide la
+   skill: refetch tras SUBSCRIBED, `onStatus` y `useAppForeground`. Añádelos.
+
+Usa el plugin `context7` si necesitas el comportamiento exacto de @supabase/supabase-js o de
+expo-router en la versión instalada.
+
+Al terminar lanza el agente `architecture-guard` sobre lo que hayas tocado y corrige lo que
+encuentre.
+
+Para probar: es JS; dame el comando de `eas update --branch preview --environment preview`, que
+lanzo yo, tras comprobar que no ha cambiado nada nativo.
+
+Cierre: skill `qa-runner`. Guion en docs/phases/fase-15.md con DOS móviles: abrir gastos, abrir
+miembros con gastos debajo, finalizar una compra y pulsar atrás, tocar una notificación estando
+ya en la lista, y que un cambio hecho en un móvil llegue al otro. No hagas commit ni push.
 ```
+
+---
 
 ### Incremento 8. Mutaciones, i18n y accesibilidad de las fases 7 a 12
 
-Agente: `architecture-guard`
+Agentes: `architecture-guard`, `pr-review-toolkit:silent-failure-hunter`.
 
 ```
-Tres bloques, cada uno con lint, typecheck y tests antes de pasar al siguiente. (1) Mutaciones
-de meal-planner, recipes y community (use-meal-planner, use-add-meal-plan-to-list,
-use-save-recipe, use-delete-recipe, use-add-recipe-to-list, use-set-member-admin,
-use-remove-member, use-add-guest): para cada una decide conmigo si es optimista y encolable
-(mutationKey + setMutationDefaults, ADR-0009) o si lleva networkMode 'always' documentado como
-excepción; todas con onError y showError. Añade await a los tres assertOnline() de
-supabase-notifications-repository.ts. (2) i18n: añade las claves que se usan y no existen
-(common.close, common.loading, common.save, common.back, items.row.checkHint,
-items.row.uncheckHint), quita los defaultValue y el ternario de AddGuestDialog.tsx:53, y amplía
-el test de i18n para que falle si un t('…') usa una clave ausente. (3) Accesibilidad: 44 pt,
-accessibilityLabel y accessibilityRole en los controles de MealPlannerScreen, AssignMealModal,
-ConsolidatedReviewModal, ShoppingModeScreen, ItemsScreen y recipes; tokens de color en vez de
-text-content-muted y #FFFFFF. Lanza architecture-guard al terminar.
+Vas a poner al día el código de las fases 7 a 12 con tres reglas del proyecto que no cumple:
+mutaciones, textos y accesibilidad. Repo: lista de la compra colaborativa (Expo SDK 57,
+NativeWind, TanStack Query).
+
+LEE PRIMERO:
+- docs/auditoria-2026-10-11.md, fallos 11, 15, 16, 20, 21, 22 y 23 del apartado 6
+- CLAUDE.md, secciones «Reglas de estado», «Reglas de errores», «Reglas de UX y accesibilidad» y
+  «Reglas de datos y sincronización»
+- DESIGN.md
+- docs/adr/ADR-0009-cola-de-mutaciones-offline.md y ADR-0010
+
+Carga la skill `expo-stack`. ENSÉÑAME UN PLAN Y ESPERA MI OK. Son tres bloques; cada uno acaba con
+lint, typecheck y tests en verde antes de empezar el siguiente.
+
+BLOQUE 1. Mutaciones
+Ninguna de estas es optimista ni encolable, y varias no avisan si fallan: use-meal-planner (alta y
+borrado), use-add-meal-plan-to-list, use-save-recipe, use-delete-recipe, use-add-recipe-to-list,
+use-set-member-admin, use-remove-member, use-add-guest.
+- Para CADA una decide conmigo, antes de escribir: optimista y encolable (`mutationKey` +
+  `setMutationDefaults`, variables con todo lo que necesita la función, id generado en el cliente
+  en la llamada a `mutate`), o `networkMode: 'always'` documentado como excepción. Tráeme una
+  tabla con tu propuesta y el motivo.
+- Todas con `onError` y `showError(cause)`. En el planificador un fallo del servidor hoy no deja
+  ningún rastro en pantalla y el diálogo se cierra antes de saber el resultado.
+- Borrar una receta lleva «deshacer», no un `Alert.alert`.
+- `await` en los tres `assertOnline()` de supabase-notifications-repository.ts, que hoy no
+  bloquean nada, y `assertOnline()` + timeout en el envío a exp.host.
+- EditRecipeScreen: subir la foto, guardar y descartar la anterior van en un caso de uso dentro
+  de la mutación. Hoy la foto vieja se borra antes de que el guardado confirme.
+- use-add-recipe-to-list y use-add-meal-plan-to-list llaman al adaptador de `items` saltándose
+  su caso de uso: expón desde `items` lo que haga falta y úsalo.
+- meal-planner/domain/meal-plan.ts importa de `@/features/recipes`, cuyo índice arrastra React y
+  Supabase. Arréglalo, y amplía la regla de pureza de eslint.config.js para que lo cace:
+  repite los patrones que ya lleva ese fichero y comprueba con una sonda que los viejos siguen
+  disparando (CLAUDE.md explica la trampa del flat config).
+
+BLOQUE 2. Textos
+- Claves que se usan y no existen en los JSON: common.close, common.loading, common.save,
+  common.back, items.row.checkHint, items.row.uncheckHint. Hoy se pinta la clave cruda o un
+  `defaultValue` en castellano.
+- Fuera los `defaultValue` y el ternario de AddGuestDialog que compara con 'Reintentar'.
+- Mensajes interpolados, no concatenados (MembersScreen, AddGuestDialog,
+  ConfirmRemoveMemberDialog).
+- Amplía el test de i18n para que falle si un `t('…')` de src/ usa una clave que no existe.
+
+BLOQUE 3. Accesibilidad y diseño
+- 44 pt de área táctil, `accessibilityLabel` y `accessibilityRole` en: MealPlannerScreen,
+  AssignMealModal, ConsolidatedReviewModal, ShoppingModeScreen, ItemsScreen (selector de
+  agrupación), AddItemBar (chip de categoría) y las pantallas de recetas. Los campos de texto
+  llevan etiqueta, no solo placeholder.
+- El stepper de raciones de AssignMealModal lee lo mismo en el menos y en el más.
+- Colores solo de tokens: `text-content-muted` no existe (el token es `muted`), `bg-accent` y
+  `amber-*` tampoco, y el blanco fijo sobre el primario no llega a contraste AA en oscuro.
+- La opción activa de las pestañas no se distingue solo por el fondo.
+- Pantallas que confunden error o sin conexión con «vacío»: RecipeDetailScreen, RecipesScreen,
+  MealPlannerScreen, ShoppingModeScreen, MembersScreen. MealPlannerScreen además no tiene
+  refresco al tirar.
+
+Al terminar los tres bloques lanza en paralelo `architecture-guard` (sobre meal-planner, recipes,
+notifications, community e items) y `pr-review-toolkit:silent-failure-hunter` (sobre las
+mutaciones), y corrige lo que encuentren.
+
+Para probar: es JS; dame el comando de `eas update`, que lanzo yo.
+
+Cierre: skill `qa-runner`. Guion en docs/phases/fase-15.md: cada mutación con y sin red, modo
+claro y oscuro, fuente del sistema al máximo y una pasada con TalkBack por el planificador y las
+recetas. Las excepciones a la regla de mutaciones que se decidan van a CLAUDE.md. No hagas commit
+ni push.
 ```
+
+---
 
 ### Incremento 9. Cobertura
 
-Agente: `pr-review-toolkit:pr-test-analyzer`
+Agente: `pr-review-toolkit:pr-test-analyzer`.
 
 ```
-Sube al 70 % la cobertura de expenses/data, recipes/data, meal-planner/data y las ramas de
-meal-planner/domain, con tests que prueben comportamiento y no líneas. Cambia
-coverageThreshold en jest.config.js para que el umbral se exija por carpeta de domain/ y data/
-y no solo en global, y enséñame que falla si bajo una. Lanza pr-test-analyzer sobre los tests
-nuevos.
+Vas a subir la cobertura de tests de cuatro carpetas que están por debajo del umbral del proyecto
+y a hacer que el umbral lo detecte. Repo: lista de la compra colaborativa (Jest, jest-expo).
+
+LEE PRIMERO:
+- docs/auditoria-2026-10-11.md, apartado 5 («Lo que decía la revisión anterior») y fallo 19
+- jest.config.js
+- La skill `qa-runner`, sección de cobertura: qué se cubre y qué no
+
+El dato: la cobertura global es del 91 %, pero por carpeta están por debajo del 70 %
+expenses/data (61,7 %), recipes/data (62,5 %), meal-planner/data (66,7 %) y las ramas de
+meal-planner/domain (67,5 %). El umbral de jest.config.js es global y por eso no salta. Vuelve a
+medir con `npm run test:coverage` antes de empezar: los incrementos 7 y 8 habrán movido los
+números.
+
+ENSÉÑAME UN PLAN Y ESPERA MI OK. Después:
+1. Tests que prueben comportamiento, no líneas: para un adaptador, que empieza por
+   `assertOnline()`, que envuelve el error con `serverError`, que traduce bien la fila de Postgres
+   a la entidad del dominio, y qué hace cuando el servidor devuelve vacío o nulo. Mira cómo lo
+   hacen los tests de community/data e items/data y sigue ese estilo.
+2. No mockees lo que estás probando. Si para subir un porcentaje hay que escribir un test que no
+   puede fallar, no lo escribas y dímelo.
+3. Cambia `coverageThreshold` para exigir el 70 % por carpeta de domain/ y data/, no solo en
+   global, y enséñame que el comando falla si bajo una a propósito.
+4. La UI no se persigue: no añadas tests de pantallas para subir el número.
+
+Al terminar lanza el agente `pr-review-toolkit:pr-test-analyzer` sobre los tests nuevos y corrige
+lo que señale.
+
+Cierre: skill `qa-runner`. Anota en docs/phases/fase-15.md la tabla de cobertura antes y después,
+y actualiza el número del README. No hagas commit ni push.
 ```
+
+---
 
 ### Incremento 10. Cierre: documentación y prueba en dispositivo
 
-Agente: `docs-drift-auditor`
+Agente: `docs-drift-auditor`.
 
 ```
-Cierre. Reescribe en CLAUDE.md el bloque de estado (fase actual, recuentos de test:rls y
-test:realtime contados sobre los scripts, features y rutas reales, stack con Sentry, push, PDF
-y sus ADR, y la regla nueva: dependencia nativa o config plugin nuevo = runtime nueva y build).
-Actualiza docs/guias/despliegue.md: Sentry, FCM, el aviso de versión, los tres canales y dónde
-se cuelga el APK. Escribe en un solo documento de docs/guias el guion de prueba en Android real
-de las fases 7 a 15 y deja hueco para el resultado de cada paso; ninguna fase pasa a "cerrada"
-hasta que yo lo recorra. Lanza docs-drift-auditor al final y no cierres hasta que no devuelva
-discrepancias altas.
+Vas a cerrar la Fase 15: poner la documentación de acuerdo con el código y dejar preparado el
+guion de prueba en dispositivo de todo lo que nunca se ha visto en un móvil. Repo: lista de la
+compra colaborativa (Expo SDK 57 + Supabase).
+
+LEE PRIMERO:
+- docs/auditoria-2026-10-11.md, fallos 17 y 26 del apartado 6
+- docs/phases/fase-15.md entero
+- docs/traspaso-2026-10-12.md
+- CLAUDE.md entero
+
+Empieza lanzando el agente `docs-drift-auditor` sobre CLAUDE.md, README.md, docs/README.md,
+docs/guias/despliegue.md, las tres skills de .claude/skills y los diarios de las fases 7 a 15.
+Tráeme su lista ordenada por gravedad ANTES de corregir nada, y espera mi OK sobre qué se arregla.
+
+Lo que ya se sabe que está mal:
+- El bloque de estado de CLAUDE.md cuenta las fases 5 y 6 en presente («Lo que falta ahora es
+  probar la pantalla rehecha»), cuando están cerradas desde septiembre. Reescríbelo corto: fase en
+  curso, qué se arrastra y dónde está el detalle.
+- CLAUDE.md dice «los diez ficheros de lib/» y son más; su bloque de variables de entorno no
+  nombra `EXPO_PUBLIC_SENTRY_DSN` ni `SUPABASE_SECRET_KEY`; el stack no menciona Sentry, push, PDF
+  ni sus ADR (0018 a 0024); la fecha de los plugins no cuenta `pr-review-toolkit`.
+- Las fases 7 a 14 figuran como «completada» o «completada y verificada» sin ninguna prueba en un
+  Android real registrada. NO las marques como cerradas ni como abiertas por tu cuenta: enséñame
+  el estado de cada una y lo decido yo.
+- La skill `supabase-data` describe estados y tablas de antes de las migraciones de octubre;
+  compruébala contra supabase/migrations/.
+- docs/guias/despliegue.md: dos avisos que eran deducciones y hay que confirmar o quitar (que un
+  build `production` falla sin token de Sentry, y que el push no funciona sin configuración de
+  FCM). Si a estas alturas hay un build que lo demuestre, escríbelo como hecho; si no, como
+  pendiente de comprobar.
+- docs/guias/auditoria-dependencias.md razona con Expo Go 54.
+- Tres dependencias de desarrollo que llegaron con el SDK 57 (@react-native/jest-preset,
+  react-test-renderer, test-renderer) sin que ningún documento diga por qué hace falta cada una.
+  Averígualo y escríbelo, o dime cuál sobra.
+
+Reglas: un ADR no se edita para cambiar de opinión; si una decisión cambió, se escribe uno nuevo
+que lo supersede y solo se toca el estado del viejo. Si cambias una regla de CLAUDE.md, cámbiala
+también en el agente de .claude/agents que la comprueba.
+
+Después escribe UN documento en docs/guias/ con el guion de prueba en Android real de las fases 7
+a 15, por pantallas, con un hueco para el resultado y la fecha de cada paso: miembros y roles,
+PDF, notificaciones push, recetas, planificador, foto en el alta, modo supermercado, selector de
+listas, PIN, y updates. Marca qué pasos necesitan dos móviles. Ninguna fase pasa a «cerrada»
+hasta que yo lo recorra.
+
+Vuelve a lanzar `docs-drift-auditor` al final. No cierres mientras devuelva discrepancias de
+gravedad alta.
+
+Cierre: skill `qa-runner`, sección «Antes de cerrar fase». No hagas commit ni push.
 ```
+
+---
 
 ### Incremento 11. Play Store en prueba interna
 
-Cuando lo anterior esté estable.
+Sin agente. Requisito: los incrementos 5 y 6 cerrados.
 
 ```
-Escribe docs/guias/publicar-en-play-prueba-interna.md, sin ejecutar nada: alta de la cuenta,
-qué firma usa Play frente al keystore de EAS y si los APK ya instalados podrán actualizarse
-encima o habrá que desinstalar, build con el perfil production, canal `production` en EAS y
-cómo conviven sus updates con los de `preview`, y qué le pasa a la sesión anónima y al PIN de
-quien desinstale. Dime los costes y lo que no puedas confirmar en la documentación oficial.
+Vas a escribir la guía para publicar la app en Google Play en prueba interna, de forma que se
+actualice sola. No vas a publicar nada: solo el documento. Repo: lista de la compra colaborativa
+(Expo SDK 57, EAS).
+
+LEE PRIMERO:
+- docs/auditoria-2026-10-11.md, apartado 4, tabla «Cómo conseguir que una versión estable se
+  actualice sola»
+- docs/guias/despliegue.md entero, app.json y eas.json
+- docs/adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md, «Consecuencias»
+
+Usa las skills de despliegue y EAS del plugin `expo` y el plugin `context7` para la documentación
+vigente de EAS Build, EAS Submit y Play Console. La skill `upgrading-expo` no se usa en este repo.
+Todo lo que afirmes sobre Google Play o EAS y no puedas confirmar en su documentación oficial,
+márcalo como «sin confirmar»: precios, plazos de revisión y requisitos de testers cambian.
+
+Escribe docs/guias/publicar-en-play-prueba-interna.md con:
+1. Alta de la cuenta de desarrollador: coste, qué pide y cuánto tarda.
+2. La firma. Los APK ya instalados están firmados con el keystore que custodia EAS. Explica qué
+   firma usa Play (Play App Signing), si un móvil con el APK actual podrá actualizarse encima
+   desde Play o habrá que desinstalar, y cómo evitar desinstalar si se puede.
+3. Qué le pasa a quien desinstale: pierde la sesión anónima y tiene que volver a entrar con su
+   nombre y su PIN. Di qué hay que tener hecho antes para que eso no deje a nadie fuera (ADR-0026:
+   todo el mundo con PIN, admins que puedan restablecer).
+4. El build: perfil `production` de eas.json (App Bundle), `versionCode` con `appVersionSource:
+   remote` y `autoIncrement`, y las variables de entorno del entorno `production` de EAS. Hoy solo
+   están subidas al entorno `preview`.
+5. Sentry en el build de producción: ese perfil no lleva `SENTRY_DISABLE_AUTO_UPLOAD`, así que
+   intentará subir sourcemaps. Qué variables necesita.
+6. Los canales: el canal `production` no existe todavía en EAS. Cómo conviven sus updates con los
+   de `preview` y qué canal recibe cada build.
+7. Prueba interna frente a prueba cerrada: límites de testers, si hace falta revisión y cuánto
+   tarda un cambio en llegar a un móvil.
+8. Las notificaciones push: qué configuración de FCM hace falta y dónde se sube en EAS.
+9. Una lista de comprobación final, paso a paso, con los comandos que tendré que lanzar yo.
+
+Añade al final una sección «Lo que no he podido confirmar».
+
+Documenta en docs/phases/fase-15.md que la guía existe y qué decisiones quedan para mí. No lances
+ningún build ni ningún submit, y no hagas commit ni push.
 ```
