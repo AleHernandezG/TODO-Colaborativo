@@ -367,101 +367,54 @@ marcha". Nunca se queda sin escribir.
 
 **Fase en curso: 15 (varias listas a la vez), abierta el 2026-10-05.** Código, tests, RLS 70/70 y
 export hechos; falta recorrer el guion en el Android real. Detalle en `docs/phases/fase-15.md`.
-Los párrafos de abajo cuentan las fases 5 y 6 tal como se escribieron entonces; las fases 7 a 14
-están en `docs/phases/` y en `docs/README.md`.
 
-**Fase 6 (catálogo y reparto de gastos), abierta el 2026-08-07.** El MVP (fases 0 → 4) está
-cerrado y probado en dispositivo con dos móviles; su diario está en `docs/phases/`. Las dos últimas
-se cerraron el 2026-08-05 de una sentada; qué se probó y con qué resultado, en
-`docs/guias/prueba-de-cierre-en-dispositivo.md`.
-
-**La Fase 5 (endurecimiento) se cerró el 2026-08-16.** Su alcance lo eligió el usuario y fueron
-cuatro cosas: id del artículo generado en el cliente, expiración y rotación del `join_code`
-(migración aplicada el 2026-08-05), i18n en inglés y la pasada con TalkBack, que se recorrió entera
-el 2026-08-16 y pasó limpio, cerrando de paso el criterio F.2 que la Fase 3 dejó a deber. Todo lo
-demás (PIN, Sentry, push, roles, analítica, development build) quedó fuera a propósito. Detalle en
-`docs/phases/fase-5.md`.
-
-Lo que se arrastra y no se puede perder de vista:
-
-- **El inglés no se ha visto nunca en un móvil.** Los incrementos 1 y 2 se probaron en dispositivo
-  el 2026-08-06 y pasaron enteros; el guion del 3 (cambiar el idioma del sistema) no se recorrió por
-  decisión del usuario, porque para esta beta lo que importa es el castellano. Si la detección de
-  idioma fallara se cae en español, así que el riesgo está acotado, pero nadie ha comprobado cómo se
-  ve un texto en inglés ni qué devuelve `getLocales()` en ese Android. Detalle y guion en
-  `docs/phases/fase-5.md`.
-
-**La app se ve en español o en inglés según el idioma del móvil**, y vuelve a español con cualquier
-otro. Los dos JSON viven en `src/shared/lib/i18n/` y hay un test que falla si se desincronizan
-(claves, `{{placeholders}}` o plurales). No hay selector de idioma dentro de la app, a propósito.
-Un `throw new Error` sigue llevando su mensaje en español porque no se pinta nunca: si uno acaba en
-pantalla, el fallo es que llegue. Detalle en el incremento 3 de `docs/phases/fase-5.md`.
+La historia de cada fase (qué se hizo, cuándo se cerró, qué se probó) está en `docs/phases/` y en
+`docs/README.md`, no aquí. Este fichero se queda solo con lo que de esas fases sigue siendo regla o
+deuda viva.
 
 La versión que corre en el móvil se ve al pie de la pantalla de lista (`v1.3.1 · base` si es el
 bundle del APK, `v1.3.1 · <id>` si es un update por aire). Compruébala ahí antes de dar por
 hecho que un cambio llegó al dispositivo.
 
-RF-8 (PDF), RF-9 (reparto de gastos) y RF-10 (catálogo de productos de supermercado) son
-**post-MVP**: están registrados en §3 y §12 del documento maestro. **RF-11 (quitar miembros y rol de
-admin) y RF-12 (invitados en los gastos) los pidió el usuario el 2026-09-03** y son la Fase 7, que
-entra al cerrar la 6; las tres decisiones que se tomaron ese día están en §12 del maestro.
-El requisito de entrada del reparto de gastos ([ADR-0005](docs/adr/ADR-0005-reparto-de-gastos.md), identidad no suplantable)
-quedó resuelto el 2026-08-24 con el PIN por miembro ([ADR-0015](docs/adr/ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md)).
+### Reglas que dejaron las fases 5 y 6
 
-**RF-9 llegó al móvil el 2026-09-03**, con el update por aire `01a0682a` sobre el APK de la 1.2.0. El
-bloque B de la Fase 6 tiene esquema, RPC transaccional, balances y liquidación mínima en `domain/`,
-mutaciones optimistas, deshacer al borrar, suscripción a Realtime y cola offline con el id del gasto
-puesto por el cliente. Detalle en `docs/phases/fase-6.md` (B.9).
+- **La app se ve en español o en inglés según el idioma del móvil**, y vuelve a español con
+  cualquier otro. Los dos JSON viven en `src/shared/lib/i18n/` y hay un test que falla si se
+  desincronizan (claves, `{{placeholders}}` o plurales). No hay selector de idioma dentro de la app,
+  a propósito. Un `throw new Error` lleva su mensaje en español porque no se pinta nunca: si uno
+  acaba en pantalla, el fallo es que llegue. Detalle en el incremento 3 de `docs/phases/fase-5.md`.
+- **`supermarkets` y `catalog_products` no se filtran por `community_id`.** Son datos compartidos
+  por todos, con `select` para `authenticated` y ninguna política de escritura: escribe solo la
+  ingesta con la secret key. Razonado en
+  [ADR-0012](docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md) y
+  [ADR-0013](docs/adr/ADR-0013-fuente-del-catalogo-mercadona.md).
+- **El precio del catálogo es de referencia.** Se enseña con su fecha, no se pinta en la lista y no
+  se convierte en un gasto sin que una persona lo confirme.
+- **`items.image_path` guarda solo rutas de nuestro bucket, nunca una URL.** Si está a `null` y el
+  artículo tiene `catalog_product_id`, la foto es la del CDN del supermercado y se saca del catálogo
+  al pintar; la foto propia siempre gana. La regla vive en
+  `src/features/items/domain/item-image-source.ts` y está razonada en
+  [ADR-0014](docs/adr/ADR-0014-origen-de-la-foto-del-articulo.md).
+- **Antes de tocar la búsqueda del catálogo, lee sus dos trampas en `docs/phases/fase-6.md`:** el
+  `word_similarity` de Postgres satura a 1 (sirve para filtrar, nunca para ordenar), y `gen types`
+  no infiere la nulabilidad de un `returns table`, así que jura que `brand`, `image_url`,
+  `package_size`, `price_cents` y `price_checked_at` no son nulos y los cinco lo son.
+- **Si el catálogo acaba trayendo datos de Open Food Facts, la pantalla que los enseñe lleva
+  atribución visible.** Es la condición de uso de su licencia (ODbL 1.0 y CC-BY-SA), no una
+  cortesía. Ofrecer `catalog_products` como export o API activaría además la cláusula de
+  compartir-igual, y ese día deja de ser una decisión técnica. Detalle en
+  `docs/guias/fuentes-de-datos-del-catalogo.md`.
+- **Un gasto solo lo borra quien lo creó**, desde su detalle (`/expenses/[id]`), que es lo que dice
+  la RLS. Detalle en `docs/phases/fase-6.md` (Tarea 3).
 
-**Su pantalla se vio por fin en un Android real y no valía**: cabecera rota, todo en un scroll, sin
-fechas, sin detalle y con el alta metida en un diálogo. Se rehizo entera el 2026-09-03 en cuatro
-rutas bajo `/expenses` (resumen, `new`, `history`, `[id]`), con el alta a pantalla completa y el
-borrado solo en el detalle y solo si el gasto es tuyo, que es exactamente lo que dice la RLS. Eso
-**cierra la primera de las dos deudas de B.9**; la segunda sigue viva: `scope: { id: 'expenses' }`
-solo es correcto mientras el gasto no cuelgue de un artículo creado sin conexión. Detalle en
-`docs/phases/fase-6.md` (Tarea 3), que también dice qué le pasa al paso 6 del guion de B.10.
+### Deuda que se arrastra
 
-**Lo que falta ahora es probar la pantalla rehecha en dispositivo.** El guion de dos móviles de B.10
-se está recorriendo contra `01a0682a`, que todavía lleva la pantalla vieja; hasta que se publique la
-nueva y se vuelva a recorrer, el bloque no está cerrado.
-
-El catálogo (RF-10, [ADR-0012](docs/adr/ADR-0012-catalogo-de-productos-de-supermercado.md)) es el
-bloque A de la Fase 6 y **está en Aceptado desde el 2026-08-07**: la fuente la eligió el usuario con
-la medición delante y es el dataset público de Mercadona en Hugging Face, un solo supermercado, con
-GitHub Action semanal. Razonado en
-[ADR-0013](docs/adr/ADR-0013-fuente-del-catalogo-mercadona.md). **El esquema está aplicado en remoto
-desde el 2026-08-14** y **la tabla tiene 4.979 productos de Mercadona actualizados por la GitHub Action el 2026-08-24**
-(`catalog-ingest.yml`, ejecutada en verde en 23s tras configurar el secret `SUPABASE_SECRET_KEY`).
-La búsqueda funciona de punta a punta desde el 2026-08-16: el ranking en
-`src/features/catalog/domain/rank-catalog-results.ts` con sus tests, la RPC `search_catalog` con su
-corrección aplicada, y el puerto y el adaptador en `src/features/catalog/`. **Las sugerencias salen
-bajo el campo de añadir y su foto llega al artículo** (`catalog/presentation/`), probado en Jest y
-**verificado en el Android real el 2026-08-24** con todos los flujos pasando limpios. El precio se guarda enlazado pero **no se
-pinta en la lista**; su consumidor es RF-9, ya escrito. Dos trampas de esa
-búsqueda están contadas en el diario de la fase y conviene leerlas antes de tocarla: **el
-`word_similarity` de Postgres satura a 1** (sirve para filtrar, nunca para ordenar) y **`gen types`
-no sabe inferir la nulabilidad de un `returns table`**, así que jura que `brand`, `image_url`,
-`package_size`, `price_cents` y `price_checked_at` no son nulos y los cinco lo son. Dos cosas suyas
-afectan a reglas de arriba desde ya: `supermarkets` y `catalog_products` son las primeras tablas que **no se filtran por
-`community_id`** (son datos compartidos por todos, con `select` para `authenticated` y ninguna
-política de escritura, así que escribe solo la ingesta con la secret key), y el precio que trae es
-**de referencia**: se enseña con su fecha y no se convierte en un gasto sin que una persona lo
-confirme.
-
-**`items.image_path` guarda solo rutas de nuestro bucket, nunca una URL.** Si está a `null` y el
-artículo tiene `catalog_product_id`, la foto es la del CDN del supermercado y se saca del catálogo al
-pintar; la foto propia siempre gana. La regla vive en `src/features/items/domain/item-image-source.ts`
-y está razonada en [ADR-0014](docs/adr/ADR-0014-origen-de-la-foto-del-articulo.md), que matiza el
-apartado 2 de ADR-0012 (decía lo contrario y se rompía en cuanto alguien fotografiaba un artículo
-venido del catálogo).
-
-Y una tercera que condiciona la UI antes de que exista: **si el catálogo acaba trayendo datos de
-Open Food Facts, la pantalla que los enseñe lleva atribución visible.** Su base de datos es ODbL 1.0
-y sus fotos CC-BY-SA, así que citar la fuente no es cortesía, es la condición de uso. La cláusula de
-compartir-igual de ODbL solo se activaría si distribuyéramos la base derivada: publicar la app que
-consulta nuestra copia no la activa, ofrecer `catalog_products` como export o API sí, y ese día deja
-de ser una decisión técnica. Comprobado en sus términos el 2026-08-07; el detalle y qué cuesta cada
-fuente, en `docs/guias/fuentes-de-datos-del-catalogo.md`.
+- **El inglés no se ha visto nunca en un móvil.** El guion de cambiar el idioma del sistema no se
+  recorrió por decisión del usuario. Si la detección fallara se cae en español, pero nadie ha
+  comprobado cómo se ve un texto en inglés ni qué devuelve `getLocales()` en ese Android. Guion en
+  `docs/phases/fase-5.md`.
+- **`scope: { id: 'expenses' }` solo es correcto mientras el gasto no cuelgue de un artículo creado
+  sin conexión.** Detalle en `docs/phases/fase-6.md` (B.9 y Tarea 3).
 
 ---
 
