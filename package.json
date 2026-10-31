@@ -12,6 +12,7 @@
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:e2e": "maestro test .maestro",
+    "test:hooks": "node scripts/test-hooks.mjs",
     "test:rls": "node --env-file=.env scripts/rls-isolation-test.mjs",
     "test:realtime": "node --env-file=.env scripts/realtime-check.mjs",
     "users": "node --env-file=.env scripts/auth-users.mjs",

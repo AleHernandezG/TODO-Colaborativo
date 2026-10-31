@@ -227,7 +227,7 @@
     "finishSuccess": "¡Compra completada! Se han comprado {{count}} artículos.",
     "finishDialog": {
       "title": "¿Finalizar la compra?",
-      "message": "Has marcado {{purchased}} de {{total}} artículos como comprados. La lista compartida se mantiene actualizada para el resto del grupo.",
+      "message": "Has marcado {{purchased}} de {{total}} artículos como comprados. El resto del grupo verá los cambios en cuanto tu móvil tenga conexión.",
       "confirm": "Finalizar y salir"
     }
   },

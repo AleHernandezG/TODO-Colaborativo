@@ -681,3 +681,78 @@ política borrada esté bien escrito: se comprobó leyendo, y tras aplicar lo co
 | Ejecutar la migración                | **No hecho.** Sin Docker ni proyecto enlazado           |
 | `npm run test:rls` (102/102)         | **No ejecutado.** Falta `.env` y las migraciones aplicadas |
 | `db.types.ts`                        | Ninguna firma cambia; al regenerar no debería haber diff por esta migración |
+
+## 11. Montaje del método de trabajo (2026-10-31)
+
+### Qué había antes
+
+Un `CLAUDE.md` de 552 líneas que mezclaba las reglas, el estado de las fases 5, 6 y 15 y la
+historia de cada regla, y un único hook que bloqueaba `git commit` y `git push`. Lo demás dependía de
+que la sesión se acordara, y hubo veces en que no: tres features fuera del lint durante semanas y
+dos updates publicados contra la runtime 1.2.0 sin subir la `version`. El plan de arreglos de esta
+fase vivía en la auditoría y en el traspaso, y cada sesión tenía que buscar por dónde iba.
+
+### Qué se ha montado
+
+Alejandro pidió aplicar aquí el método de `METODO-PARA-PROYECTO-NUEVO.md` y
+`PIEZAS-PARA-PROYECTO-NUEVO.md`, con su repo DietMetric como referencia. La pieza a pieza está en
+[`docs/tecnica/METODO-DE-TRABAJO.md`](../tecnica/METODO-DE-TRABAJO.md) y la decisión en
+[ADR-0027](../adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md). En resumen:
+
+- `docs/plan/`: `ROADMAP.md` con el bloque «Estado», `PREGUNTAS.md` (P-01 a P-03) y
+  `prompts/T-15.md` para los incrementos 3 y 4.
+- `docs/tecnica/`: `METODO-DE-TRABAJO.md`, `STACK.md`, `GLOSARIO.md` y `ESTRUCTURA.md`.
+- Seis hooks en `.claude/hooks/`, probados con `npm run test:hooks` (89/89).
+- Skills nuevas: `adr`, `documentar-cambio`, `cerrar-paquete`, `prompt-de-paquete`,
+  `probar-en-android`, y las dos que solo lanza Alejandro, `publicar-version` y `aplicar-migracion`.
+- Agentes nuevos: `revisor-documentacion`, `revisor-interfaz` e `investigador-datos`.
+- Tests nuevos: `forbidden-claims.test.ts` (regla 6) y `repository-rules.test.ts`.
+- `CLAUDE.md` rehecho con la forma del de DietMetric; `~/.claude/CLAUDE.md` creado con el estilo
+  común a todos los proyectos.
+- `.gitattributes` con `eol=lf`, `scripts/block-git-write-commands.mjs` borrado (lo sustituye
+  `.claude/hooks/bloquear-escrituras-git.mjs`) y el plugin `skill-creator` activado.
+
+### Qué decisión costó tomar
+
+Cuánto mover `docs/`. El método quiere `docs/tecnica/adr/NNNN` y `docs/aprende/diario/`; aquí hay
+26 ADR y 16 diarios enlazados desde las skills, los agentes y entre sí. Alejandro eligió adaptar sin
+mover: se añaden `plan/` y `tecnica/`, y los paquetes llevan el número de su fase para que el diario
+siga siendo `fase-N.md`.
+
+La segunda fue qué piezas del método no entraban. Las plantillas suponen un backend propio con API,
+fuentes que se piden a mano y un dominio que predice; aquí el backend es Supabase con RLS, la única
+fuente es el catálogo y el dominio son repartos y agrupaciones. Lo que se dejó fuera, con su
+motivo, está en el apartado 8 de `METODO-DE-TRABAJO.md`. A cambio entraron dos cosas que el método
+no trae: el hook bloquea también `eas update/build/submit` y `supabase db push`, que llegan a los
+móviles y a la base de otras personas, y la prueba se describe para un Android real en vez de un
+navegador.
+
+### Qué se rompió por el camino
+
+- El test de la regla 6 encontró el primer día que el diálogo de fin de compra prometía que la
+  lista «se mantiene actualizada para el resto del grupo», también en modo avión. Se cambió el texto
+  en `es.json` y `en.json`; queda para confirmar en P-01.
+- El hook `comprobar-nucleo` usaba el patrón `/domain/`, que en Windows Jest no sabe leer. Habría
+  dado por buenos unos tests que no ejecutaba. Se arregló y se comprobó con un test en rojo puesto a
+  propósito (apartado 9 de `METODO-DE-TRABAJO.md`).
+- La expresión del método para reconocer un ADR aceptado solo leía una de las tres formas en que los
+  ADR de este repo escriben su estado.
+
+### Verificación
+
+| Comprobación          | Resultado                                    |
+| --------------------- | -------------------------------------------- |
+| `npm test`            | 68 suites, 490 tests en verde                |
+| `npm run test:hooks`  | 89/89                                        |
+| `npm run lint`        | 0 errores, los 9 avisos que ya había         |
+| `npm run typecheck`   | Limpio                                       |
+| `comprobar-nucleo`    | Verde en 27 s; con un test en rojo devuelve 2 |
+
+### Qué queda pendiente
+
+- P-01, P-02 y P-03 de `docs/plan/PREGUNTAS.md`. La P-02 (44 pt o 48 dp) conviene responderla antes
+  del incremento 6, que pinta pantallas.
+- Los hooks nuevos solo se cargan al abrir una sesión nueva. Esta sesión los probó con
+  `test-hooks.mjs`, no en uso real.
+- Hay dos apartados numerados como «8» en este diario (Republicación y Devolver la runtime 1.2.0).
+  No se renumeran porque otros documentos citan «apartado 8» y «apartado 9».

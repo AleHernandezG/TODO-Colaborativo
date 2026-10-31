@@ -227,7 +227,7 @@
     "finishSuccess": "Shopping finished! {{count}} items purchased.",
     "finishDialog": {
       "title": "Finish shopping trip?",
-      "message": "You marked {{purchased}} of {{total}} items as bought. The shared list is up to date for everyone in the group.",
+      "message": "You marked {{purchased}} of {{total}} items as bought. The rest of the group will see the changes as soon as your phone is online.",
       "confirm": "Finish and exit"
     }
   },

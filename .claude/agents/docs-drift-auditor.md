@@ -56,5 +56,5 @@ documento:
 
 Ordena por daño: primero lo que haría a alguien (o a Claude) actuar mal, como una regla que ya no
 se cumple, un comando que falla o una fase equivocada; al final lo cosmético. Para cada corrección
-di **dónde** va según la tabla «Dónde va cada cosa» de `CLAUDE.md`. Cierra con lo que no pudiste
+di **dónde** va según la tabla «Dónde va cada decisión» de `CLAUDE.md`. Cierra con lo que no pudiste
 verificar y por qué.

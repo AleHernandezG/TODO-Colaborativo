@@ -26,6 +26,7 @@ npm-debug.*
 yarn-error.*
 
 .claude/settings.local.json
+.claude/.ultima-verificacion-nucleo
 
 .DS_Store
 Thumbs.db

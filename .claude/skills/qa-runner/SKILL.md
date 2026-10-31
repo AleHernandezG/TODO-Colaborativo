@@ -55,7 +55,9 @@ aislamiento por comunidad, y el rollback de una mutación optimista cuando la re
 
 ## 4. Prueba manual
 
-Los tests no ven la app. Deja escrito cómo probar el cambio a mano, con pasos concretos:
+Los tests no ven la app. Deja escrito cómo probar el cambio a mano, con pasos concretos. Lo que
+siempre entra en el guion (versión en el pie, sin red, botón atrás, TalkBack, fuente grande, área
+táctil) está en la skill `probar-en-android`:
 
 ```
 1. npx expo start (o --tunnel si el móvil no está en tu Wi-Fi)
@@ -92,7 +94,9 @@ justo lo que nadie recuerda seis meses después.
 
 ## 6. Antes de cerrar fase
 
-Las fases van en orden, 0 → 4, y ninguna se salta. Antes de pedir luz verde para la siguiente:
+Cerrar una fase es cerrar su paquete del ROADMAP: eso lo hace la skill `cerrar-paquete`, que da esta
+sección por pasada y añade los revisores, el bloque «Estado» y la entrega. Las fases van en orden y
+ninguna se salta. Antes de pedir luz verde para la siguiente:
 
 - Los tres comandos de calidad, en verde
 - Prueba manual hecha, con sus pasos escritos

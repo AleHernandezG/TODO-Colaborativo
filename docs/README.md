@@ -8,11 +8,21 @@ Organizada por **para qué sirve cada documento**, no por tema. Si buscas algo:
 | Saber **por qué** algo está hecho como está    | [`adr/`](./adr/)                                               |
 | Ver qué se hizo en cada fase y cómo probarlo   | [`phases/`](./phases/)                                         |
 | Hacer una tarea concreta paso a paso           | [`guias/`](./guias/)                                           |
+| Saber **por dónde va** el proyecto y qué sigue | [`plan/ROADMAP.md`](./plan/ROADMAP.md), bloque «Estado»          |
+| Arrancar el siguiente incremento               | [`plan/prompts/`](./plan/prompts/)                              |
+| Responder una duda que me toca decidir         | [`plan/PREGUNTAS.md`](./plan/PREGUNTAS.md)                      |
+| Saber dónde va un fichero nuevo                | [`tecnica/ESTRUCTURA.md`](./tecnica/ESTRUCTURA.md)              |
+| Ver versiones y licencias de las dependencias  | [`tecnica/STACK.md`](./tecnica/STACK.md)                        |
+| Traducir un término del dominio a código       | [`tecnica/GLOSARIO.md`](./tecnica/GLOSARIO.md)                  |
+| Entender cómo está montado Claude Code         | [`tecnica/METODO-DE-TRABAJO.md`](./tecnica/METODO-DE-TRABAJO.md) |
 | Las reglas duras que sigue el proyecto         | [`../CLAUDE.md`](../CLAUDE.md)                                 |
 | Saber qué aspecto tiene que tener una pantalla | [`../DESIGN.md`](../DESIGN.md)                                 |
 
 El criterio y sus motivos están en
-[ADR-0003](./adr/ADR-0003-estructura-del-repositorio.md).
+[ADR-0003](./adr/ADR-0003-estructura-del-repositorio.md), ampliado por
+[ADR-0027](./adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md) con `plan/` y `tecnica/`. El
+método se tomó de DietMetric, otro repositorio de Alejandro que trabaja igual. Quien venga de allí:
+aquí los ADR siguen en `adr/` y el diario de cada paquete es `phases/fase-N.md`.
 
 ## Decisiones de arquitectura
 
@@ -44,6 +54,7 @@ El criterio y sus motivos están en
 | [0024](./adr/ADR-0024-modo-supermercado-y-categorias-de-articulos.md)    | Modo supermercado y categorías de artículos       | Aceptado                          |
 | [0025](./adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md) | Varias listas por usuario y lista activa             | Aceptado (RLS 70/70)              |
 | [0026](./adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md) | El PIN sale de `members`; identidad sin PIN no reclamable | Aceptado; migración A escrita y sin aplicar, B pendiente |
+| [0027](./adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md) | Método de trabajo con paquetes, hooks y revisores        | Propuesto                         |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin
@@ -56,6 +67,7 @@ verificado" cuando la prueba que lo respalda pasa).
 
 ## Fases
 
+Desde el 2026-10-31 cada fase es un paquete del [ROADMAP](./plan/ROADMAP.md) con su mismo número.
 El proyecto va por fases y no se salta a la siguiente sin cerrar la anterior. Cada
 `phases/fase-N.md` lleva qué se hizo, las decisiones que no dieron para ADR, cómo probarlo a mano
 y la deuda técnica que se asume a sabiendas.
@@ -75,7 +87,7 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 12 · Planificador Semanal de Menús y consolidación](./phases/fase-12.md) — cerrada (código, RLS 65/65, Realtime, tests y docs completados)
 - [Fase 13 · Foto opcional en el alta y portada en recetas](./phases/fase-13.md) — código y tests completados
 - [Fase 14 · Modo supermercado y agrupación por categorías (RF-16)](./phases/fase-14.md) — código y tests completados
-- [Fase 15 · Varias listas a la vez](./phases/fase-15.md) — código, tests, RLS 70/70 y export completados; falta la prueba en dispositivo
+- [Fase 15 · Varias listas a la vez](./phases/fase-15.md) — es el paquete T-15, abierto: incrementos 3 a 11 pendientes y la prueba en dispositivo. Estado al día en [`plan/ROADMAP.md`](./plan/ROADMAP.md)
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
 [la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).
