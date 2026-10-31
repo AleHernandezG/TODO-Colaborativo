@@ -450,7 +450,7 @@ npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
 # Aislamiento entre listas, catálogo, gastos idempotentes, varias listas, PIN fuera de members y
 # RPC de recetas, gastos y menús. 102/102 (101/102 sin SUPABASE_SECRET_KEY). 32 comprobaciones
-# necesitan las migraciones 20261012120000 y 20261012130000; contra un proyecto sin ellas, 70/70.
+# necesitan las migraciones 20261012120000 y 20261012130000, ya aplicadas en el real y el ensayo.
 npm run test:rls
 
 # Realtime: artículos, gastos, miembros, filtro por lista, aislamiento y presencia. 18/18

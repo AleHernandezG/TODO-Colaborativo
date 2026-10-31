@@ -583,6 +583,9 @@ con cero filas (la guía dice cómo ejercerla).
 **Mientras la migración no esté aplicada al proyecto real, `npm run test:rls` contra él falla** en
 las comprobaciones nuevas, que llaman a funciones que todavía no existen. No es una regresión.
 
+Nota del 2026-10-31: los pasos 1 a 3 de esta lista ya no valen tal cual, porque la migración está
+aplicada en los dos proyectos. Lo que queda está en el apartado 12.
+
 ## 10. Recetas entre comunidades, miembros archivados y permisos (2026-10-12)
 
 Incremento 4 del plan de `docs/auditoria-2026-10-11.md` (fallos 3, 12 y 24). Escrita el
