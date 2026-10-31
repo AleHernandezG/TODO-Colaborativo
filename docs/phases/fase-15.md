@@ -495,7 +495,8 @@ que el update arregla esos móviles sigue siendo una deducción.
 
 ## 9. El PIN sale de `members`: migración A de ADR-0026 (2026-10-12)
 
-Incremento 3 del plan de `docs/auditoria-2026-10-11.md`. **Escrita y sin aplicar.**
+Incremento 3 del plan de `docs/auditoria-2026-10-11.md`. Escrita el 2026-10-12. **Aplicada en el
+real y en el ensayo sin quedar anotada; se vio el 2026-10-31** (apartado 12).
 
 ### Qué se hizo
 
@@ -584,8 +585,9 @@ las comprobaciones nuevas, que llaman a funciones que todavía no existen. No es
 
 ## 10. Recetas entre comunidades, miembros archivados y permisos (2026-10-12)
 
-Incremento 4 del plan de `docs/auditoria-2026-10-11.md` (fallos 3, 12 y 24). **Escrita y sin
-aplicar.** Se ensaya y se aplica junto con la del apartado 9, en ese orden.
+Incremento 4 del plan de `docs/auditoria-2026-10-11.md` (fallos 3, 12 y 24). Escrita el
+2026-10-12. **Aplicada en el real y en el ensayo sin quedar anotada; se vio el 2026-10-31**
+(apartado 12).
 
 ### Qué se hizo
 
@@ -756,3 +758,54 @@ navegador.
   `test-hooks.mjs`, no en uso real.
 - Hay dos apartados numerados como «8» en este diario (Republicación y Devolver la runtime 1.2.0).
   No se renumeran porque otros documentos citan «apartado 8» y «apartado 9».
+
+## 12. Las migraciones de los incrementos 3 y 4 ya estaban aplicadas (2026-10-31)
+
+Al enlazar la CLI para ensayar las migraciones de los apartados 9 y 10, salió que no había nada que
+aplicar. Este apartado recoge lo que se vio y lo que falta para dar los incrementos por cerrados.
+El prompt de ese cierre está en `docs/plan/prompts/T-15.md`.
+
+### Qué se vio
+
+| Comprobación | Proyecto | Resultado |
+| --- | --- | --- |
+| `npx supabase migration list --linked` | Ensayo (`dmbghwxsjjcxzbjblbzi`) | Las 24, con `local` y `remote`, incluidas `20261012120000` y `20261012130000` |
+| `npx supabase migration list --linked` | Real (`mnjhkqpeeivitpfejoxq`) | Lo mismo: ninguna pendiente |
+| `GET members?select=pin_hash&limit=0`, publishable key | Real | `42703 column members.pin_hash does not exist` |
+| `GET member_secrets?select=member_id&limit=0`, publishable key | Real | `42501 permission denied for table member_secrets` |
+| `grep pin_hash src/` | — | Solo en `db.types.ts` y como dato falso en `observability.test.ts` |
+| `db.types.ts` | — | Sin regenerar: declara `members.pin_hash` y no tiene `member_secrets` ni las RPC del PIN |
+
+La columna se eliminó y la tabla existe, así que no es un `migration repair` que solo marcara el
+historial: el esquema real es el de las dos migraciones. Las dos peticiones con `limit=0` no
+devuelven filas. `supabase db dump` no sirve para mirar el esquema en esta máquina porque pide
+Docker.
+
+### Qué no se sabe
+
+Quién las aplicó ni cuándo. `docs/traspaso-2026-10-12.md` proponía el commit
+`feat(db): migraciones ... aplicadas, db.types regenerado`, que no está en `git log`: lo más
+probable es que se lanzara el `db push` del traspaso y se quedara a medias antes de regenerar los
+tipos y documentar. Tampoco se sabe si se ensayó la copia de hashes con filas, pero eso ya da
+igual: la migración aborta si copia menos hashes de los que había, así que aplicada con `db push`
+no puede haber perdido ninguno.
+
+### Qué implica
+
+- **La app compila contra un esquema que no existe.** No rompe nada hoy porque nadie lee
+  `pin_hash`, pero el adaptador de las RPC del PIN (incremento 6) no se puede escribir hasta
+  regenerar los tipos.
+- **La suplantación sigue abierta hasta la migración B**, como dice ADR-0026: los PIN antiguos
+  siguen valiendo y una fila sin PIN la reclama cualquiera con el código.
+- `test:rls` no se ha corrido nunca contra este esquema. Hasta que dé 102/102, el aislamiento de
+  recetas y gastos de la migración del apartado 10 está aplicado sin probar.
+
+### Qué falta para cerrar los incrementos 3 y 4
+
+1. Las comprobaciones del prompt en el editor SQL del real: el estado de `member_secrets`, cómo se
+   aplicaron (`supabase_migrations.schema_migrations`), las consultas de ADR-0026 y que ninguna
+   función tenga dos sobrecargas.
+2. Regenerar `db.types.ts`, y después typecheck, lint y `npm test`.
+3. `npm run test:rls` (102/102) y `npm run test:realtime` (18/18) contra el real.
+4. El guion corto en el Android con el APK 1.3.1: unirse, volver a entrar y equivocarse de PIN.
+5. Las líneas de estado de ADR-0026, `docs/README.md` y `CLAUDE.md`.

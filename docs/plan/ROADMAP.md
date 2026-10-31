@@ -14,8 +14,10 @@ diario de su fase.
 **T-15 abierto desde el 2026-10-05 (varias listas a la vez, más el plan de arreglos de la
 auditoría del 2026-10-11).** Incrementos 1 y 2 hechos: `main` es SDK 57 y versión 1.3.1
 (`febae87`), y la runtime 1.2.0 ya no recibe el bundle roto (grupo de EAS `c3353939`). Las
-migraciones de los incrementos 3 y 4 (`20261012120000` y `20261012130000`) están escritas y
-revisadas, **sin aplicar en ningún proyecto**. El 2026-10-31: Jest con 68 suites y 490 tests en verde,
+migraciones de los incrementos 3 y 4 (`20261012120000` y `20261012130000`) **están aplicadas en el
+proyecto real y en el de ensayo**, sin que nadie lo apuntara: se vio el 2026-10-31 (`fase-15.md`,
+apartado 12). Falta comprobarlas, regenerar `db.types.ts`, que sigue con `members.pin_hash`, y
+pasar `test:rls`. El 2026-10-31: Jest con 68 suites y 490 tests en verde,
 `npm run test:hooks` 89/89, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio. Diario en [`fase-15.md`](../phases/fase-15.md).
 
 **Método de trabajo montado el 2026-10-31**: seis hooks en `.claude/hooks/`, siete skills nuevas,
@@ -26,7 +28,8 @@ Propuesto hasta que Alejandro lo acepte.
 
 Pendiente del T-15, en este orden (el porqué del orden, en la auditoría, apartado 7):
 
-- Incrementos 3 y 4: ensayar y aplicar las dos migraciones. Necesita el ordenador con `.env`.
+- Incrementos 3 y 4: verificar en el real las dos migraciones ya aplicadas, regenerar los tipos y
+  pasar `test:rls` y `test:realtime`. Necesita el ordenador con `.env`.
 - Incremento 6: pantalla del PIN y migración B. Va antes que el 5: hasta la B, una fila sin PIN la
   puede reclamar cualquiera con el código de la lista (ADR-0026).
 - Incrementos 5, 7, 8, 9, 10 y 11, en el orden de la tabla de la auditoría.
@@ -34,7 +37,8 @@ Pendiente del T-15, en este orden (el porqué del orden, en la auditoría, apart
   listas en un móvil.
 - P-01 de [`PREGUNTAS.md`](PREGUNTAS.md): el texto del diálogo de fin de compra que cambió la regla 6.
 
-**Siguiente: T-15, incrementos 3 y 4 · Aplicar las dos migraciones.** El prompt está en
+**Siguiente: T-15, incrementos 3 y 4 · Verificar y cerrar las migraciones ya aplicadas.** El
+prompt está en
 [`prompts/T-15.md`](prompts/T-15.md).
 
 ## Lo que se arrastra de fases anteriores
@@ -130,5 +134,7 @@ diario de la fase.
 
 ## Qué bloquea el proyecto ahora mismo
 
-Las dos migraciones sin aplicar. Hasta que entren, la migración B no se puede escribir encima y el
-PIN sigue sin proteger nada en el proyecto real.
+Que `db.types.ts` no cuadra con el esquema real. Las dos migraciones están aplicadas, pero los tipos
+siguen declarando `members.pin_hash` y no conocen `member_secrets` ni las tres RPC del PIN, así que
+el incremento 6 no puede escribir su adaptador hasta regenerarlos. Y hasta la migración B, una fila
+sin PIN la sigue pudiendo reclamar cualquiera con el código de la lista.
