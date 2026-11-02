@@ -1,10 +1,11 @@
 # ADR-0026: El PIN sale de `members` y la identidad sin PIN deja de ser reclamable
 
 - **Fecha:** 2026-10-12
-- **Estado:** Aceptado por el usuario el 2026-10-12. La migración A está escrita
-  (`supabase/migrations/20261012120000_member_secrets_and_identity_hardening.sql`), revisada por
-  `migration-reviewer` y **sin aplicar**: falta ensayarla en el proyecto de prueba. La migración B
-  no está escrita.
+- **Estado:** Aceptado por el usuario el 2026-10-12. La migración A
+  (`supabase/migrations/20261012120000_member_secrets_and_identity_hardening.sql`) está **aplicada**
+  en el real y en el ensayo con `db push`, sin fecha anotada; se vio el 2026-10-31 y se comprobó el
+  2026-11-02 (`docs/phases/fase-15.md`, apartado 12). La migración B no está escrita; lleva además
+  el `revoke` de `generate_join_code()` a `authenticated`.
 - **Decisores:** Alejandro, con Claude
 - **Supersede a:** [ADR-0015](ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md) en sus
   apartados 1, 4 y 5. Los apartados 2 y 3 (el PIN viaja en `create_community` y `join_community`)
