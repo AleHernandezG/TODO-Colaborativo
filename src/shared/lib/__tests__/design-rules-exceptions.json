@@ -1,0 +1,128 @@
+[
+  {
+    "file": "src/features/community/presentation/screens/MembersScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 1,
+    "reason": "contentContainerStyle con padding 16 de antes del T-16. Lo quita el T-16.6 al rehacer Miembros"
+  },
+  {
+    "file": "src/features/community/presentation/screens/MembersScreen.tsx",
+    "rule": "unknown-color-class",
+    "lines": 4,
+    "reason": "Insignias de admin y de invitado con accent y amber, que no existen en los tokens: NativeWind las ignora. T-16.6"
+  },
+  {
+    "file": "src/features/expenses/presentation/screens/ExpenseDetailScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 1,
+    "reason": "contentContainerStyle con padding 16 y paddingBottom 24 de antes del T-16. T-16.6"
+  },
+  {
+    "file": "src/features/expenses/presentation/screens/ExpensesScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 1,
+    "reason": "contentContainerStyle con padding 16 y paddingBottom 24 de antes del T-16. T-16.6"
+  },
+  {
+    "file": "src/features/expenses/presentation/screens/MovementsScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 1,
+    "reason": "contentContainerStyle con padding 16 y paddingBottom 24 de antes del T-16. T-16.6"
+  },
+  {
+    "file": "src/features/expenses/presentation/screens/NewExpenseScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 1,
+    "reason": "contentContainerStyle con padding 16 y paddingBottom 24 de antes del T-16. T-16.6"
+  },
+  {
+    "file": "src/features/items/presentation/components/AddItemBar.tsx",
+    "rule": "numeric-style",
+    "lines": 7,
+    "reason": "Sugerencias del catálogo con tamaños de letra, radios y gap a mano (11, 13, 16, 20). T-16.4"
+  },
+  {
+    "file": "src/features/items/presentation/components/CategoryPickerModal.tsx",
+    "rule": "numeric-style",
+    "lines": 5,
+    "reason": "Filas de pasillo con letra 15, 16 y 22 y relleno a mano. T-16.4"
+  },
+  {
+    "file": "src/features/items/presentation/components/EditItemDialog.tsx",
+    "rule": "numeric-style",
+    "lines": 6,
+    "reason": "Diálogo de edición con letra 13, 15 y 20 y radio 10 a mano. T-16.4"
+  },
+  {
+    "file": "src/features/items/presentation/screens/ItemsScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 9,
+    "reason": "Selector de agrupación y estado vacío con letra 12 y relleno a mano. T-16.4"
+  },
+  {
+    "file": "src/features/items/presentation/screens/ItemsScreen.tsx",
+    "rule": "raw-color",
+    "lines": 2,
+    "reason": "Blanco fijo sobre el primario en el selector de agrupación, que en oscuro es el fallo 23 de la auditoría. T-16.3 lo resuelve en src/shared/ui y el T-16.4 lo quita de aquí"
+  },
+  {
+    "file": "src/features/items/presentation/screens/ShoppingModeScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 33,
+    "reason": "Casi toda la pantalla va con style en línea y números a mano, sin tokens. T-16.4 la rehace"
+  },
+  {
+    "file": "src/features/items/presentation/screens/ShoppingModeScreen.tsx",
+    "rule": "raw-color",
+    "lines": 1,
+    "reason": "Blanco fijo sobre el primario (fallo 23 de la auditoría). T-16.4"
+  },
+  {
+    "file": "src/features/meal-planner/presentation/components/AssignMealModal.tsx",
+    "rule": "raw-color",
+    "lines": 2,
+    "reason": "Blanco fijo sobre el primario en el selector receta o texto libre (fallo 23 de la auditoría). T-16.5"
+  },
+  {
+    "file": "src/features/meal-planner/presentation/screens/MealPlannerScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 1,
+    "reason": "contentContainerStyle con paddingBottom 40 de antes del T-16. T-16.5"
+  },
+  {
+    "file": "src/features/meal-planner/presentation/screens/MealPlannerScreen.tsx",
+    "rule": "missing-dark-variant",
+    "lines": 6,
+    "reason": "Volver, día de hoy y botones del menú con el primario claro también en oscuro. T-16.5"
+  },
+  {
+    "file": "src/features/meal-planner/presentation/screens/MealPlannerScreen.tsx",
+    "rule": "unknown-color-class",
+    "lines": 8,
+    "reason": "text-content-muted no existe en los tokens (el gris es muted): NativeWind la ignora y el texto no lleva el gris. T-16.5"
+  },
+  {
+    "file": "src/features/notifications/presentation/hooks/use-push-notifications.ts",
+    "rule": "raw-color",
+    "lines": 1,
+    "reason": "lightColor del canal de Android, el azul del icono de app.json. expo-notifications pide un string; T-16.3 decide si pasa a tokens.js"
+  },
+  {
+    "file": "src/features/recipes/presentation/screens/EditRecipeScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 1,
+    "reason": "contentContainerStyle con relleno a mano de antes del T-16. T-16.5"
+  },
+  {
+    "file": "src/features/recipes/presentation/screens/RecipeDetailScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 1,
+    "reason": "contentContainerStyle con relleno a mano de antes del T-16. T-16.5"
+  },
+  {
+    "file": "src/features/recipes/presentation/screens/RecipesScreen.tsx",
+    "rule": "numeric-style",
+    "lines": 1,
+    "reason": "contentContainerStyle con relleno a mano de antes del T-16. T-16.5"
+  }
+]

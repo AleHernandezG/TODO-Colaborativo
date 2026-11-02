@@ -56,7 +56,25 @@ montaje (herramientas en `~/tools`, los tres interruptores de Xiaomi, por qué e
 5. Capturas con `adb exec-out screencap -p` al scratchpad, y mirarlas. Un paso sin captura o sin
    aserción de Maestro es «no comprobado».
 6. Sin red, con `adb shell cmd connectivity airplane-mode enable` y `disable`.
-7. Al terminar, recordarle a Alejandro que apague los interruptores de depuración.
+7. **Cada pantalla que toque el cambio, medida** con la pantalla delante (desde el T-16.1), desde
+   Git Bash:
+
+   ```bash
+   npm run inspect:screen -- --label <pantalla>-<variante> --out ~/tools/capturas/<aaaa-mm>/<variante>
+   ```
+
+   Saca el árbol de uiautomator y los textos que uiautomator deja fuera (en logcat, etiqueta
+   `AccessibilityNodeInfoDumper`), y marca pulsables por debajo de 48 dp (y aparte los de 44),
+   separaciones de menos de 8 dp, pulsables sin nombre, repetidos, pisados o fuera de pantalla, y
+   textos aplastados o cortados. Deja `.xml`, `.log`, `.png`, `.json` y `.txt`. Sale con 0 si no
+   marca nada, con 2 si marca y con 1 si no pudo medir. Las variantes son claro y oscuro, y letra
+   al 100, 115 y 200 %, con `adb shell settings put system font_scale <n>` y
+   `adb shell cmd uimode night yes|no`. Antes se apuntan los ajustes del móvil
+   (`settings get system font_scale`, `cmd uimode night`) y al terminar se dejan como estaban.
+   Para ir a una pantalla, `adb shell am force-stop` y el enlace `listacompra://<ruta>` con
+   `am start -W`: con la app caliente el enlace la deja en «Conectando…». La primera foto está en
+   `docs/diseno/estado-de-partida.md`.
+8. Al terminar, recordarle a Alejandro que apague los interruptores de depuración.
 
 Nunca `maestro cloud`, que es de pago (regla 3). Lo que no ve Maestro sigue en el guion a mano:
 TalkBack, letra al máximo, modo oscuro y si algo se lee bien.

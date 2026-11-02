@@ -17,7 +17,8 @@
     "test:realtime": "node --env-file=.env scripts/realtime-check.mjs",
     "users": "node --env-file=.env scripts/auth-users.mjs",
     "catalog:benchmark": "node --env-file-if-exists=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/catalog-source-benchmark.mjs",
-    "catalog:ingest": "node --env-file-if-exists=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/catalog-ingest.mjs"
+    "catalog:ingest": "node --env-file-if-exists=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/catalog-ingest.mjs",
+    "inspect:screen": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/inspect-screen.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

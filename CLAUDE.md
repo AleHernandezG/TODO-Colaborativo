@@ -471,6 +471,10 @@ npm run catalog:ingest                   # upsert idempotente con la secret key
 npm run users
 npm run users -- --delete-orphans
 
+# Medir la pantalla que está abierta en el Android: pulsables por debajo de 48 dp, separación,
+# textos aplastados. Sale con 2 si marca algo. Captura, XML y JSON a ~/tools/capturas/<aaaa-mm>
+npm run inspect:screen -- --label lista --out ~/tools/capturas/2026-11
+
 # E2E con Maestro (CLI fuera de npm, adb y el APK instalado; no con Expo Go). Deja una lista real
 # en Supabase y clearState borra la sesión del móvil. adb y Maestro viven en ~/tools, sin PATH:
 # docs/guias/e2e-con-maestro.md. camino-feliz y cola-offline están desfasados desde la fase 15

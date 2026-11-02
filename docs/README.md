@@ -17,6 +17,7 @@ Organizada por **para qué sirve cada documento**, no por tema. Si buscas algo:
 | Entender cómo está montado Claude Code         | [`tecnica/METODO-DE-TRABAJO.md`](./tecnica/METODO-DE-TRABAJO.md) |
 | Las reglas duras que sigue el proyecto         | [`../CLAUDE.md`](../CLAUDE.md)                                 |
 | Saber qué aspecto tiene que tener una pantalla | [`../DESIGN.md`](../DESIGN.md)                                 |
+| Ver qué falla hoy en cada pantalla del móvil   | [`diseno/estado-de-partida.md`](./diseno/estado-de-partida.md) |
 
 El criterio y sus motivos están en
 [ADR-0003](./adr/ADR-0003-estructura-del-repositorio.md), ampliado por
@@ -88,6 +89,7 @@ y la deuda técnica que se asume a sabiendas.
 - [Fase 13 · Foto opcional en el alta y portada en recetas](./phases/fase-13.md) — código y tests completados
 - [Fase 14 · Modo supermercado y agrupación por categorías (RF-16)](./phases/fase-14.md) — código y tests completados
 - [Fase 15 · Varias listas a la vez](./phases/fase-15.md) — es el paquete T-15, abierto: incrementos 3 a 11 pendientes y la prueba en dispositivo. Estado al día en [`plan/ROADMAP.md`](./plan/ROADMAP.md)
+- [Fase 16 · Rediseño de todas las pantallas](./phases/fase-16.md) — es el paquete T-16, abierto: incremento 1 (herramientas para medir y foto de partida) hecho
 
 Las fases 0 → 4 son el MVP y se probaron en dispositivo con dos móviles; el resultado está en
 [la guía de cierre](./guias/prueba-de-cierre-en-dispositivo.md).

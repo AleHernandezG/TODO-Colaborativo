@@ -52,6 +52,16 @@ vigilan el lint (`no-restricted-imports`) y el hook `comprobar-nucleo.mjs`.
 | `docs/adr/` | Decisiones, `ADR-NNNN-...md`. No se editan una vez aceptadas |
 | `docs/phases/` | El diario de cada fase o paquete |
 | `docs/guias/` | Procedimientos paso a paso |
+| `docs/diseno/` | Lo medido de las pantallas en el móvil: `estado-de-partida.md` (T-16.1) y, desde el T-16.2, el diseño. Las capturas y los XML no van aquí sino a `~/tools/capturas/<aaaa-mm>/`, fuera del repo |
+
+## `scripts/`
+
+| Carpeta | Contiene |
+| --- | --- |
+| `scripts/*.mjs` | Las órdenes de `package.json`: ingesta y medición del catálogo, `test:rls`, `test:realtime`, `users`, `inspect:screen` |
+| `scripts/lib/` | La lógica pura de un script, en TypeScript para que Jest la pruebe (la cobertura de `jest.config.js` no la cuenta: mide `domain/` y `data/`). El `.mjs` hace la E/S (adb, red, disco) y la importa; Node la carga con `--experimental-strip-types` |
+| `scripts/__tests__/` | Los tests de `scripts/lib/`. Jest los recoge como los de `src/` |
+| `scripts/__fixtures__/` | Entradas reales grabadas para esos tests, como el árbol de uiautomator de la cabecera aplastada |
 
 ## Dónde pongo un fichero nuevo
 
@@ -68,7 +78,7 @@ vigilan el lint (`no-restricted-imports`) y el hook `comprobar-nucleo.mjs`.
 | Un texto de pantalla | `src/shared/lib/i18n/es.json` y `en.json` a la vez |
 | Un color, tamaño o radio | `src/theme/tokens.js` y su papel en `DESIGN.md` |
 | Un cambio de esquema | una migración nueva en `supabase/migrations/`, con el diseño aprobado antes |
-| Un script de mantenimiento | `scripts/`, en `.mjs`, con imports relativos (Node no resuelve el alias `@/`) |
+| Un script de mantenimiento | `scripts/`, en `.mjs`, con imports relativos (Node no resuelve el alias `@/`). Si tiene lógica que merezca un test, esa parte va en `scripts/lib/<x>.ts`, sin imports de Node, y el `.mjs` hace la E/S |
 | Una decisión | `docs/adr/` con la skill `adr` |
 | Un procedimiento repetible | `docs/guias/` |
 | Una pieza de Claude Code | `.claude/skills/`, `.claude/agents/` o `.claude/hooks/`, apuntada en `METODO-DE-TRABAJO.md` |

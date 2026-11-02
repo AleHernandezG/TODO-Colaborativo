@@ -115,6 +115,8 @@ pero peor de deshacer.
 | `src/shared/lib/i18n/__tests__/forbidden-claims.test.ts` | Regla 6: ningún texto dice que algo está sincronizado o guardado en el servidor, ni presenta un precio como actual; el aviso de orientativo y la antigüedad del precio siguen existiendo |
 | `src/shared/lib/i18n/__tests__/translations.test.ts` | Español e inglés con las mismas claves, placeholders y plurales |
 | `src/shared/lib/__tests__/repository-rules.test.ts` | Cada carpeta de `src/features/` está en el array `features` del lint, tiene `index.ts` y no deja ficheros sueltos en `presentation/` |
+| `src/shared/lib/__tests__/design-rules.test.ts` | `DESIGN.md` en `src/app` y `src/features/*/presentation`: nada de números en `fontSize`, `gap`, radios, `padding` o `margin`; ni hex, ni `rgb()`, ni clases con un color, un radio o un valor `[...]` fuera de los tokens; cada color con su `dark:`; nunca `allowFontScaling={false}`. Lo de antes del T-16 vive en `design-rules-exceptions.json`, que solo baja |
+| `scripts/__tests__/screen-audit.test.ts` | Que `npm run inspect:screen` da como aplastado el título de 19 px de la fase 15 (`scripts/__fixtures__/`), y caza pulsables pequeños, juntos, sin nombre, repetidos o pisados |
 | `eslint.config.js` | Pureza de `domain/`, puerta por `index.ts`, Paper solo en `shared/ui` |
 | `npm run test:rls` | Regla 5: aislamiento entre comunidades |
 | `npm run test:hooks` | Que los hooks bloquean lo que deben y nada más |
@@ -122,6 +124,12 @@ pero peor de deshacer.
 El test de la regla 6 encontró una promesa el mismo día que se escribió: el diálogo de fin de compra
 decía que la lista «se mantiene actualizada para el resto del grupo» también sin red. Se cambió el
 texto, y Alejandro lo dio por bueno en P-01 de `PREGUNTAS.md`.
+
+El de diseño compara recuentos de líneas por fichero y regla, no cada caso por separado: en un
+fichero con excepción se puede quitar una línea y meter otra en el mismo cambio sin que se entere.
+Es un trinquete para que la deuda no crezca, no una garantía de que lo nuevo esté limpio; eso lo
+mira `revisor-interfaz`. Tampoco recorre `src/shared/ui`, donde los ajustes sobre Paper llevan
+números a propósito (fase 16).
 
 ## 7. Plugins
 
@@ -153,6 +161,18 @@ Lo que se miró y no entró:
 - **`kotlin-lsp`**: no hay código nativo en el repo (`android/` lo genera `prebuild` y está en
   `.gitignore`).
 - **Playwright CLI e `impeccable`**: son para interfaces en el navegador; esta app no tiene web.
+
+Lo que se miró el 2026-11-02 para el rediseño (T-16) y tampoco entró:
+
+- **Maestro MCP** (`maestro mcp`, Apache-2.0): trae tres herramientas de Maestro Cloud, de pago,
+  que se saltarían el hook que lo bloquea en la terminal. Y en HyperOS `launchApp` sigue
+  bloqueado, así que no arregla lo que más falla. Para medir una pantalla está
+  `npm run inspect:screen`.
+- **Skills de Callstack** (`callstackincubator/agent-skills`, MIT): no están en el marketplace
+  oficial, y su parte de navegación es para React Navigation a pelo, no para expo-router.
+- **`frontend-design` y `playground`**: son para la web. Las del plugin `expo` (`expo-router`,
+  `expo-design-system`, `expo-animation`, `expo-native-ui`) sí sirven al T-16, con la salvedad de
+  que `expo-native-ui` sigue la guía de Apple y aquí manda Android.
 
 ## 8. Lo que no se montó del método, y por qué
 

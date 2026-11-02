@@ -142,14 +142,10 @@ veces en una compra, como marcar un artículo, cambia al instante. El detalle es
 
 ## Lo que hoy no cumple
 
-Los cuatro incumplimientos que se midieron el 2026-10-05 (radios fuera de los tokens, cuatro
-opacidades de pulsado, una sombra y cifras sin números tabulares) se arreglaron ese mismo día. Al
-hacerlo aparecieron otros que siguen abiertos; quien toque estos ficheros que los arregle de paso
-en vez de copiarlos:
+La lista ya no se lleva a mano aquí. Desde el T-16.1 la lleva
+`src/shared/lib/__tests__/design-rules-exceptions.json`, con fichero, regla, número de líneas y
+motivo, y `design-rules.test.ts` falla si una línea nueva se sale de los tokens o si se arregla una
+sin bajar el número. Cada incremento del T-16 quita las de sus pantallas y el T-16.8 la deja vacía.
 
-- `MealPlannerScreen.tsx` usa `text-content-muted`, una clase que no existe: el color secundario es
-  `text-muted`. Ese texto sale hoy con el color por defecto del sistema.
-- En el mismo fichero y en algún otro hay `text-primary` y `bg-primary/15` sin su pareja `dark:`.
-- `ShoppingModeScreen.tsx` y los componentes de alta y edición de artículos ponen tamaños de fuente
-  y radios con números en `style` (`fontSize: 13`, `borderRadius: 18`) en vez de con las clases de
-  la escala.
+Lo que se ve en el móvil (pulsables pequeños, textos aplastados con la letra grande) no lo caza un
+test: está medido pantalla a pantalla en `docs/diseno/estado-de-partida.md`.

@@ -16,8 +16,7 @@ auditoría del 2026-10-11).** Incrementos 1 y 2 hechos: `main` es SDK 57 y versi
 (`febae87`). **Incrementos 3 y 4 cerrados el 2026-11-02, con su paso en el Android**: las dos
 migraciones están aplicadas con `db push` y comprobadas en el real, `db.types.ts` regenerado,
 `test:rls` 102/102 y `test:realtime` 18/18 contra el real, Jest con 68 suites y 490 tests (72 y
-510 tras el arreglo de Gastos),
-`test:hooks` 103/103, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio. Diario en
+510 tras el arreglo de Gastos, 74 y 530 tras el T-16.1), `test:hooks` 103/103, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio. Diario en
 [`fase-15.md`](../phases/fase-15.md), apartados 12 y 13.
 
 **El POCO F5 tiene la 1.3.1 desde el 2026-11-02** (build `08f58498`, pie `v1.3.1 · base`), y la
@@ -57,6 +56,10 @@ Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `p
 1. El arreglo de Gastos (canal de miembros repetido) y averiguar la lista perdida:
    [`T-15-gastos.md`](prompts/T-15-gastos.md). Hecho y visto en el POCO el 2026-11-02.
 2. T-16.1, herramientas para medir y foto de partida: [`T-16-1-herramientas.md`](prompts/T-16-1-herramientas.md).
+   Hecho el 2026-11-03: `npm run inspect:screen`, el test de diseño con su lista de excepciones
+   (21 entradas, 93 líneas) y la foto de las 15 pantallas en
+   [`diseno/estado-de-partida.md`](../diseno/estado-de-partida.md). Diario en
+   [`fase-16.md`](../phases/fase-16.md).
 3. T-16.2, el diseño sin código: [`T-16-2-diseno.md`](prompts/T-16-2-diseno.md).
 4. Incremento 6 del T-15, la pantalla del PIN con el diseño nuevo y la migración B:
    [`T-15.md`](prompts/T-15.md). Hasta la B, una fila sin PIN la puede reclamar cualquiera con el
@@ -68,8 +71,9 @@ Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `p
 - El guion de la fase 15 en un Android real (`fase-15.md`, apartado 4). El selector de listas ya se
   vio en el POCO (se abre y atrás lo cierra); falta cambiar de lista y el resto del guion.
 
-**Siguiente: T-16.1, herramientas para medir y foto de partida**, con su prompt en
-[`prompts/T-16-1-herramientas.md`](prompts/T-16-1-herramientas.md).
+**Siguiente: T-16.2, el diseño sin código**, con su prompt en
+[`prompts/T-16-2-diseno.md`](prompts/T-16-2-diseno.md). Parte de
+[`diseno/estado-de-partida.md`](../diseno/estado-de-partida.md).
 
 ## Lo que se arrastra de fases anteriores
 
@@ -129,7 +133,7 @@ detrás de los dos incrementos que cambian código.
 | ------- | ----------------------------------------- | -------------------------- | ------------------------------------------ |
 | T-0…T-14 | MVP y fases post-MVP                     | Cerradas                   | [`docs/phases/`](../phases/)               |
 | T-15    | Varias listas y plan de arreglos          | Abierto, incrementos 3 a 11 | [`fase-15.md`](../phases/fase-15.md)      |
-| T-16    | Rediseño de las pantallas                 | Aprobado (P-04), sin empezar | `fase-16.md`, lo crea el incremento 1    |
+| T-16    | Rediseño de las pantallas                 | Abierto, incremento 1 hecho | [`fase-16.md`](../phases/fase-16.md)      |
 
 ## Fichas
 
