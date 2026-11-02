@@ -512,6 +512,49 @@ el `onSuccess` de la mutación ya invalida por su cuenta.
 El `unsubscribe()` del cleanup no es opcional: sin él acumulas canales en cada remontaje y
 acabas con eventos duplicados.
 
+### Un hook de lectura no abre canales
+
+`supabase.channel(topic)` devuelve el canal que ya exista con ese nombre, y `.on()` sobre un canal
+en `joining` o `joined` lanza `cannot add postgres_changes callbacks ... after subscribe()`. Un
+`useCommunityMembers` que se suscribía dentro de la lectura tumbó Gastos en la 1.3.1: la pantalla lo
+llama dos veces (activos y archivados) y el segundo `.on()` rompía el árbol entero. Un `useQuery`
+se puede llamar las veces que haga falta; un canal, una.
+
+Así que la lectura es solo lectura, y el canal lo abre un sitio que decide cuántas veces:
+
+```tsx
+export function MembersRealtime() {
+  const communityId = useActiveCommunityStore((state) => state.membership?.community.id)
+  useMembersRealtime(communityId)
+  return null
+}
+```
+
+Se monta una vez en `src/app/_layout.tsx`, dentro de `SessionGate`, y sigue a la lista activa: al
+cambiar de lista cierra el canal viejo y abre el nuevo, y sin lista no abre nada. Apilar Miembros
+encima de Gastos ya no abre un segundo canal, y cerrarla no toca el que hay. `useMembersRealtime`
+lleva el patrón de este apartado entero (300 ms, 1500 ms tras `connected`, `isMutating`,
+`useAppForeground`) e invalida `allCommunityMembersKey(communityId)`, el prefijo que cubre activos y
+archivados.
+
+Hay otra trampa que esto no cierra. `removeChannel` es asíncrono: el canal se queda en `leaving`
+hasta que el servidor confirma la baja. Si en esa ventana se vuelve a abrir el mismo topic, `.on()`
+no lanza, `subscribe()` no hace nada porque el canal no está cerrado, y cuando llega la
+confirmación el canal se cierra sin llamar a `onStatus`. Queda muerto en silencio. Con el canal en la
+raíz solo pasa cambiando de lista A → B → A en menos de un viaje al servidor; en `items`, con
+`replace('/list')`. Lo arregla un registro de canales con recuento de referencias, en lo que queda
+del incremento 7 del T-15.
+
+Lo prueban los tests con el `RealtimeClient` real de realtime-js y un socket que nunca conecta
+(`src/shared/lib/__fixtures__/offline-realtime.ts`): un doble a mano del cliente no reproduce el
+`channel()` que devuelve el existente, que es justo el fallo.
+
+`items`, `expenses` y `presence` tienen su hook de canal aparte (`useItemsRealtime`,
+`useExpensesRealtime`, `useViewers`), pero lo llama la pantalla, así que dos pantallas iguales
+apiladas lo repiten: `RecipeDetailScreen` hace `push('/list')`. `recipes` y `meal_plan_slots`
+todavía lo abren dentro de la lectura (`useRecipes`, `useMealPlanWeek`), y Recetas → Menú puede
+repetirlo. Las dos cosas están apuntadas en el ROADMAP para lo que queda del incremento 7.
+
 ### Realtime contra el borrado con deshacer
 
 Durante los 5 s de "Deshacer" la fila ya no se ve pero **sigue en el servidor**. Si en esa

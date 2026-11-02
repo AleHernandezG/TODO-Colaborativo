@@ -1080,8 +1080,10 @@ noche: P-04 está respondida y el T-16 aprobado (ver «Decisiones sobre la march
 
 ### Qué falta
 
-1. Los hallazgos 1 y 2, en `src/`. El 1 bloquea Gastos para cualquiera con la 1.3.1.
-2. El 3, investigarlo antes del incremento 5.
+1. Los hallazgos 1 y 2, en `src/`. El 1 bloquea Gastos para cualquiera con la 1.3.1. El 1 está
+   arreglado en el apartado 14; el 2 va al T-16.
+2. El 3, investigarlo antes del incremento 5. Averiguado en el apartado 14: la 1.3.1 no borra la
+   sesión de nadie.
 3. El rediseño: plan y prompts, con el OK de Alejandro. Hecho, ver abajo.
 4. Los incrementos 3 y 4 quedan probados en el Android en lo suyo (unirse, PIN, PIN equivocado, atrás
    y sin red). Lo que falla es de otras pantallas.
@@ -1109,3 +1111,152 @@ noche: P-04 está respondida y el T-16 aprobado (ver «Decisiones sobre la march
   los agentes y las skills; el token `minTouchTarget` sigue en 44 hasta el T-16.3, porque cambiarlo
   es código y descoloca todas las pantallas a la vez. P-03: ADR-0027 aceptado. No queda ninguna
   pregunta abierta.
+
+## 14. El arreglo de Gastos y la lista perdida (2026-11-02)
+
+Prompt: [`prompts/T-15-gastos.md`](../plan/prompts/T-15-gastos.md). Dos encargos: que Gastos deje
+de tumbar la 1.3.1 (hallazgo 1 del apartado 13) y averiguar, sin tocar código, por qué el POCO
+perdió su lista al pasar de la 1.2.0 a la 1.3.1 (hallazgo 3). Solo JS: sale por aire.
+
+### Qué pasaba
+
+`useCommunityMembers` era a la vez una lectura y una suscripción: cada componente que lo montaba
+llamaba a `subscribeMembers`, que hacía `supabase.channel('members:<id>')`. Leído en el código de
+`@supabase/realtime-js` 2.110.7, que es lo instalado (context7 pedía autenticarse):
+
+- `channel(topic)` devuelve el canal que ya exista con ese nombre, no uno nuevo.
+- `.on()` lanza si ese canal está en `joining` o `joined`.
+- `removeChannel` no lo quita en el acto: lo deja en `leaving` hasta que el servidor confirma.
+
+`ExpensesSummary` llama a `useCommunityMembers` dos veces, una para los activos y otra con
+`includeArchived`. La segunda recibía el canal de la primera, ya en `joining`, y su `.on()` lanzaba.
+Es el `cannot add postgres_changes callbacks for realtime:members:<id> after subscribe()` del
+`logcat`.
+
+El primer test, `use-community-members.test.tsx`, monta el `RealtimeClient` real con un socket que
+nunca conecta (`src/shared/lib/__fixtures__/offline-realtime.ts`) y una pantalla que lee los
+miembros dos veces. Antes del arreglo fallaba con el mismo mensaje que el POCO. Un doble a mano del
+cliente no lo habría reproducido, porque el fallo está justo en que `channel()` devuelve el
+existente.
+
+### Qué se hizo
+
+- **La lectura es solo lectura.** `useCommunityMembers` conserva su firma y las cinco pantallas que
+  lo usan no cambian. Exporta `allCommunityMembersKey(communityId)`, el prefijo que cubre activos y
+  archivados, y los tres hooks de mutación (`use-add-guest`, `use-remove-member`,
+  `use-set-member-admin`) invalidan con él en vez de repetir la clave a mano.
+- **El canal lo abre `useMembersRealtime`**, con el mismo patrón que `useItemsRealtime`: agrupa los
+  eventos en 300 ms, refresca 1500 ms después de `connected`, reprograma si hay una mutación en
+  vuelo, refresca al volver a primer plano con `useAppForeground` y no hace nada después del
+  cleanup. Devuelve el estado del canal, que de momento no pinta nadie.
+- **`MembersRealtime`**, un componente que no pinta nada, lee la lista activa del store y llama al
+  hook. Se exporta por `index.ts` y se monta una sola vez en `src/app/_layout.tsx`, dentro de
+  `SessionGate`.
+- **El puerto**: `subscribeMembers(communityId, { onChange, onStatus })` devuelve la función de baja
+  y el tipo `MembersChannelStatus` tiene los tres estados de `items`. El adaptador traduce
+  `SUBSCRIBED`, `CHANNEL_ERROR`, `TIMED_OUT` y `CLOSED` y mantiene el
+  `filter: community_id=eq.<id>` de la regla 5. Es lo único que cambia en `data/`.
+
+Sin cambios de esquema, RLS ni RPC. `test:realtime` no usa `subscribeMembers` y sigue en 18/18.
+
+### Decisiones
+
+- **Dónde se monta el canal: en la raíz, siguiendo a la lista activa.** El canal no es de ninguna
+  pantalla. Montarlo en el componente exterior de `ItemsScreen` volvía a romper con dos `/list`
+  apiladas, y un recuento de referencias en `presentation/` metía el estado global que se quería
+  evitar. Lo que cuesta: un topic más en el websocket mientras haya lista activa. Un evento que
+  llega sin ninguna pantalla de miembros abierta solo marca la caché como vieja y no pide nada.
+  Tocar `_layout.tsx`, que no estaba en la lista del prompt, y la firma del puerto lo aprobó
+  Alejandro con el plan.
+- **Descartado un topic distinto por cada llamada** (`members:<id>:<n>`): abre tantos canales como
+  lecturas, cada uno con su refetch, y esconde el fallo en vez de quitarlo. Descartado también un
+  registro en `data/`, porque el prompt deja `data/` fuera salvo `subscribeMembers`.
+- **El fallo de `leaving` se queda vivo, a propósito.** Si el mismo topic se reabre mientras el
+  anterior está en `leaving`, `.on()` no lanza, `subscribe()` no hace nada porque el canal no está
+  cerrado y, cuando llega la confirmación de la baja, el canal se cierra sin llamar a `onStatus`.
+  Queda muerto y nadie se entera. Con el canal en la raíz solo pasa cambiando de lista A → B → A en
+  menos de un viaje al servidor. `architecture-guard` lo señaló y está comprobado en el código. Lo
+  arregla un registro de canales con recuento de referencias, en lo que queda del incremento 7.
+
+### Lo que absorbe de la auditoría
+
+Del incremento 7 de [`auditoria-2026-10-11.md`](../auditoria-2026-10-11.md#7-plan-de-arreglos), los
+puntos 1, 2 y 3 y, del punto 7, la parte del canal de miembros: el refetch tras `SUBSCRIBED`, el
+estado por `onStatus` y `useAppForeground`. Los otros cinco canales siguen como estaban.
+
+### La lista perdida
+
+La 1.3.1 no borra la sesión de los móviles que actualizan, así que no era motivo para pararse.
+
+- La clave `active-community`, la forma de lo que guarda y el almacén de la sesión de Supabase son
+  los mismos en `307ac3f`, el commit que puso la `version` en 1.2.0, y en `main`: el store solo se
+  movió de carpeta en `9b5a03c` y cambió su import. El test nuevo
+  `presentation/stores/__tests__/active-community-store.test.ts` mete el JSON tal como lo guardaba
+  la 1.2.0 (`{ state: { membership }, version: 0 }`) y la 1.3.1 lo rehidrata sin tocarlo.
+- Entre la instalación de la 1.3.1 (19:13:14Z) y el primer `pm clear` (19:16:39Z), Supabase no
+  tiene ningún usuario de auth nuevo. La app usó la sesión que ya tenía guardada.
+- Esa sesión es casi seguro la anónima `0e7b790d`. La creó un móvil a las 18:03:04Z, todavía con la
+  1.2.0 y antes de conectar el `adb`, y ninguna sesión de Claude hizo nada a esa hora. Renovó su
+  token a las 19:06:02Z y nunca ha tenido una fila en `members`. Ningún otro usuario renovó token
+  mientras se abría la 1.3.1, y `b885bf74`, el otro candidato, es de otro móvil. Lo comprobó un
+  script de solo lectura con la secret key, que se quedó en el scratchpad de la sesión.
+
+Lo que pasó: la 1.2.0 ya había perdido su sesión original antes de las 18:03Z. Hizo
+`signInAnonymously` y siguió pintando la lista que tenía en disco, porque la 1.2.0 nunca comprueba si
+sigues en ella, y la RLS le devolvía todo vacío. Al abrir la 1.3.1, `useActiveMembershipSync`
+(ADR-0025) vio que esa sesión no está en ninguna lista y la mandó a la bienvenida. Es lo que tenía
+que hacer, y lo cubre el test «me saca a la portada y lo avisa si no me queda ninguna».
+
+Lo que no queda probado es por qué se cayó la sesión original. Las dos causas posibles son un
+refresh token inválido o un usuario de auth borrado por un `npm run users -- --delete-orphans`
+lanzado a mano, que los logs de sesión no registran. AsyncStorage del POCO no se pudo leer: `run-as`
+falla porque el APK no es depurable.
+
+Para el incremento 5, sin escribir nada aquí:
+
+- **Avisar en Sentry** cuando `ensureSession` crea un usuario y hay una lista guardada en disco. Un
+  `captureMessage` y su test, para saber la próxima vez cuándo y en qué versión pasa. Antes hace
+  falta `EXPO_PUBLIC_SENTRY_DSN` en `preview`, que sigue sin estar.
+- **Ofrecer volver a esa lista** desde la bienvenida, con el código y el nombre ya rellenos, para
+  recuperar la fila con el PIN (ADR-0026). Solo JS, en torno a medio día. No sirve a quien no tiene
+  PIN, y hoy son 20 miembros activos.
+
+### Revisiones
+
+`architecture-guard` dio seis hallazgos. Los tres primeros están arreglados: el fixture pasó a
+`src/shared/lib/__fixtures__/` porque lo usan tests de dos carpetas, importa `RealtimeClient` de
+`@supabase/supabase-js` en vez del paquete interno, y las mutaciones invalidan con
+`allCommunityMembersKey`. Los otros tres se quedan, cada uno con su sitio:
+
+- El fallo de `leaving` de arriba (A → B → A), al registro del incremento 7.
+- `isMutating()` cuenta las mutaciones en pausa de la cola offline, así que sin red el refresco se
+  reprograma cada 300 ms hasta que la cola se vacía. No pide nada al servidor, pero el temporizador
+  no para. `items` hace lo mismo desde la fase 6. Al incremento 7.
+- `useMealPlanWeek` abre `meal_plan_slots:<id>` dentro de la lectura
+  (`meal-planner/presentation/hooks/use-meal-planner.ts`), igual que `useRecipes`. Recetas → Menú
+  puede repetir el fallo de Gastos. Al incremento 7, apuntado en el ROADMAP.
+
+`pr-review-toolkit:silent-failure-hunter` no estaba disponible en la sesión como tipo de agente, así
+que la revisión de fallos silenciosos de los hooks de suscripción se hizo a mano. Salió el mismo
+canal muerto de `leaving`. Lo demás aguanta: `removeChannel` nunca rechaza, `invalidateQueries` no
+lanza, los temporizadores se limpian y un `CHANNEL_ERROR` lo vuelve a unir Phoenix, que acaba en
+`SUBSCRIBED` y refresca. El `err` de `CHANNEL_ERROR` no se registra, igual que en `items`.
+
+### Verificación
+
+Typecheck limpio, lint con 0 errores y los 9 avisos de antes, Jest con 72 suites y 510 tests
+(91,16 % de sentencias) y `test:realtime` 18/18 contra el real. Tests nuevos:
+
+| Test | Qué comprueba |
+| --- | --- |
+| `use-community-members.test.tsx` | Dos lecturas en la misma pantalla no lanzan, y leer no abre ningún canal |
+| `use-members-realtime.test.tsx` | Los 11 casos del hook: agrupar, refresco tras `connected`, mutación en vuelo, primer plano, `CHANNEL_ERROR` y `TIMED_OUT` sin lanzar, baja antes de abrir el siguiente y cambio de lista |
+| `MembersRealtime.test.tsx` | Miembros sobre Gastos comparte el único canal, cerrar y reabrir Gastos no lo reabre, y cambiar de lista cierra el viejo y abre el nuevo |
+| `active-community-store.test.ts` | La 1.3.1 rehidrata la lista activa que guardó la 1.2.0 |
+
+### La prueba en el POCO
+
+Pendiente del update por aire, que lanza Alejandro. Con la skill `probar-en-android` hay que ver la
+`versionName` 1.3.1 y el pie con el id del update en el segundo arranque, abrir Gastos, Miembros
+encima de Gastos y atrás, cambiar de lista con Gastos abierto, Gastos sin red y un cambio de
+miembros desde otra sesión que llega a la pantalla.

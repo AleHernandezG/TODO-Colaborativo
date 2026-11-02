@@ -1,36 +1,24 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 
 import { supabaseCommunityRepository } from '../../data/supabase-community-repository'
 import type { CommunityMember } from '../../domain/community-repository'
+
+export function allCommunityMembersKey(communityId: string | null | undefined) {
+  return ['community-members', communityId] as const
+}
 
 export function communityMembersKey(
   communityId: string | null | undefined,
   includeArchived = false,
 ) {
-  return ['community-members', communityId, { includeArchived }] as const
+  return [...allCommunityMembersKey(communityId), { includeArchived }] as const
 }
 
 export function useCommunityMembers(
   communityId: string | null | undefined,
   options?: { includeArchived?: boolean },
 ) {
-  const queryClient = useQueryClient()
   const includeArchived = options?.includeArchived ?? false
-
-  useEffect(() => {
-    if (!communityId) return
-
-    const unsubscribe = supabaseCommunityRepository.subscribeMembers(communityId, () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['community-members', communityId],
-      })
-    })
-
-    return () => {
-      unsubscribe()
-    }
-  }, [communityId, queryClient])
 
   return useQuery({
     queryKey: communityMembersKey(communityId, includeArchived),

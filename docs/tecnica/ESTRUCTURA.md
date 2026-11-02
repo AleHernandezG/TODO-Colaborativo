@@ -63,6 +63,7 @@ vigilan el lint (`no-restricted-imports`) y el hook `comprobar-nucleo.mjs`.
 | Una mutación que se pueda encolar | su `setMutationDefaults` en `presentation/mutations/` |
 | Un componente que se usa en dos features | `src/shared/ui/` si es presentacional; si conoce datos, se queda en una feature y la otra lo importa por su `index.ts` |
 | Un envoltorio de un módulo nativo | `src/shared/lib/` |
+| Un doble de test que usan varias features | `src/shared/lib/__fixtures__/`, fuera de la cobertura por `jest.config.js`; es una subcarpeta de `lib/`, no una cuarta de `shared/`. El de una sola carpeta, en su `__fixtures__/` al lado |
 | Una feature nueva | `src/features/<x>/` y, en el mismo cambio, su nombre en el array `features` de `eslint.config.js` (lo vigila `repository-rules.test.ts`) |
 | Un texto de pantalla | `src/shared/lib/i18n/es.json` y `en.json` a la vez |
 | Un color, tamaño o radio | `src/theme/tokens.js` y su papel en `DESIGN.md` |

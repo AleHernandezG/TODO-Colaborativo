@@ -9,6 +9,13 @@ export type JoinOutcome =
   | { status: 'wrong_pin' }
   | { status: 'too_many_attempts' }
 
+export type MembersChannelStatus = 'connecting' | 'connected' | 'disconnected'
+
+export type MembersSubscriptionHandlers = {
+  onChange: () => void
+  onStatus: (status: MembersChannelStatus) => void
+}
+
 export type CommunityMember = {
   id: string
   username: string
@@ -28,18 +35,8 @@ export interface CommunityRepository {
     communityId: string,
     options?: { includeArchived?: boolean },
   ): Promise<CommunityMember[]>
-  removeMember(
-    communityId: string,
-    memberId: string,
-  ): Promise<{ status: 'deleted' | 'archived' }>
-  setMemberAdmin(
-    communityId: string,
-    memberId: string,
-    isAdmin: boolean,
-  ): Promise<void>
-  addGuestMember(
-    communityId: string,
-    username: string,
-  ): Promise<CommunityMember>
-  subscribeMembers(communityId: string, onChange: () => void): () => void
+  removeMember(communityId: string, memberId: string): Promise<{ status: 'deleted' | 'archived' }>
+  setMemberAdmin(communityId: string, memberId: string, isAdmin: boolean): Promise<void>
+  addGuestMember(communityId: string, username: string): Promise<CommunityMember>
+  subscribeMembers(communityId: string, handlers: MembersSubscriptionHandlers): () => void
 }

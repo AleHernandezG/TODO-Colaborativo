@@ -453,29 +453,82 @@ describe('addGuestMember', () => {
 })
 
 describe('subscribeMembers', () => {
-  it('crea un canal con filtro por comunidad y devuelve función para desuscribirse', () => {
-    const onMock = jest.fn().mockReturnThis()
-    const subscribeMock = jest.fn().mockReturnThis()
-    const channelMock = { on: onMock, subscribe: subscribeMock }
-    channel.mockReturnValue(channelMock)
+  type FakeChannel = {
+    on: jest.Mock
+    subscribe: jest.Mock
+  }
 
-    const onChange = jest.fn()
-    const unsubscribe = supabaseCommunityRepository.subscribeMembers('c1', onChange)
+  function mockChannel() {
+    const listeners: { config: Record<string, unknown>; handler: () => void }[] = []
+    let statusCallback: ((status: string) => void) | undefined
+    const built: FakeChannel = {
+      on: jest.fn((_event: string, config: Record<string, unknown>, handler: () => void) => {
+        listeners.push({ config, handler })
+        return built
+      }),
+      subscribe: jest.fn((callback: (status: string) => void) => {
+        statusCallback = callback
+        return built
+      }),
+    }
+    channel.mockReturnValue(built)
+    return { built, listeners, emitStatus: (status: string) => statusCallback?.(status) }
+  }
+
+  it('escucha solo los cambios de su comunidad', () => {
+    const { listeners } = mockChannel()
+
+    supabaseCommunityRepository.subscribeMembers('c1', {
+      onChange: jest.fn(),
+      onStatus: jest.fn(),
+    })
 
     expect(channel).toHaveBeenCalledWith('members:c1')
-    expect(onMock).toHaveBeenCalledWith(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'members',
-        filter: 'community_id=eq.c1',
-      },
-      expect.any(Function),
-    )
+    expect(listeners).toHaveLength(1)
+    expect(listeners[0].config).toEqual({
+      event: '*',
+      schema: 'public',
+      table: 'members',
+      filter: 'community_id=eq.c1',
+    })
+  })
 
+  it('avisa de cada cambio sin mirar el contenido del evento', () => {
+    const { listeners } = mockChannel()
+    const onChange = jest.fn()
+
+    supabaseCommunityRepository.subscribeMembers('c1', { onChange, onStatus: jest.fn() })
+    listeners[0].handler()
+    listeners[0].handler()
+
+    expect(onChange).toHaveBeenCalledTimes(2)
+  })
+
+  it('traduce el estado del canal a conectado o desconectado', () => {
+    const { emitStatus } = mockChannel()
+    const onStatus = jest.fn()
+
+    supabaseCommunityRepository.subscribeMembers('c1', { onChange: jest.fn(), onStatus })
+
+    emitStatus('SUBSCRIBED')
+    expect(onStatus).toHaveBeenLastCalledWith('connected')
+
+    for (const status of ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED']) {
+      emitStatus(status)
+      expect(onStatus).toHaveBeenLastCalledWith('disconnected')
+    }
+  })
+
+  it('la función que devuelve cierra el canal', () => {
+    const { built } = mockChannel()
+
+    const unsubscribe = supabaseCommunityRepository.subscribeMembers('c1', {
+      onChange: jest.fn(),
+      onStatus: jest.fn(),
+    })
+
+    expect(removeChannel).not.toHaveBeenCalled()
     unsubscribe()
-    expect(removeChannel).toHaveBeenCalledWith(channelMock)
+    expect(removeChannel).toHaveBeenCalledWith(built)
   })
 })
-

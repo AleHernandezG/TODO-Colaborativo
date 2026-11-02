@@ -8,6 +8,7 @@ import { useColorScheme } from 'react-native'
 import { PaperProvider, Portal } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
+import { MembersRealtime } from '@/features/community'
 import { registerExpenseMutationDefaults } from '@/features/expenses'
 import { registerItemMutationDefaults } from '@/features/items'
 import { SessionGate } from '@/features/session'
@@ -38,6 +39,7 @@ function RootLayout() {
             <StatusBar style="auto" />
             <SessionGate>
               <Stack screenOptions={{ headerShown: false }} />
+              <MembersRealtime />
               <SnackbarHost />
             </SessionGate>
           </Portal.Host>

@@ -15,7 +15,8 @@ diario de su fase.
 auditoría del 2026-10-11).** Incrementos 1 y 2 hechos: `main` es SDK 57 y versión 1.3.1
 (`febae87`). **Incrementos 3 y 4 cerrados el 2026-11-02, con su paso en el Android**: las dos
 migraciones están aplicadas con `db push` y comprobadas en el real, `db.types.ts` regenerado,
-`test:rls` 102/102 y `test:realtime` 18/18 contra el real, Jest con 68 suites y 490 tests,
+`test:rls` 102/102 y `test:realtime` 18/18 contra el real, Jest con 68 suites y 490 tests (72 y
+510 tras el arreglo de Gastos),
 `test:hooks` 103/103, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio. Diario en
 [`fase-15.md`](../phases/fase-15.md), apartados 12 y 13.
 
@@ -26,13 +27,24 @@ el PIN sin crear un duplicado, PIN equivocado, atrás y sin red, que cumple la r
 deja usar `launchApp` y el flujo va en tramos. Salieron cinco hallazgos (`fase-15.md`, apartado
 13), y dos son graves:
 
-- **Gastos tumba la app en la 1.3.1**: canal `members:<id>` repetido en `subscribeMembers`.
+- **Gastos tumbaba la app en la 1.3.1**: canal `members:<id>` repetido en `subscribeMembers`.
+  Arreglado el 2026-11-02 (`fase-15.md`, apartado 14): la lectura ya no abre canal y
+  `<MembersRealtime />` lo abre una vez en la raíz. Solo JS; falta el update por aire y verlo en el
+  POCO.
 - **La cabecera de la lista aplasta el título a 19 px** con la letra al 115 %, y con él el selector
   de listas. Alejandro pidió rediseñar todas las pantallas y lo decidió en
   [P-04](PREGUNTAS.md#p-04--alcance-y-orden-del-rediseño): paquete T-16, con su ficha abajo.
 
-Además, al pasar de la 1.2.0 a la 1.3.1 el POCO perdió su lista. Hay que averiguarlo antes del
-incremento 5.
+**La lista perdida del POCO no la borró la 1.3.1**, que lee lo mismo que guardaba la 1.2.0. El
+móvil ya había perdido su sesión anónima antes del update, y la 1.3.1 lo mandó a la bienvenida al
+reconciliar (ADR-0025). Por qué se cayó esa sesión no está probado. El aviso en Sentry y el «volver a
+esa lista» van al incremento 5 (`fase-15.md`, apartado 14).
+
+**Lo que queda de Realtime para el incremento 7**: `useRecipes` y `useMealPlanWeek` abren su canal
+dentro de la lectura, como hacía `useCommunityMembers`, y Recetas → Menú puede repetir el fallo de
+Gastos; reabrir un topic mientras el anterior está en `leaving` deja el canal muerto sin aviso; y
+`isMutating()` cuenta la cola offline en pausa y reprograma el refresco cada 300 ms. Los tres los
+cierra un registro de canales con recuento de referencias en `src/shared/lib/`.
 
 **Método de trabajo montado el 2026-10-31**: seis hooks en `.claude/hooks/`, siete skills nuevas,
 tres agentes nuevos, los tests de la regla 6 y de las reglas del repositorio, y este ROADMAP.
@@ -43,8 +55,8 @@ Detalle en [`METODO-DE-TRABAJO.md`](../tecnica/METODO-DE-TRABAJO.md) y en el apa
 Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `prompts/`:
 
 1. El arreglo de Gastos (canal de miembros repetido) y averiguar la lista perdida:
-   [`T-15-gastos.md`](prompts/T-15-gastos.md). Un fallo que tumba la app en la versión que se va
-   a repartir va antes que todo lo demás.
+   [`T-15-gastos.md`](prompts/T-15-gastos.md). Hecho en código el 2026-11-02; queda la prueba en
+   el POCO tras el update por aire.
 2. T-16.1, herramientas para medir y foto de partida: [`T-16-1-herramientas.md`](prompts/T-16-1-herramientas.md).
 3. T-16.2, el diseño sin código: [`T-16-2-diseno.md`](prompts/T-16-2-diseno.md).
 4. Incremento 6 del T-15, la pantalla del PIN con el diseño nuevo y la migración B:
@@ -57,8 +69,8 @@ Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `p
 - El guion de la fase 15 en un Android real (`fase-15.md`, apartado 4). El selector de listas ya se
   vio en el POCO (se abre y atrás lo cierra); falta cambiar de lista y el resto del guion.
 
-**Siguiente: el arreglo de Gastos del T-15**, con su prompt en
-[`prompts/T-15-gastos.md`](prompts/T-15-gastos.md).
+**Siguiente: T-16.1, herramientas para medir y foto de partida**, con su prompt en
+[`prompts/T-16-1-herramientas.md`](prompts/T-16-1-herramientas.md).
 
 ## Lo que se arrastra de fases anteriores
 

@@ -196,15 +196,13 @@ export const supabaseCommunityRepository: CommunityRepository = {
     }
 
     return (
-      (
-        data as unknown as {
-          id: string
-          username: string
-          auth_user_id: string | null
-          is_admin: boolean
-          removed_at: string | null
-        }[]
-      ) ?? []
+      (data as unknown as {
+        id: string
+        username: string
+        auth_user_id: string | null
+        is_admin: boolean
+        removed_at: string | null
+      }[]) ?? []
     ).map((m) => ({
       id: m.id,
       username: m.username,
@@ -279,7 +277,7 @@ export const supabaseCommunityRepository: CommunityRepository = {
     }
   },
 
-  subscribeMembers(communityId: string, onChange: () => void): () => void {
+  subscribeMembers(communityId, { onChange, onStatus }) {
     const channel = supabase
       .channel(`members:${communityId}`)
       .on(
@@ -290,11 +288,17 @@ export const supabaseCommunityRepository: CommunityRepository = {
           table: 'members',
           filter: `community_id=eq.${communityId}`,
         },
-        () => {
-          onChange()
-        },
+        () => onChange(),
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          onStatus('connected')
+          return
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          onStatus('disconnected')
+        }
+      })
 
     return () => {
       void supabase.removeChannel(channel)
