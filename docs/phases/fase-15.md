@@ -1081,7 +1081,7 @@ noche: P-04 está respondida y el T-16 aprobado (ver «Decisiones sobre la march
 ### Qué falta
 
 1. Los hallazgos 1 y 2, en `src/`. El 1 bloquea Gastos para cualquiera con la 1.3.1. El 1 está
-   arreglado en el apartado 14; el 2 va al T-16.
+   arreglado en el apartado 14 y visto en el POCO con el update `01a19e5d`; el 2 va al T-16.
 2. El 3, investigarlo antes del incremento 5. Averiguado en el apartado 14: la 1.3.1 no borra la
    sesión de nadie.
 3. El rediseño: plan y prompts, con el OK de Alejandro. Hecho, ver abajo.
@@ -1256,7 +1256,53 @@ Typecheck limpio, lint con 0 errores y los 9 avisos de antes, Jest con 72 suites
 
 ### La prueba en el POCO
 
-Pendiente del update por aire, que lanza Alejandro. Con la skill `probar-en-android` hay que ver la
-`versionName` 1.3.1 y el pie con el id del update en el segundo arranque, abrir Gastos, Miembros
-encima de Gastos y atrás, cambiar de lista con Gastos abierto, Gastos sin red y un cambio de
-miembros desde otra sesión que llega a la pantalla.
+Hecha el 2026-11-02 en el POCO F5 (`1e5b87b9`) por `adb`, con `versionName` 1.3.1 y el pie
+`v1.3.1 · 01a19e5d`, que es el update `01a19e5d-058a-7002-9677-0864f3e477a7` del canal `preview`
+(«Fix Gastos crash: open members channel once»). Las capturas se quedaron en el scratchpad de la
+sesión; en logcat no salió ningún error en ningún paso.
+
+| Paso | Resultado |
+| --- | --- |
+| Abrir Gastos en «E2E PIN» | Abre, con «Todavía no hay gastos». Antes reventaba |
+| Miembros encima de Gastos y atrás | Ana (Tú, Admin) y Bea; atrás vuelve a Gastos |
+| Lista nueva «E2E Gastos» (Ana, PIN 1234) y Gastos y Miembros en ella | Abren, solo con Ana |
+| Volver a «E2E PIN» y abrir Gastos y Miembros | Abren, con Ana y Bea |
+| Un miembro nuevo desde otra sesión | Carla entra en «E2E PIN» con un script (sesión anónima y `join_community`, ni `test:realtime` ni el dashboard) y sale en Miembros del POCO en menos de 2 s |
+| Sin red: modo avión, cerrar del todo, abrir | Lista y Gastos abren con el aviso «Los cambios de los demás no llegan solos…», sin decir que está al día |
+| Quitar el modo avión | Miembros carga Ana, Bea y Carla |
+
+Quedan en Supabase una lista de prueba nueva, «E2E Gastos», y dos miembros nuevos en «E2E PIN»,
+Carla y Dani.
+
+Lo que quedaba, recorrido a continuación en el mismo móvil:
+
+- **Cambio rápido A → B → A con Gastos abierto.** De «E2E PIN» a «E2E Gastos», abrir Gastos, atrás,
+  y de vuelta a «E2E PIN», todo en 2,2 s (una captura a mitad confirma que Gastos de «E2E Gastos»
+  llegó a abrirse). Repetido dos veces, sin error en logcat. Después, Dani entra en «E2E PIN» desde
+  otra sesión (22:41:52Z) y sale en Miembros en menos de 2 s, así que el canal de miembros sigue vivo.
+  Eso no descarta la trampa de `leaving`: por `adb` no se puede asegurar que la vuelta caiga dentro
+  de la ventana en que el servidor aún no ha confirmado la salida. Sigue en el incremento 7.
+- **Letra del sistema al máximo** (`font_scale` 2.0, devuelta luego a 1.15). Gastos y Miembros se
+  usan enteros y nada se sale de la pantalla. Los títulos se cortan («Re…» en Gastos, «Miembr…» en
+  Miembros) y un nombre corto como Carla pasa a «Carl..». La cabecera de la lista desaparece, el
+  hallazgo 2 del apartado 13. Al T-16. Cambiar la letra recrea la actividad y la app vuelve a la lista.
+- **TalkBack.** Activarlo por `adb` abre su tutorial, que no se deja cerrar con toques inyectados, y
+  la voz no se oye desde la sesión, así que se apagó (forzar la parada de TalkBack lo desactiva). Lo
+  que se miró es el árbol de accesibilidad, que es lo que TalkBack lee. En Gastos, «Lista»,
+  «Miembros de la lista» y «Añadir gasto», los tres como botón. En Miembros, «Volver», «Añadir
+  invitado» y, por cada miembro, «Hacer admin» y «Eliminar» con su nombre, todos como botón. Escuchar
+  la voz queda para el guion a mano del T-16.
+
+Hallazgos nuevos, ninguno del arreglo:
+
+- Los tres «Hacer admin» de Miembros se anuncian igual, sin el nombre del miembro, al contrario que
+  «Eliminar Bea». Con TalkBack no se sabe a quién se hace admin. Al T-16.6.
+- Los botones de la cabecera y los de cada miembro miden 121 px de alto en el POCO (440 dpi), unos
+  44 dp, y entre «Hacer admin» y «Eliminar» hay 9 px, unos 3 dp. P-02 pide 48 dp y 8 dp de separación;
+  si hay `hitSlop`, el árbol no lo enseña. Al T-16, que sube el área táctil.
+- Miembros sin red tras un arranque en frío se queda en «Cargando el código…» y sin lista. La query
+  `['community-members', id]` no lleva `meta.persist`, así que no hay nada en disco, y el estado de
+  carga reutiliza la clave `list.joinCodeLoading`. Al T-16.6, que rehace Miembros.
+- La etiqueta «Admin» de Miembros apenas se lee en modo oscuro. Al T-16.3.
+- El árbol de accesibilidad de Gastos anuncia «Cargando los gastos…» mientras pinta el estado vacío.
+  Al T-16.6.

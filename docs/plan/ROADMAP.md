@@ -29,8 +29,8 @@ deja usar `launchApp` y el flujo va en tramos. Salieron cinco hallazgos (`fase-1
 
 - **Gastos tumbaba la app en la 1.3.1**: canal `members:<id>` repetido en `subscribeMembers`.
   Arreglado el 2026-11-02 (`fase-15.md`, apartado 14): la lectura ya no abre canal y
-  `<MembersRealtime />` lo abre una vez en la raíz. Solo JS; falta el update por aire y verlo en el
-  POCO.
+  `<MembersRealtime />` lo abre una vez en la raíz. Visto en el POCO con el update
+  `v1.3.1 · 01a19e5d`.
 - **La cabecera de la lista aplasta el título a 19 px** con la letra al 115 %, y con él el selector
   de listas. Alejandro pidió rediseñar todas las pantallas y lo decidió en
   [P-04](PREGUNTAS.md#p-04--alcance-y-orden-del-rediseño): paquete T-16, con su ficha abajo.
@@ -55,8 +55,7 @@ Detalle en [`METODO-DE-TRABAJO.md`](../tecnica/METODO-DE-TRABAJO.md) y en el apa
 Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `prompts/`:
 
 1. El arreglo de Gastos (canal de miembros repetido) y averiguar la lista perdida:
-   [`T-15-gastos.md`](prompts/T-15-gastos.md). Hecho en código el 2026-11-02; queda la prueba en
-   el POCO tras el update por aire.
+   [`T-15-gastos.md`](prompts/T-15-gastos.md). Hecho y visto en el POCO el 2026-11-02.
 2. T-16.1, herramientas para medir y foto de partida: [`T-16-1-herramientas.md`](prompts/T-16-1-herramientas.md).
 3. T-16.2, el diseño sin código: [`T-16-2-diseno.md`](prompts/T-16-2-diseno.md).
 4. Incremento 6 del T-15, la pantalla del PIN con el diseño nuevo y la migración B:
