@@ -8,16 +8,16 @@ El siguiente número libre es **P-05**.
 
 | Pregunta | Sobre qué | Bloquea | Estado |
 | --- | --- | --- | --- |
-| [P-01](#p-01--el-texto-del-diálogo-de-fin-de-compra) | Texto del diálogo de fin de compra | Nada | Abierta |
-| [P-02](#p-02--área-táctil-mínima-44-pt-o-48-dp) | Área táctil mínima | Incrementos 6 y 8 del T-15 y el diseño del T-16 | Abierta |
-| [P-03](#p-03--aceptar-el-adr-0027) | Aceptar el ADR-0027 | Nada | Abierta |
+| [P-01](#p-01--el-texto-del-diálogo-de-fin-de-compra) | Texto del diálogo de fin de compra | Nada | Respondida: A |
+| [P-02](#p-02--área-táctil-mínima-44-pt-o-48-dp) | Área táctil mínima | Nada | Respondida: A, 48 dp |
+| [P-03](#p-03--aceptar-el-adr-0027) | Aceptar el ADR-0027 | Nada | Respondida: aceptado |
 | [P-04](#p-04--alcance-y-orden-del-rediseño) | Alcance y orden del rediseño | Nada | Respondida: A con A1 |
 
 ---
 
 ## P-01 · El texto del diálogo de fin de compra
 
-**No bloquea nada; ya está cambiado en el árbol, sin commit.**
+No bloqueaba nada. El texto nuevo ya estaba en `es.json` y `en.json`.
 
 El test de la regla 6 (`src/shared/lib/i18n/__tests__/forbidden-claims.test.ts`) encontró una
 promesa en `shopping.finishDialog.message` el mismo día que se escribió. El diálogo sale al pulsar
@@ -43,12 +43,15 @@ Ningún flujo de `.maestro/` cita el texto viejo (comprobado con `grep`).
 
 **Recomendación: A.** Es una frase y no necesita lógica nueva.
 
+**Respuesta (2026-11-02): A.** Se queda el texto nuevo. El T-16.4, que rehace el modo
+supermercado, no lo cambia sin volver a preguntar.
+
 ---
 
 ## P-02 · Área táctil mínima: 44 pt o 48 dp
 
-**Bloquea los incrementos 6 y 8 del T-15 y el diseño del T-16 (incremento 2)**, que fija las
-medidas de todas las pantallas.
+Bloqueaba los incrementos 6 y 8 del T-15 y el diseño del T-16 (incremento 2), que fija las
+medidas de todas las pantallas. Respondida el 2026-11-02, al final de este apartado.
 
 `CLAUDE.md` pide ≥ 44 × 44 pt, que es la cifra de Apple. Android, que es la plataforma que manda,
 recomienda 48 × 48 dp con 8 dp de separación entre controles. En Android 1 pt de React Native es
@@ -71,11 +74,18 @@ Fuentes, consultadas el 2026-10-31:
 **Recomendación: A.** Ante una decisión entre plataformas gana Android (`CLAUDE.md`), y con
 `hitSlop` el coste en iOS es nulo.
 
+**Respuesta (2026-11-02): A.** La regla pasa a 48 × 48 dp con 8 dp de separación en `CLAUDE.md`,
+`DESIGN.md`, `README.md`, la especificación, `architecture-guard`, `revisor-interfaz` y las skills
+`expo-stack` y `probar-en-android`. El token `minTouchTarget` (44, usado en unos 50 sitios) y su
+test no cambian hoy: es código y mueve todas las pantallas a la vez. Lo sube el T-16.3, que toca
+`src/shared/ui`. Hasta entonces el script del T-16.1 falla a 48 y enseña también la columna de 44,
+para ver cuánto queda.
+
 ---
 
 ## P-03 · Aceptar el ADR-0027
 
-**No bloquea nada**: el método ya funciona mientras el ADR está en Propuesto.
+No bloqueaba nada: el método ya funcionaba con el ADR en Propuesto.
 
 [ADR-0027](../adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md) recoge lo que se montó el
 2026-10-31: los paquetes T-NN, los hooks, las skills y los agentes nuevos, y lo que se descartó.
@@ -83,6 +93,10 @@ Pasa a Aceptado cuando lo digas.
 
 **Recomendación: aceptarlo tras una o dos sesiones de uso**, cuando se haya visto si algún hook
 bloquea de más.
+
+**Respuesta (2026-11-02): aceptado.** Se usó en varias sesiones y ningún hook bloqueó algo que no
+debía; el falso positivo que se sospechaba con un grep de «maestro cloud» no existe. Desde hoy el
+hook protege el ADR: un cambio al método va en un ADR nuevo.
 
 ---
 

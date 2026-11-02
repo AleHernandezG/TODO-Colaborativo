@@ -251,7 +251,7 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 | **Rendimiento**          | Arranque en frío < 3 s; render de lista de 200 artículos fluido (listas virtualizadas).     |
 | **Sincronización**       | Latencia de propagación P95 < 2 s con conexión normal.                                      |
 | **Offline**              | La app abre y muestra la última lista cacheada sin red; cambios se encolan.                 |
-| **Accesibilidad**        | WCAG 2.2 AA: contraste, targets táctiles ≥ 44×44 pt, compatibilidad con lector de pantalla. |
+| **Accesibilidad**        | WCAG 2.2 AA: contraste, targets táctiles ≥ 48×48 dp, compatibilidad con lector de pantalla. |
 | **Internacionalización** | Textos externalizados (i18n) desde el inicio; ES por defecto, preparado para EN.            |
 | **Mantenibilidad**       | Capas desacopladas, cobertura de tests en dominio y repositorios ≥ 70%.                     |
 | **Seguridad (beta)**     | Reglas de acceso a nivel de fila por comunidad; secretos fuera del repo.                    |
@@ -548,7 +548,7 @@ Centralizados en `theme/tokens.ts` y consumidos por `shared/ui`. Cambiar el look
 ### 10.4 Accesibilidad (WCAG 2.2 AA)
 
 - Contraste de texto ≥ 4.5:1 (≥ 3:1 para texto grande).
-- Áreas táctiles ≥ 44×44 pt.
+- Áreas táctiles ≥ 48×48 dp con 8 dp de separación (P-02, 2026-11-02).
 - **Etiquetas de accesibilidad** (`accessibilityLabel`, `accessibilityRole`) en todos los controles → compatibilidad con VoiceOver/TalkBack.
 - Estados no dependientes solo del color (icono + texto para «comprado»).
 - Respetar tamaño de fuente del sistema (_dynamic type_) y modo oscuro.
@@ -831,7 +831,7 @@ proyecto/
 
 ## Reglas duras
 
-- Accesibilidad: labels + contraste AA + targets >= 44pt en cada control nuevo.
+- Accesibilidad: labels + contraste AA + áreas táctiles >= 48 × 48 dp con 8 dp de separación en cada control nuevo.
 - Optimistic UI con rollback en todas las mutaciones.
 - Nunca commitear secretos. Usa .env / EAS secrets.
 - Cada feature: test de dominio + README corto. ADR si hay decisión relevante.
@@ -879,7 +879,7 @@ REGLAS DE ARQUITECTURA
 REGLAS DE UX/ACCESIBILIDAD (no negociables)
 - Pensado para usuario novato: acción principal grande y evidente por pantalla,
   feedback inmediato, "deshacer" tras borrar, valores por defecto sensatos.
-- Cada control: accessibilityLabel + accessibilityRole, contraste AA, target >= 44pt.
+- Cada control: accessibilityLabel + accessibilityRole, contraste AA, área táctil >= 48 × 48 dp con 8 dp de separación.
 - Textos vía i18n (nada hardcodeado). Soporta modo claro/oscuro desde tokens.
 
 SEGURIDAD (beta)

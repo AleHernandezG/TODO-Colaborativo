@@ -25,7 +25,7 @@ alguno, se dice y decide Alejandro.
 
 Recuentos de partida: los que deje el arreglo de Gastos en el bloque «Estado» del ROADMAP. Si no
 hay cifras nuevas, Jest con 68 suites y 490 tests, `test:hooks` 103/103, lint con 0 errores y 9
-avisos. Preguntas abiertas que le afectan: P-02 (44 pt o 48 dp), que fija el umbral del script.
+avisos. P-02 está respondida: 48 dp con 8 dp de separación, que es el umbral del script.
 Siguiente ADR libre: 0028; siguiente pregunta libre: P-05.
 
 Hace falta el POCO por USB con los interruptores de depuración activados.
@@ -56,7 +56,7 @@ Antes de nada, lee en este orden:
   4. src/shared/lib/__tests__/repository-rules.test.ts: la forma que sigue el test nuevo
   5. docs/guias/e2e-con-maestro.md, desde «En Windows, sin tocar el PATH»
   6. La skill probar-en-android
-  7. docs/plan/PREGUNTAS.md, P-02
+  7. docs/plan/PREGUNTAS.md, P-02 y su respuesta
 
 No explores fuera de esta lista. Para un símbolo, el LSP antes que leer ficheros enteros.
 
@@ -98,9 +98,9 @@ Lo que caza el test de diseño, en src/app y src/features/*/presentation:
   bajar: cada incremento del T-16 quita las de sus pantallas y el 8 la deja vacía.
 
 Decisiones que tienes que tomar:
-  1. El umbral del área táctil. Si P-02 está respondida, el suyo. Si no, recomiendo que el script
-     avise a 48 dp y falle a 44 pt, y que el documento enseñe las dos columnas. Descartado:
-     decidir P-02 aquí
+  1. Cómo enseña el script la distancia hasta 48 dp mientras el token siga en 44. Recomiendo que
+     falle a 48 dp y a menos de 8 dp de separación, y que el documento enseñe también la columna
+     de 44 para ver cuánto queda. Descartado: fallar solo a 44 hasta el T-16.3
   2. Qué hace el test con una línea nueva fuera de las excepciones: fallar. Descartado: un aviso,
      que nadie lee
   3. Las variantes de la foto: claro y oscuro con letra al 100 %, y claro con letra al 115 % y al

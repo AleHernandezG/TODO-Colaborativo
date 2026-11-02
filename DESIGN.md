@@ -96,8 +96,9 @@ Escala de Tailwind, en múltiplos de 4. Lo habitual: `gap-2` entre elementos de 
 entre filas o bloques, `p-3` o `p-4` de relleno de tarjeta, `px-4` de margen lateral de pantalla.
 Los medios pasos (`0.5`, `1.5`) solo para ajustar un chip o una insignia.
 
-El área táctil mínima es `minTouchTarget` (44) de `@/theme`, puesta con `minHeight` y `minWidth` en
-el `Pressable`. Si el dibujo es más pequeño, crece el área con `hitSlop`, no el dibujo.
+El área táctil mínima es 48 × 48 dp con 8 dp de separación (P-02), puesta con `minHeight` y
+`minWidth` en el `Pressable` a partir de `minTouchTarget` de `@/theme`. El token sigue en 44 hasta
+que lo suba el T-16.3. Si el dibujo es más pequeño, crece el área con `hitSlop`, no el dibujo.
 
 ## Elevación
 

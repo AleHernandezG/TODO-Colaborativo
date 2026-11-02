@@ -21,7 +21,7 @@ Qué leer antes de tocar nada que no entiendas:
 | `docs/tecnica/ESTRUCTURA.md` | Dónde va cada cosa y dónde poner un fichero nuevo |
 | `docs/tecnica/STACK.md` | Versiones y licencias, con fecha de comprobación |
 | `docs/tecnica/METODO-DE-TRABAJO.md` | Cómo está montado Claude Code: skills, agentes, hooks y plugins, con su porqué |
-| `docs/adr/` | Las decisiones, con lo que se descartó: 26 aceptadas y la 0027 propuesta |
+| `docs/adr/` | Las decisiones, con lo que se descartó: 27 aceptadas |
 | `docs/phases/fase-N.md` | El diario de cada fase: qué se hizo, cómo probarlo, deuda asumida |
 | `DESIGN.md` | Cómo se ve la app. Léelo antes de pintar o tocar una pantalla |
 
@@ -226,8 +226,9 @@ error se enseña entre paréntesis, para que una captura valga como diagnóstico
 
 **Pensado para quien no sabe usar apps**: una acción principal grande por pantalla, respuesta
 inmediata, «deshacer» tras borrar y valores por defecto sensatos (cantidad 1). Cada control nuevo
-lleva `accessibilityLabel`, `accessibilityRole`, contraste AA y un área táctil de al menos 44 × 44
-pt (P-02 pregunta si se sube a los 48 dp que pide Android). Ningún estado depende solo del color.
+lleva `accessibilityLabel`, `accessibilityRole`, contraste AA y un área táctil de al menos 48 × 48
+dp con 8 dp de separación, la cifra de Android (P-02); si el dibujo es más pequeño, crece con
+`hitSlop`. Ningún estado depende solo del color.
 Modo claro y oscuro desde los tokens, y el tamaño de fuente del sistema se respeta. Lo que no esté
 en `DESIGN.md` no se usa sin añadirlo antes a `src/theme/tokens.js`.
 

@@ -36,10 +36,11 @@ el número. Un estado que solo se distingue por el color, como «comprado» sin 
 información necesaria, `allowFontScaling={false}` sin motivo escrito, filas que no crecen. Con la
 fuente al máximo de Android el texto tiene que caber o envolver.
 
-**6. Área táctil.** Controles por debajo de 44 × 44 pt, que es lo que exige `CLAUDE.md`, contando
-`hitSlop`. Señala aparte los que no llegan a 48 × 48 dp, que es lo que recomienda Android
-(https://developer.android.com/guide/topics/ui/accessibility/apps), hasta que la pregunta P-02 de
-`docs/plan/PREGUNTAS.md` se responda.
+**6. Área táctil.** Controles por debajo de 48 × 48 dp contando `hitSlop`, o a menos de 8 dp del
+siguiente, que es lo que exige `CLAUDE.md` desde P-02 y lo que recomienda Android
+(https://developer.android.com/guide/topics/ui/accessibility/apps). Mientras el token
+`minTouchTarget` siga en 44 (lo sube el T-16.3), un control que llega a 44 y no a 48 es deuda del
+T-16 y no fallo del cambio que se revisa.
 
 **7. Una acción principal.** Pantallas con dos botones que compiten por ser el principal, o con la
 acción principal fuera de la vista inicial.

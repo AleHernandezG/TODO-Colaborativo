@@ -23,8 +23,7 @@ del incremento 7 de la auditoría. Lo demás del 7 se reparte entre el T-16 (nav
 
 Recuentos de partida: Jest con 68 suites y 490 tests, `test:hooks` 103/103, `test:rls` 102/102 y
 `test:realtime` 18/18 contra el real, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio.
-El POCO tiene la 1.3.1 `base` (build `08f58498`). Preguntas abiertas: P-01, P-02 y P-03, ninguna
-le afecta. Siguiente ADR libre: 0028; siguiente pregunta libre: P-05.
+El POCO tiene la 1.3.1 `base` (build `08f58498`). No queda ninguna pregunta abierta. Siguiente ADR libre: 0028; siguiente pregunta libre: P-05.
 
 Se pega tal cual en la sesión.
 

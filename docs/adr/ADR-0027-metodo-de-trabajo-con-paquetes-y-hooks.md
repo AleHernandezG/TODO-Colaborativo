@@ -1,6 +1,6 @@
 # ADR-0027: Método de trabajo con paquetes, hooks y revisores
 
-- Estado: Propuesto
+- Estado: Aceptado (2026-11-02, P-03)
 - Fecha: 2026-10-31
 - Relacionado: ADR-0003 (estructura del repositorio)
 

@@ -56,6 +56,8 @@ de la navegación en la versión instalada, context7 o docs.expo.dev/versions/v5
 Dónde escribes:
   - src/app/: los _layout y las rutas que muevas
   - src/shared/ui/: la cabecera y lo que el diseño ponga como compartido para navegar
+  - src/theme/tokens.js y su test: minTouchTarget pasa de 44 a 48 (P-02), y lo que se descoloque
+    en pantallas que todavía no se han rehecho se apunta en fase-16.md, no se arregla aquí
   - src/features/community/presentation/: el selector de listas en la cabecera
   - src/features/notifications/presentation/ y donde viva useGoToList, para los puntos 4 y 5
   - src/shared/lib/i18n/es.json y en.json, a la vez
@@ -129,6 +131,7 @@ Terminado cuando:
     lo que marque está en fase-16.md con su motivo
   - el test de diseño pasa con menos excepciones que al empezar, y el número está apuntado
   - pin-unirse.yaml pasa entero en el POCO, aserción de Ana incluida
+  - minTouchTarget vale 48 y tokens.test.ts lo comprueba
   - el texto sobre el primario llega a AA en claro y en oscuro (fallo 23), comprobado con
     Accessibility Scanner en el POCO
   - npm run typecheck limpio, npm run lint con 0 errores, npm test en verde con la cobertura de

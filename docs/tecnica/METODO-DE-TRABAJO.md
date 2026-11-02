@@ -121,7 +121,7 @@ pero peor de deshacer.
 
 El test de la regla 6 encontró una promesa el mismo día que se escribió: el diálogo de fin de compra
 decía que la lista «se mantiene actualizada para el resto del grupo» también sin red. Se cambió el
-texto; queda como P-01 en `PREGUNTAS.md`.
+texto, y Alejandro lo dio por bueno en P-01 de `PREGUNTAS.md`.
 
 ## 7. Plugins
 

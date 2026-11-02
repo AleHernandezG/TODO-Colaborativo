@@ -35,7 +35,7 @@ Pasos numerados, cada uno con lo que se hace y lo que se tiene que ver. Siempre 
   `docs/guias/prueba-de-cierre-en-dispositivo.md`, apartado 4
 - **tamaño de fuente del sistema al máximo** y **modo oscuro**
 - **área táctil**: Android recomienda 48 × 48 dp con 8 dp de separación; Accessibility Scanner de
-  Google lo mide en el propio móvil. `CLAUDE.md` pide ≥ 44 pt (pregunta P-02 abierta)
+  Google lo mide en el propio móvil. `CLAUDE.md` pide lo mismo desde P-02 (2026-11-02)
 
 ## Primero lo prueba la sesión, por `adb` y Maestro
 

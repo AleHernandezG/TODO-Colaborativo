@@ -44,8 +44,8 @@ ve.
    la hidratación.
 7. **i18n.** Ningún texto de UI hardcodeado; claves presentes en `es.json` y `en.json`.
 8. **Accesibilidad.** Cada control interactivo nuevo con `accessibilityLabel`, `accessibilityRole`
-   y área táctil de 44 pt o más. Estado nunca solo por color. `testID` solo donde el texto es
-   ambiguo.
+   y área táctil de 48 × 48 dp o más con 8 dp de separación (P-02), contando `hitSlop`. Estado
+   nunca solo por color. `testID` solo donde el texto es ambiguo.
 9. **Paper.** `react-native-paper` solo dentro de `src/shared/ui`, y solo `Snackbar`, `Dialog` y
    `Portal`.
 10. **Android.** Tras tocar navegación, que el atrás del sistema esté tratado a propósito.

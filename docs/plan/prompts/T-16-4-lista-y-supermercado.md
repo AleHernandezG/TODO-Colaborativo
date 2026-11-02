@@ -18,9 +18,8 @@ Lo que se encuentra:
   de AddItemBar; la opción activa que solo se distingue por el fondo; y ShoppingModeScreen, que
   confunde un error con «vacío».
 
-Recuentos de partida: los del bloque «Estado» del ROADMAP. Preguntas abiertas: P-01 (el texto del
-diálogo de fin de compra) le afecta, porque atrás en el modo supermercado puede acabar en ese
-diálogo. Se pega tal cual en la sesión.
+Recuentos de partida: los del bloque «Estado» del ROADMAP. P-01 está respondida: el texto del diálogo
+de fin de compra se queda como está, y atrás en el modo supermercado puede acabar en ese diálogo. Se pega tal cual en la sesión.
 
 ---
 
@@ -93,8 +92,8 @@ Donde sí te paras:
     allá de un caso de uso nuevo
   - si un control no llega al área táctil de DESIGN.md sin cambiar el diseño
   - si cambia un texto que cita forbidden-claims.test.ts
-  - si atrás en el modo supermercado pide cambiar el texto del diálogo de fin de compra: es P-01
-    y la decido yo
+  - si atrás en el modo supermercado pide cambiar el texto del diálogo de fin de compra, que se
+    decidió en P-01
 
 Orden de trabajo:
   1. El plan con las decisiones, y esperas mi OK

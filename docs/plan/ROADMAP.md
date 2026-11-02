@@ -37,8 +37,8 @@ incremento 5.
 **Método de trabajo montado el 2026-10-31**: seis hooks en `.claude/hooks/`, siete skills nuevas,
 tres agentes nuevos, los tests de la regla 6 y de las reglas del repositorio, y este ROADMAP.
 Detalle en [`METODO-DE-TRABAJO.md`](../tecnica/METODO-DE-TRABAJO.md) y en el apartado 11 de
-`fase-15.md`. [ADR-0027](../adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md) en
-Propuesto hasta que Alejandro lo acepte.
+`fase-15.md`. [ADR-0027](../adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md) aceptado el
+2026-11-02 (P-03).
 
 Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `prompts/`:
 
@@ -56,7 +56,6 @@ Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `p
    absorbieron el arreglo de Gastos y el T-16 (ficha del T-16, «Absorbe»).
 - El guion de la fase 15 en un Android real (`fase-15.md`, apartado 4). El selector de listas ya se
   vio en el POCO (se abre y atrás lo cierra); falta cambiar de lista y el resto del guion.
-- P-01 de [`PREGUNTAS.md`](PREGUNTAS.md): el texto del diálogo de fin de compra que cambió la regla 6.
 
 **Siguiente: el arreglo de Gastos del T-15**, con su prompt en
 [`prompts/T-15-gastos.md`](prompts/T-15-gastos.md).
@@ -171,8 +170,8 @@ del test de diseño vacía; el script de inspección sin marcas en las 15 pantal
 o cada una explicada; `pin-unirse`, `camino-feliz` y `cola-offline` pasan en el POCO.
 **Cuidado con:** si la navegación pide código nativo, la versión pasa a 1.4.0 con build nuevo y nada
 del T-16 llega a la 1.3.1 hasta entonces; lo decide Alejandro en el incremento 2. `NativeTabs` es API
-inestable en el SDK 57 y cambia de ruta en el 58. P-02 (44 pt o 48 dp) fija las medidas: mejor
-respondida antes del incremento 2.
+inestable en el SDK 57 y cambia de ruta en el 58. P-02 está respondida: 48 dp con 8 dp de
+separación, y el token `minTouchTarget` sube de 44 a 48 en el T-16.3.
 
 ## Cómo se cierra un paquete
 

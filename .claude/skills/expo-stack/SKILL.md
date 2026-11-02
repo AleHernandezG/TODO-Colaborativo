@@ -953,7 +953,7 @@ cambia por otro dibujo.
 Cada control interactivo nuevo, sin excepción:
 
 - `accessibilityLabel` con texto de i18n y `accessibilityRole`
-- área táctil ≥ 44×44 pt (usa `hitSlop` si el icono es pequeño)
+- área táctil ≥ 48 × 48 dp con 8 dp de separación (usa `hitSlop` si el icono es pequeño; P-02)
 - contraste AA contra su fondo, en claro **y** en oscuro
 - estado nunca solo por color: "comprado" lleva icono + tachado + label, no solo gris
 

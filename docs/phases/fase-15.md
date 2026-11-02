@@ -736,7 +736,7 @@ navegador.
 
 - El test de la regla 6 encontró el primer día que el diálogo de fin de compra prometía que la
   lista «se mantiene actualizada para el resto del grupo», también en modo avión. Se cambió el texto
-  en `es.json` y `en.json`; queda para confirmar en P-01.
+  en `es.json` y `en.json`; Alejandro lo confirmó en P-01 el 2026-11-02.
 - El hook `comprobar-nucleo` usaba el patrón `/domain/`, que en Windows Jest no sabe leer. Habría
   dado por buenos unos tests que no ejecutaba. Se arregló y se comprobó con un test en rojo puesto a
   propósito (apartado 9 de `METODO-DE-TRABAJO.md`).
@@ -755,8 +755,8 @@ navegador.
 
 ### Qué queda pendiente
 
-- P-01, P-02 y P-03 de `docs/plan/PREGUNTAS.md`. La P-02 (44 pt o 48 dp) conviene responderla antes
-  del incremento 6, que pinta pantallas.
+- P-01, P-02 y P-03 de `docs/plan/PREGUNTAS.md`, respondidas el 2026-11-02 (ver «Decisiones sobre la
+  marcha» del apartado 13). La P-02 quedó en 48 dp antes del incremento 6, que pinta pantallas.
 - Los hooks nuevos solo se cargan al abrir una sesión nueva. Esta sesión los probó con
   `test-hooks.mjs`, no en uso real.
 - Hay dos apartados numerados como «8» en este diario (Republicación y Devolver la runtime 1.2.0).
@@ -1104,3 +1104,8 @@ noche: P-04 está respondida y el T-16 aprobado (ver «Decisiones sobre la march
   `launchApp`), las skills de Callstack (fuera del marketplace oficial) y `frontend-design` y
   `playground` (son para la web). Lo que sí se monta, un script de inspección y un test de diseño, lo
   decide el T-16.1 con su plan.
+- P-01, P-02 y P-03 respondidas el mismo 2026-11-02. P-01: se queda el texto nuevo del diálogo de
+  fin de compra. P-02: el área táctil mínima pasa a 48 × 48 dp con 8 dp de separación en las reglas,
+  los agentes y las skills; el token `minTouchTarget` sigue en 44 hasta el T-16.3, porque cambiarlo
+  es código y descoloca todas las pantallas a la vez. P-03: ADR-0027 aceptado. No queda ninguna
+  pregunta abierta.

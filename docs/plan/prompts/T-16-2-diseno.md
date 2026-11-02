@@ -19,8 +19,9 @@ Lo que se encuentra:
 - `DESIGN.md` dice plano, texto grande, un solo acento y una acción principal a todo el ancho. Eso
   se queda salvo que la foto diga que no funciona.
 
-Recuentos de partida: los que deje el incremento 1. Preguntas abiertas: P-02 condiciona las medidas
-de todo el diseño y conviene que esté respondida antes de empezar. Siguiente ADR libre: 0028;
+Recuentos de partida: los que deje el incremento 1. P-02 está respondida: 48 dp con 8 dp de
+separación para todo el diseño, aunque el token minTouchTarget siga en 44 hasta el T-16.3.
+Siguiente ADR libre: 0028;
 siguiente pregunta libre: P-05.
 
 Se pega tal cual en la sesión.
@@ -47,7 +48,7 @@ Antes de nada, lee en este orden:
   3. DESIGN.md entero y src/theme/tokens.js
   4. docs/especificacion-y-roadmap.md, solo la lista RF-1 a RF-16: qué tiene que caber en la app
   5. docs/adr/ADR-0004 (Paper solo para superposiciones) y ADR-0025 (lista activa y selector)
-  6. docs/plan/PREGUNTAS.md, P-02
+  6. docs/plan/PREGUNTAS.md, la respuesta de P-02
   7. Las skills expo-router y expo-design-system del plugin expo. expo-native-ui solo para ver qué
      difiere en iOS; cuando choque con Material, gana Material
 
@@ -127,7 +128,6 @@ Reglas que aplican aunque no lo parezca:
 Donde sí te paras:
   - si la navegación recomendada pide un build nuevo: me das el coste (versión 1.4.0, build, y que
     nada del T-16 llegue a la 1.3.1 hasta entonces) y decido
-  - si P-02 sigue abierta cuando vayas a fijar medidas
   - si el diseño quita una funcionalidad de las RF-1 a RF-16 o la esconde a más de dos toques
 
 Orden de trabajo:
@@ -146,7 +146,7 @@ Documentación que cambia:
   - ROADMAP: el bloque «Estado» y «Siguiente», que pasa al incremento 6 del T-15
   - docs/plan/prompts/T-15.md y T-16-3 a T-16-8, si cambian
   - CLAUDE.md, «UX y accesibilidad», solo si cambia una regla que se sigue siempre (el área táctil
-    si se respondió P-02), y el agente revisor-interfaz en el mismo cambio
+    ya cambió con P-02), y el agente revisor-interfaz en el mismo cambio
 
 Terminado cuando:
   - los bocetos de las 15 pantallas de `src/app/` aprobados por mí, en claro y oscuro, y con la lista y la cabecera
@@ -166,6 +166,4 @@ Al terminar: git status, qué entra en el commit, qué no y por qué, el mensaje
 
 - Que el incremento 1 dejó `docs/diseno/estado-de-partida.md` con las 15 pantallas medidas. Si faltan
   pantallas, el diseño de esas va sin foto y se dice.
-- Que P-02 está respondida. Si no, la sesión se para al fijar medidas, como dice «Donde sí te
-  paras».
 - Que la sesión puede publicar un artifact. Si no, los bocetos se abren desde el fichero HTML.

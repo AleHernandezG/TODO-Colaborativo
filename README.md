@@ -135,7 +135,7 @@ opinión: se escribe uno nuevo que supersede al viejo.
 ## Accesibilidad
 
 No es una capa que se añade al final. Cada control lleva `accessibilityLabel` y
-`accessibilityRole`, área táctil de 44 pt como mínimo y contraste AA. Ningún estado se comunica
+`accessibilityRole`, área táctil de 48 dp como mínimo y contraste AA. Ningún estado se comunica
 solo con color: «comprado» lleva icono y texto además del tachado. La app respeta el tamaño de
 fuente del sistema y el modo claro y oscuro desde los tokens.
 
