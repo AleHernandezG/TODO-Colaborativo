@@ -13,19 +13,26 @@ diario de su fase.
 
 **T-15 abierto desde el 2026-10-05 (varias listas a la vez, más el plan de arreglos de la
 auditoría del 2026-10-11).** Incrementos 1 y 2 hechos: `main` es SDK 57 y versión 1.3.1
-(`febae87`). **Incrementos 3 y 4 cerrados el 2026-11-02, salvo su paso en el Android**: las dos
+(`febae87`). **Incrementos 3 y 4 cerrados el 2026-11-02, con su paso en el Android**: las dos
 migraciones están aplicadas con `db push` y comprobadas en el real, `db.types.ts` regenerado,
 `test:rls` 102/102 y `test:realtime` 18/18 contra el real, Jest con 68 suites y 490 tests,
 `test:hooks` 103/103, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio. Diario en
 [`fase-15.md`](../phases/fase-15.md), apartados 12 y 13.
 
-**Desde el 2026-11-02 la prueba en el Android la hace la sesión** por `adb` y Maestro, con el POCO
-F5 por USB (`fase-15.md`, apartado 13; `docs/guias/e2e-con-maestro.md`). El POCO tenía la 1.2.0 y
-por eso no le llegaban los updates. Los APK 1.3.x ya no se pueden descargar de EAS; Alejandro lanzó
-un build 1.3.1 nuevo ese día (`08f58498`), que a las 19:40 seguía `in queue`. En el ordenador del
-POCO ya están `adb`, Maestro y un JDK 21 en `~/tools` (el Java del sistema es el 8); el POCO se ve
-por USB, pendiente de aceptar la clave RSA. **El paso del Android de los 3 y 4 sigue «no
-comprobado»** hasta que el build termine.
+**El POCO F5 tiene la 1.3.1 desde el 2026-11-02** (build `08f58498`, pie `v1.3.1 · base`), y la
+sesión lo prueba sola por `adb` y Maestro (`docs/guias/e2e-con-maestro.md`). El guion del PIN pasó
+entero, salvo la aserción «Estás dentro como Ana», que tapa la cabecera: crear, unirse, volver con
+el PIN sin crear un duplicado, PIN equivocado, atrás y sin red, que cumple la regla 6. HyperOS no
+deja usar `launchApp` y el flujo va en tramos. Salieron cinco hallazgos (`fase-15.md`, apartado
+13), y dos son graves:
+
+- **Gastos tumba la app en la 1.3.1**: canal `members:<id>` repetido en `subscribeMembers`.
+- **La cabecera de la lista aplasta el título a 19 px** con la letra al 115 %, y con él el selector
+  de listas. Alejandro pide rediseñar todas las pantallas: paquete nuevo, con plan y prompts por
+  aprobar ([P-04](PREGUNTAS.md#p-04--alcance-y-orden-del-rediseño)).
+
+Además, al pasar de la 1.2.0 a la 1.3.1 el POCO perdió su lista. Hay que averiguarlo antes del
+incremento 5.
 
 **Método de trabajo montado el 2026-10-31**: seis hooks en `.claude/hooks/`, siete skills nuevas,
 tres agentes nuevos, los tests de la regla 6 y de las reglas del repositorio, y este ROADMAP.
@@ -35,19 +42,20 @@ Propuesto hasta que Alejandro lo acepte.
 
 Pendiente del T-15, en este orden (el porqué del orden, en la auditoría, apartado 7):
 
-- Incremento 6: primero el Android de los 3 y 4 (`.maestro/pin-unirse.yaml` en el POCO con la
-  1.3.1), después la pantalla del PIN y la migración B. Va antes que el 5: hasta la B, una fila sin
+- El arreglo de Gastos (canal de miembros repetido). Un fallo que tumba la app en la versión que se
+  va a repartir va antes que todo lo demás.
+- Incremento 6: la pantalla del PIN y la migración B. Va antes que el 5: hasta la B, una fila sin
   PIN la puede reclamar cualquiera con el código de la lista (ADR-0026). Hay 12 listas cuyo único
   admin no tiene PIN y 20 miembros activos sin PIN.
 - Incrementos 5, 7, 8, 9, 10 y 11, en el orden de la tabla de la auditoría.
-- El guion de la fase 15 en un Android real (`fase-15.md`, apartado 4). Nadie ha visto el selector de
-  listas en un móvil.
+- El guion de la fase 15 en un Android real (`fase-15.md`, apartado 4). El selector de listas ya se
+  vio en el POCO (se abre y atrás lo cierra); falta cambiar de lista y el resto del guion.
 - P-01 de [`PREGUNTAS.md`](PREGUNTAS.md): el texto del diálogo de fin de compra que cambió la regla 6.
 
-**Siguiente: T-15 · Preparar la prueba en el Android**, desde su paso 2, en cuanto el build
-`08f58498` diga `finished`: el paso 1 (herramientas) está hecho. Prompt en
-[`prompts/T-15-preparar-android.md`](prompts/T-15-preparar-android.md). Después, el incremento 6
-(pantalla del PIN y migración B), con el suyo en [`prompts/T-15.md`](prompts/T-15.md).
+**Siguiente: el incremento 6 del T-15** (pantalla del PIN y migración B), con su prompt en
+[`prompts/T-15.md`](prompts/T-15.md), salvo que [P-04](PREGUNTAS.md#p-04--alcance-y-orden-del-rediseño)
+ponga antes el arreglo de Gastos o el diseño del T-16. El de Gastos aún no tiene prompt: se escribe
+con `prompt-de-paquete` cuando se decida.
 
 ## Lo que se arrastra de fases anteriores
 
@@ -107,7 +115,7 @@ detrás de los dos incrementos que cambian código.
 | ------- | ----------------------------------------- | -------------------------- | ------------------------------------------ |
 | T-0…T-14 | MVP y fases post-MVP                     | Cerradas                   | [`docs/phases/`](../phases/)               |
 | T-15    | Varias listas y plan de arreglos          | Abierto, incrementos 3 a 11 | [`fase-15.md`](../phases/fase-15.md)      |
-| T-16    | Sin definir                               | Se decide al cerrar el T-15 | —                                         |
+| T-16    | Rediseño de las pantallas (propuesto)     | Plan pendiente del OK de Alejandro | —                                  |
 
 ## Fichas
 
@@ -151,5 +159,5 @@ diario de la fase.
 Que la suplantación sigue abierta hasta la migración B: una fila sin PIN la puede reclamar
 cualquiera con el código de la lista, y los 120 PIN que fueron legibles siguen valiendo. La B no se
 puede aplicar sin más, porque hay 12 listas cuyo único admin no tiene PIN y se quedarían sin forma
-de recuperarlo. Antes hace falta la pantalla del PIN del incremento 6, y para probarla, el POCO con
-la 1.3.1 del build nuevo.
+de recuperarlo. Antes hace falta la pantalla del PIN del incremento 6. El POCO ya tiene la 1.3.1 para
+probarla.

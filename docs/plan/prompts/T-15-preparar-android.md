@@ -1,5 +1,8 @@
 # Prompt de arranque · T-15 · Preparar la prueba en el Android y cerrar el paso del móvil de los incrementos 3 y 4
 
+> Hecho el 2026-11-02. El resultado está en `docs/phases/fase-15.md`, apartado 13. Se conserva como
+> referencia: lo que cuenta abajo del POCO y del build ya no es el estado actual.
+
 Este prompt va antes del incremento 6. Deja el ordenador donde se conecte el POCO F5 listo para que
 la sesión pruebe sola por `adb` y Maestro, instala el APK 1.3.1 del build del 2026-11-02, guarda una
 copia que no caduque y recorre `.maestro/pin-unirse.yaml`, que se escribió sin poder ejecutarlo.

@@ -810,7 +810,8 @@ no puede haber perdido ninguno.
    función tenga dos sobrecargas.
 2. Regenerar `db.types.ts`, y después typecheck, lint y `npm test`.
 3. `npm run test:rls` (102/102) y `npm run test:realtime` (18/18) contra el real.
-4. El guion corto en el Android con el APK 1.3.1: unirse, volver a entrar y equivocarse de PIN.
+4. El guion corto en el Android con el APK 1.3.1: unirse, volver a entrar y equivocarse de PIN
+   (hecho, apartado 13).
 5. Las líneas de estado de ADR-0026, `docs/README.md` y `CLAUDE.md`.
 
 ### Cierre de las comprobaciones (2026-11-02)
@@ -1006,18 +1007,80 @@ Con el prompt `T-15-preparar-android.md`, se hizo su paso 1 y se paró en el 2, 
   diálogo RSA ni mirado la versión instalada.
 - **El build**: según `npx eas-cli build:list --platform android --limit 3 --non-interactive` y
   `build:view`, el 1.3.1 nuevo (`08f58498`, campo Commit `64e27b1`, Started at 19:08) seguía
-  `in queue` a las 19:40. En la misma lista, los dos anteriores (`5f8bd1c3` y `a8a36a6b`) van del
+  `in queue` a las 19:40 (terminó después; ver la subsección siguiente). En la misma lista, los dos anteriores (`5f8bd1c3` y `a8a36a6b`) van del
   2026-10-09 al 2026-10-18 entre Started at y Finished at. Sin APK no se instaló nada ni se ejecutó
   el flujo.
 
-Todo lo de abajo sigue «no comprobado».
+### Resultado en el POCO con la 1.3.1 (2026-11-02, noche)
+
+El build `08f58498` terminó a las 20:09, hora local (`completedAt` 19:09:47Z). El APK está en
+`~/tools/apk/agora-1.3.1-08f58498.apk`: 122.608.133 bytes, SHA-256
+`fffec820418b4419300e67f1e40bb0179fbd1bc5506d0b8e463b8cf523d88f30`.
+
+`adb install -r` falló dos veces con `INSTALL_FAILED_USER_RESTRICTED` hasta que
+Alejandro activó «Instalar vía USB» (`getprop persist.security.adbinstall` pasó de vacío a `1`).
+Después entró encima de la 1.2.0 sin problema de firma: `versionName=1.3.1`. El pie dice
+`v1.3.1 · base`, también tras dos aperturas con `force-stop` entre medias, así que no hay update
+por aire publicado para la 1.3.1.
+
+En HyperOS, `launchApp` de Maestro no abre la app: HyperOS lo corta (`MIUILOG- Permission Denied
+Activity` en `logcat`), y darle al driver los permisos MIUI 10021, 10020 y 10008 con `appops` no
+cambió nada. Funciona partir el guion en cuatro tramos sin `launchApp` y, antes de cada uno, hacer por
+`adb` lo que hacía `launchApp clearState`: `pm clear`, `pm grant ... POST_NOTIFICATIONS` (si no, el
+diálogo del permiso tapa la app) y `monkey` para abrirla. Los tramos están en el scratchpad de la
+sesión, no en `.maestro/`: `pin-unirse.yaml` sigue siendo el guion de referencia para un móvil que
+no sea Xiaomi. Además, Maestro desinstala su driver al acabar y lo vuelve a instalar en cada tramo, y
+HyperOS rechazó esa instalación en 13 de 18 intentos (`INSTALL_FAILED_USER_RESTRICTED` o
+`DeviceServerDiedException ... during 'deviceInfo'`) con el interruptor encendido. Se reintenta hasta
+que entra.
+
+El guion del PIN, con la lista «E2E PIN» y el código `M4N-A6XT`:
+
+| Paso | Resultado | Prueba |
+| --- | --- | --- |
+| 1. Crear la lista como Ana, PIN 1234 | Comprobado con una salvedad: la lista se crea y se entra, pero la aserción «Estás dentro como Ana» falla por el hallazgo 2 | Captura de la lista y del selector, que dice «E2E PIN · Como Ana · ✓ Abierta» |
+| 2. Unirse como Bea, PIN 5678 | Comprobado | Maestro, 10 pasos en verde, y captura con «Como Bea» en el selector |
+| 3. Ana vuelve desde una sesión nueva con su PIN | Comprobado: entra como Ana y no como «Ana2» | Maestro, 14 pasos en verde, y captura |
+| 4. Ana con el PIN 0000 | Comprobado: «El PIN no es correcto para este usuario.» bajo el campo, y no entra | Maestro y captura |
+| 5. Atrás tras el PIN equivocado | Comprobado: vuelve a la bienvenida | Maestro y captura |
+| Atrás en el selector de listas | Comprobado: cierra el diálogo y deja la lista | Árbol de `uiautomator` y captura |
+| Atrás en «Entrar con un código», desde el selector | Comprobado: el teclado se abre solo; el primer atrás lo cierra y el segundo vuelve a la lista | Árbol de `uiautomator` antes y después, y `mInputShown` |
+| Sin red: unirse con `ABC-DEFG`, Carla, 1234 | Comprobado. Con `airplane-mode enable` (`airplane_mode_on=1`, sin red por defecto y el ping falla), el botón se queda «ocupado» unos 12 s y sale «No se pudo hablar con el servidor. Revisa la conexión y vuelve a intentarlo.» La regla 6 se cumple: no dice que nada se haya guardado | Seis árboles de `uiautomator` y captura del aviso |
+
+Las capturas se quedan en el scratchpad y no entran en el repo: dos llevan la pantalla de inicio del
+móvil, con su fondo. Cada ejecución del tramo 1 deja una lista «E2E PIN» en Supabase; hoy al menos
+dos.
+
+Salieron cinco hallazgos. Ninguno se arregla aquí, porque todos piden tocar `src/`:
+
+1. **«Gastos» tumba la app.** Al tocarlo, la pantalla se queda gris y la app desaparece, sin cierre
+   nativo. `logcat` dice `Error: cannot add postgres_changes callbacks for realtime:members:<id> after
+   subscribe()` en `ExpensesSummary`. Pasó dos veces seguidas (20:24 y 20:26). `subscribeMembers`
+   abre el canal `members:<communityId>` cada vez que un componente monta `useCommunityMembers`.
+   Según el mensaje, el cliente devuelve el canal que ya estaba suscrito con ese nombre y el segundo
+   `.on()` lanza. No se ha mirado si pasa en la 1.2.0. Es lo más grave de la tanda: en la 1.3.1 no se
+   puede abrir Gastos.
+2. **La cabecera de la lista no cabe.** Con la letra del sistema al 115 % (la del POCO), los cinco
+   botones (Modo Compra, Menú, Recetas, PDF y Gastos) se comen el ancho, y la columna del nombre de la
+   lista y de «Estás dentro como…» se queda en 19 px (`bounds [66,160][85,769]`). Ni el nombre ni el
+   selector de listas se ven. El selector solo se abre tocando ese hueco a ciegas.
+3. Al pasar de la 1.2.0 a la 1.3.1, el POCO perdió su lista y abrió en la bienvenida. No se ha
+   averiguado por qué. Si pasa en todos los móviles, quien actualice tendrá que volver a entrar con
+   código, nombre y PIN. Hay que saberlo antes del incremento 5, que reparte la versión.
+4. El código de invitación queda muy abajo. Está en la pantalla de la lista, pero debajo del
+   formulario de añadir y del estado vacío: hacen falta dos deslizamientos para verlo. Recién creado
+   dice «Caduca dentro de 6 días» en vez de 7.
+5. Sin red se tarda 12 s en avisar, y el aviso es el de servidor inalcanzable, no el de «No tienes
+   conexión». Se cumple la regla 6, pero quien no tiene red espera sin saber por qué.
+
+Al ver las pantallas, Alejandro pidió rediseñar todas las interfaces, mirando apps parecidas y
+patrones actuales, porque «ahora es imposible». Es un paquete aparte (T-16 propuesto, P-04 de
+`PREGUNTAS.md`), con su plan y sus prompts, y no entra en este incremento.
 
 ### Qué falta
 
-1. En el POCO: aceptar la clave RSA de este ordenador, activar «Instalar vía USB» y «Depuración USB
-   (ajustes de seguridad)», con la cuenta Xiaomi, y reiniciar.
-2. Cuando acabe el build `08f58498`: descargar el APK a `~/tools/apk/agora-1.3.1-08f58498.apk` con su
-   SHA-256, `adb install -r` y comprobar `versionName=1.3.1` y el pie.
-3. `pin-unirse.yaml` hasta que pase, con capturas de cada paso, y sin red con `adb`.
-4. Anotar aquí el resultado. Hasta entonces el guion del Android de los incrementos 3 y 4 es «no
-   comprobado».
+1. Los hallazgos 1 y 2, en `src/`. El 1 bloquea Gastos para cualquiera con la 1.3.1.
+2. El 3, investigarlo antes del incremento 5.
+3. El rediseño: plan y prompts, con el OK de Alejandro.
+4. Los incrementos 3 y 4 quedan probados en el Android en lo suyo (unirse, PIN, PIN equivocado, atrás
+   y sin red). Lo que falla es de otras pantallas.

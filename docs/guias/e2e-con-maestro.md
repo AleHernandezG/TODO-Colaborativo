@@ -191,7 +191,41 @@ aceptarlo, `adb devices` dice `unauthorized`.
 
 Lo que se vio el 2026-11-02: con solo «Depuración USB», `adb` funcionó (versión instalada, capturas,
 abrir la app) y Maestro no arrancó, sin llegar a instalar sus apps. Es el síntoma de que falta
-«Instalar vía USB».
+«Instalar vía USB». `adb install` daba `INSTALL_FAILED_USER_RESTRICTED`. Los dos interruptores de
+Xiaomi se pueden consultar sin mirar el móvil:
+
+```bash
+adb shell getprop persist.security.adbinstall   # 1 = Instalar vía USB
+adb shell getprop persist.security.adbinput     # 1 = Depuración USB (ajustes de seguridad)
+```
+
+### Lo que HyperOS no deja hacer a Maestro
+
+- `launchApp` no abre la app. HyperOS lo bloquea (`MIUILOG- Permission Denied Activity` en
+  `logcat`), y dar permisos al driver con `appops` no lo arregla. En el POCO, el flujo se parte en
+  tramos sin `launchApp`. Antes de cada tramo se hace por `adb` lo que hacía `launchApp clearState`:
+
+  ```bash
+  adb shell pm clear com.alejandrohernandez.listacompra
+  adb shell pm grant com.alejandrohernandez.listacompra android.permission.POST_NOTIFICATIONS
+  adb shell monkey -p com.alejandrohernandez.listacompra -c android.intent.category.LAUNCHER 1
+  ```
+
+  Sin el `pm grant`, el diálogo del permiso de notificaciones tapa la app, porque quien lo
+  concedía era `launchApp`. El código de invitación pasa de un tramo a otro con `-e JOIN_CODE=...`.
+- El driver de Maestro se instala en cada ejecución y se desinstala al terminar. HyperOS
+  rechaza esa instalación muchas veces aunque «Instalar vía USB» esté a 1: 13 de 18 intentos el
+  2026-11-02, con `INSTALL_FAILED_USER_RESTRICTED` o `DeviceServerDiedException ... during
+  'deviceInfo'`. Se reintenta hasta que entra; el `adb install -r` del APK de la app no falló ninguna
+  vez.
+
+### Trampas de Git Bash
+
+- `adb shell uiautomator dump /sdcard/ui.xml` necesita `MSYS_NO_PATHCONV=1` delante, porque Git Bash
+  convierte `/sdcard/...` en una ruta de Windows.
+- Esa misma variable rompe `cmd //c maestro.bat`: `cmd` recibe `//c` tal cual, abre su consola, sale
+  con código 0 y Maestro no se ejecuta. Parece un pase y no lo es. En la orden de Maestro, nunca, y
+  un resultado se da por bueno solo si el log trae los pasos `COMPLETED`.
 
 ## Es seguro para el móvil
 
@@ -260,10 +294,13 @@ móvil. Es lo que pide la skill `probar-en-android` antes de pasar un guion a ma
 Lo que sigue siendo a mano: TalkBack, el tamaño de letra máximo y si algo se ve bien. Maestro dice si
 un texto está, no si se lee.
 
-**Pendiente el 2026-11-02, actualizado a las 19:40:** en el segundo ordenador ya están `adb`
-37.0.1, Maestro 2.12.1 y Temurin 21.0.13 en `~/tools`, y `adb devices` ve el POCO (`1e5b87b9`) como
-`unauthorized` hasta aceptar la clave RSA. Falta todo lo que depende del APK: el build 1.3.1 nuevo
-(`08f58498`, commit `64e27b1`) seguía `in queue`. Cuando termine, se descarga a
-`~/tools/apk/agora-1.3.1-08f58498.apk`, se apunta aquí su tamaño y su SHA-256, se activan «Instalar
-vía USB» y «Depuración USB (ajustes de seguridad)» y se ejecuta `pin-unirse.yaml` por primera vez. La parte que
-lee el código de invitación sigue sin comprobar.
+**Estado el 2026-11-02, 20:40:** en el segundo ordenador están `adb` 37.0.1, Maestro 2.12.1 y
+Temurin 21.0.13 en `~/tools`, y el APK 1.3.1 del build `08f58498` en
+`~/tools/apk/agora-1.3.1-08f58498.apk` (122.608.133 bytes, SHA-256
+`fffec820418b4419300e67f1e40bb0179fbd1bc5506d0b8e463b8cf523d88f30`). El guion de
+`pin-unirse.yaml` se recorrió en el POCO partido en tramos, como se cuenta arriba. Resultado y
+hallazgos en `docs/phases/fase-15.md`, apartado 13.
+
+`pin-unirse.yaml` comprueba la entrada con «Estás dentro como Ana», y ese texto no se ve con la letra
+del sistema por encima del 100 % (hallazgo 2 del apartado 13). Hasta arreglar la cabecera, los tramos
+abren el selector de listas tocando «Lista E2E PIN» y buscan «Como Ana».

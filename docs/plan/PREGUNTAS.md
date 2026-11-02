@@ -4,13 +4,14 @@ Las dudas que decide Alejandro. Cada una lleva los hechos, las opciones y una re
 respuesta va debajo con la fecha y el enlace a dónde acabó. Una pregunta respondida no se borra.
 Si la respuesta es «no me convence», se da otra vuelta en la misma pregunta.
 
-El siguiente número libre es **P-04**.
+El siguiente número libre es **P-05**.
 
 | Pregunta | Sobre qué | Bloquea | Estado |
 | --- | --- | --- | --- |
 | [P-01](#p-01--el-texto-del-diálogo-de-fin-de-compra) | Texto del diálogo de fin de compra | Nada | Abierta |
 | [P-02](#p-02--área-táctil-mínima-44-pt-o-48-dp) | Área táctil mínima | Incrementos 6 y 8 del T-15 | Abierta |
 | [P-03](#p-03--aceptar-el-adr-0027) | Aceptar el ADR-0027 | Nada | Abierta |
+| [P-04](#p-04--alcance-y-orden-del-rediseño) | Alcance y orden del rediseño | Incremento 6 del T-15 y el T-16 | Abierta |
 
 ---
 
@@ -81,3 +82,36 @@ Pasa a Aceptado cuando lo digas.
 
 **Recomendación: aceptarlo tras una o dos sesiones de uso**, cuando se haya visto si algún hook
 bloquea de más.
+
+---
+
+## P-04 · Alcance y orden del rediseño
+
+**Bloquea el incremento 6 del T-15** (su pantalla del PIN) y la apertura del T-16.
+
+El 2026-11-02, viendo la 1.3.1 en el POCO, pediste rediseñar todas las pantallas. Lo que se midió
+ese día (`fase-15.md`, apartado 13):
+
+- La cabecera de la lista lleva cinco botones y deja el título y el selector en 19 px con la letra al
+  115 %. El selector solo se abre a ciegas.
+- El código de invitación queda a dos deslizamientos, debajo del formulario y del estado vacío.
+- Gastos tumba la app en la 1.3.1. No es de diseño, pero es la otra pantalla que no se puede usar.
+
+La app tiene 16 rutas en `src/app/`.
+
+Alcance:
+
+- **A. Rediseño completo (T-16)**: navegación nueva, una pantalla por incremento, con la prueba en el
+  POCO de cada una.
+- **B. Solo la cabecera y el selector**, como un incremento más del T-15. Arregla el hallazgo 2 y deja
+  el resto como está.
+
+Orden, si es A:
+
+- **A1.** Arreglo de Gastos, después el diseño del T-16 sin código, y después el incremento 6, con la
+  pantalla del PIN ya hecha con el diseño nuevo.
+- **A2.** Incremento 6 primero, porque cierra la suplantación (ADR-0026), y el rediseño detrás.
+
+**Recomendación: A con A1.** El arreglo de Gastos es pequeño y bloquea una pantalla entera. El diseño
+sin código cabe en una sesión y evita hacer dos veces la pantalla del PIN. Con A2, la suplantación
+se cierra una o dos sesiones antes, a cambio de rehacer esa pantalla.
