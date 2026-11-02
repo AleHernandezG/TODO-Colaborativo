@@ -41,9 +41,10 @@ Pendiente del T-15, en este orden (el porqué del orden, en la auditoría, apart
   listas en un móvil.
 - P-01 de [`PREGUNTAS.md`](PREGUNTAS.md): el texto del diálogo de fin de compra que cambió la regla 6.
 
-**Siguiente: T-15, incremento 6 · Pantalla del PIN, mensajes de unirse y migración B**, empezando
-por cerrar el Android de los incrementos 3 y 4. El prompt está en
-[`prompts/T-15.md`](prompts/T-15.md).
+**Siguiente: T-15 · Preparar la prueba en el Android** y cerrar el paso del móvil de los
+incrementos 3 y 4, en el ordenador donde se conecte el POCO. Prompt en
+[`prompts/T-15-preparar-android.md`](prompts/T-15-preparar-android.md). Después, el incremento 6
+(pantalla del PIN y migración B), con el suyo en [`prompts/T-15.md`](prompts/T-15.md).
 
 ## Lo que se arrastra de fases anteriores
 
