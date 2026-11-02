@@ -53,8 +53,9 @@ hallazgo que no compartes se discute con Alejandro, no se ignora en silencio.
 
 Un paquete no está terminado porque compile. El guion de `fase-N.md` se recorre en el móvil con el
 APK del perfil `preview` o con el update publicado, comprobando antes la versión en el pie de la
-lista. Si lo que cambió es sincronización, con dos móviles. Si no se ha recorrido, el paquete no se
-cierra: se dice y se apunta en «Estado».
+lista. Si el móvil está conectado, lo recorre la sesión por `adb` y Maestro (skill
+`probar-en-android`), empezando por la `versionName` instalada. Si lo que cambió es sincronización,
+con dos móviles. Si no se ha recorrido, el paquete no se cierra: se dice y se apunta en «Estado».
 
 ## 4. La documentación
 

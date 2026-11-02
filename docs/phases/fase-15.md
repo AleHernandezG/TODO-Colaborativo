@@ -566,9 +566,9 @@ con cero filas (la guía dice cómo ejercerla).
 | `node --check` del test              | Sintaxis correcta                                      |
 | `npm run lint` y `npm run typecheck`  | Limpios (0 errores, 9 avisos que ya estaban)           |
 | `npm test`                           | Sin repetir: el incremento no toca `src/`              |
-| Ejecutar la migración                | **No hecho.** Sin Docker ni proyecto enlazado          |
-| `npm run test:rls`                   | **No ejecutado.** Falta `.env` y la migración aplicada. Con las dos migraciones del día, 102/102 |
-| `db.types.ts`                        | **Sin regenerar.** Sigue declarando `members.pin_hash` |
+| Ejecutar la migración | Aplicada con `db push` (48 sentencias en `schema_migrations`), sin fecha anotada; vista el 2026-10-31 (apartado 12) |
+| `npm run test:rls` | 102/102 contra el real, el 2026-11-02 |
+| `db.types.ts` | Regenerado el 2026-11-02: sin `members.pin_hash`, con `member_secrets` y las tres RPC del PIN |
 
 ### Qué falta, en orden
 
@@ -674,8 +674,8 @@ es la validación de título y raciones, que no es un problema de aislamiento.
 `delete_recipe` por un archivado; un `member_id` ajeno dentro de `p_shares` (solo se prueba el
 pagador); `item_not_in_community`; un `update` directo en `expenses` o `meal_plan_slots`; y un
 `insert` o `delete` directo en `expense_shares`. Estas tres últimas dependen de que el nombre de la
-política borrada esté bien escrito: se comprobó leyendo, y tras aplicar lo confirma la consulta de
-`pg_policies` que hay en `docs/traspaso-2026-10-12.md`.
+política borrada esté bien escrito: se comprobó leyendo, y el 2026-11-02 lo confirmó la consulta de `pg_policies` en el
+real (apartado 12, fila c5).
 
 ### Verificación
 
@@ -683,9 +683,9 @@ política borrada esté bien escrito: se comprobó leyendo, y tras aplicar lo co
 | ------------------------------------ | ------------------------------------------------------- |
 | `migration-reviewer` sobre el `.sql` | Dos pasadas (la segunda, sobre el cierre de la escritura directa): lista para ensayar |
 | `node --check` del test              | Sintaxis correcta                                       |
-| Ejecutar la migración                | **No hecho.** Sin Docker ni proyecto enlazado           |
-| `npm run test:rls` (102/102)         | **No ejecutado.** Falta `.env` y las migraciones aplicadas |
-| `db.types.ts`                        | Ninguna firma cambia; al regenerar no debería haber diff por esta migración |
+| Ejecutar la migración | Aplicada con `db push` (29 sentencias en `schema_migrations`), sin fecha anotada; vista el 2026-10-31 (apartado 12) |
+| `npm run test:rls` (102/102) | 102/102 contra el real, el 2026-11-02 |
+| `db.types.ts` | Regenerado el 2026-11-02: ninguna línea del diff viene de esta migración |
 
 ## 11. Montaje del método de trabajo (2026-10-31)
 
@@ -812,3 +812,190 @@ no puede haber perdido ninguno.
 3. `npm run test:rls` (102/102) y `npm run test:realtime` (18/18) contra el real.
 4. El guion corto en el Android con el APK 1.3.1: unirse, volver a entrar y equivocarse de PIN.
 5. Las líneas de estado de ADR-0026, `docs/README.md` y `CLAUDE.md`.
+
+### Cierre de las comprobaciones (2026-11-02)
+
+La CLI apuntaba al real (`supabase/.temp/project-ref`) y `migration list --linked` daba las 24 sin
+pendientes. Las comprobaciones del prompt se lanzaron en el editor SQL del real como una sola
+consulta, porque el editor solo enseña el resultado de la última sentencia. Son las cuatro del
+prompt del incremento, con cuatro filas más (c5 a c8) para lo que los apartados 9 y 10 daban por
+pendiente de confirmar tras aplicar. Solo lee; se puede repetir tal cual:
+
+```sql
+select 'c1a member_secrets por exposed' as check_name,
+       coalesce((select string_agg(exposed::text || ': ' || n, ', ' order by exposed)
+                   from (select exposed, count(*) n from member_secrets group by 1) t), 'sin filas') as result
+union all
+select 'c1b activos sin fila en member_secrets',
+       (select count(*) from members m left join member_secrets s on s.member_id = m.id
+         where m.removed_at is null and s.member_id is null)::text
+union all
+select 'c1c de ellos, con sesión / invitados',
+       (select count(*) filter (where m.auth_user_id is not null) || ' / ' ||
+               count(*) filter (where m.auth_user_id is null)
+          from members m left join member_secrets s on s.member_id = m.id
+         where m.removed_at is null and s.member_id is null)
+union all
+select 'c2 schema_migrations',
+       (select string_agg(j->>'version' || ' ' || coalesce(j->>'name', '-') ||
+                          ' by=' || coalesce(j->>'created_by', '-') ||
+                          ' n_statements=' || coalesce(jsonb_array_length(j->'statements'), 0),
+                          ' | ' order by j->>'version')
+          from (select to_jsonb(sm) j from supabase_migrations.schema_migrations sm
+                 where version >= '20261012') t)
+union all
+select 'c3a funciones que nombran pin_hash',
+       (select string_agg(oid::regprocedure::text, ', ' order by oid::regprocedure::text)
+          from pg_proc where prosrc ilike '%pin_hash%')
+union all
+select 'c3b listas sin admin con sesión',
+       (select count(*) from communities c
+         where not exists (select 1 from members m where m.community_id = c.id and m.removed_at is null
+                             and m.is_admin and m.auth_user_id is not null))::text
+union all
+select 'c3c authenticated ejecuta generate_join_code() / store_member_pin()',
+       has_function_privilege('authenticated', 'generate_join_code()', 'execute')::text || ' / ' ||
+       has_function_privilege('authenticated', 'store_member_pin(uuid,text)', 'execute')::text
+union all
+select 'c3d antes de la B: listas con un admin con sesión y sin PIN',
+       (select count(*) from communities c
+         where (select count(*) from members m where m.community_id = c.id and m.removed_at is null
+                  and m.is_admin and m.auth_user_id is not null) = 1
+           and exists (select 1 from members m
+                        left join member_secrets s on s.member_id = m.id
+                       where m.community_id = c.id and m.removed_at is null
+                         and m.is_admin and s.member_id is null))::text
+union all
+select 'c4 firmas y sobrecargas',
+       (select string_agg(sig || ' x' || n, ', ' order by sig)
+          from (select oid::regprocedure::text sig, count(*) over (partition by proname) n
+                  from pg_proc where pronamespace = 'public'::regnamespace
+                   and proname in ('join_community', 'set_member_pin', 'reset_member_pin',
+                     'my_member_pin_state', 'save_recipe', 'delete_recipe',
+                     'create_expense_with_shares', 'upsert_meal_slot')) t)
+union all
+select 'c5 políticas de gastos y menú',
+       (select string_agg(tablename || '.' || policyname || ' ' || cmd, ', ' order by tablename, cmd)
+          from pg_policies where tablename in ('expenses', 'expense_shares', 'meal_plan_slots', 'settlements'))
+union all
+select 'c6 member_secrets: rls / nº políticas / select de authenticated',
+       (select relrowsecurity::text from pg_class where oid = 'public.member_secrets'::regclass) || ' / ' ||
+       (select count(*) from pg_policies where tablename = 'member_secrets')::text || ' / ' ||
+       has_table_privilege('authenticated', 'public.member_secrets', 'select')::text
+union all
+select 'c7 members.pin_hash existe',
+       exists (select 1 from information_schema.columns
+                where table_schema = 'public' and table_name = 'members' and column_name = 'pin_hash')::text
+union all
+select 'c8 recipe_ingredients en supabase_realtime',
+       exists (select 1 from pg_publication_tables
+                where pubname = 'supabase_realtime' and tablename = 'recipe_ingredients')::text;
+```
+
+| Fila | Qué mira | Resultado | Lectura |
+| --- | --- | --- | --- |
+| c1a | `member_secrets` por `exposed` | 120 `true`, 8 `false` | 120 hashes copiados de `members.pin_hash`; 8 PIN puestos después |
+| c1b | Miembros activos sin fila en `member_secrets` | 20 | Los que el incremento 6 tiene que llevar a ponerse un PIN |
+| c1c | De esos 20, con sesión / invitados | 18 / 2 | |
+| c2 | `supabase_migrations.schema_migrations` | `20261012120000` con 48 sentencias y `20261012130000` con 29; `created_by` vacío | `db push`, no `migration repair`: el esquema es el de los ficheros |
+| c3a | Funciones cuyo cuerpo nombra `pin_hash` | `join_community`, `set_member_pin`, `store_member_pin` | Las reescritas por la A. `reset_member_pin` no sale porque guarda el hash por `store_member_pin`. Nada creado a mano en el panel |
+| c3b | Listas sin un admin con sesión | 0 | El saneado de invitados admin no dejó ninguna lista huérfana |
+| c3c | `authenticated` ejecuta `generate_join_code()` / `store_member_pin()` | `true` / `false` | **Hallazgo.** Ver abajo |
+| c3d | Listas cuyo único admin con sesión no tiene PIN («antes de la B») | 12 | Cifra para el diseño de la B: esas 12 listas no pueden quedarse sin forma de recuperar al admin |
+| c4 | Sobrecargas de las ocho funciones tocadas | Todas `x1` | Sin riesgo de `PGRST203` |
+| c5 | Políticas de `expenses`, `expense_shares`, `meal_plan_slots`, `settlements` | `expenses` select y delete; `expense_shares` select; `meal_plan_slots` select y delete; `settlements` select, insert y delete | Lo que pedía la sección 7 de la migración del apartado 10 |
+| c6 | `member_secrets`: RLS / políticas / `select` de `authenticated` | `true` / 0 / `false` | Cerrada |
+| c7 | ¿Existe `members.pin_hash`? | `false` | |
+| c8 | ¿`recipe_ingredients` en `supabase_realtime`? | `false` | |
+
+**El hallazgo de c3c.** `generate_join_code()` es `security definer` y su `revoke` de
+`20260718120100` solo nombra a `public` y `anon`; los privilegios por defecto de Supabase dan
+`execute` a `authenticated` de forma directa. Es la trampa que la skill `supabase-data` ya contaba
+para `store_member_pin`, que sí está bien. No escribe nada y solo devuelve un código que no está en
+uso, así que no filtra datos. **Decidido el 2026-11-02**: el `revoke execute ... from
+authenticated` va en la migración B del incremento 6, con su comprobación en `test:rls`. Descartado:
+una migración propia ahora, un `db push` más al real por algo que hoy no se puede explotar. La skill
+decía que no tenía grant a nadie; ya cuenta lo que hay.
+
+**Decidido también**: los 20 miembros sin PIN se quedan así hasta el incremento 6, cuya pantalla se
+lo pedirá. Descartado ponérselo desde el editor SQL, que se salta `set_member_pin` y deja a esas
+personas con un PIN que no conocen.
+
+| Comprobación | Resultado (2026-11-02) |
+| --- | --- |
+| `db.types.ts` regenerado desde Git Bash | UTF-8. Diff de +66 y −4, todo de la migración A: fuera `members.pin_hash`; dentro `member_secrets`, `join_attempts.member_id` con su FK, `set_member_pin`, `reset_member_pin`, `my_member_pin_state` y las internas (`store_member_pin`, `is_valid_pin`, `member_has_history`, `pin_attempts_*`). Ninguna línea de la del apartado 10, y nada que no venga de las dos |
+| `npm run typecheck` | Limpio. Nada de `src/` necesitó cambios |
+| `npm run lint` | 0 errores, los 9 avisos de antes |
+| `npm test` | 68 suites, 490 tests, en verde |
+| `npm run test:rls` contra el real | 102/102 |
+| `npm run test:realtime` contra el real | 18/18 |
+| `npm run test:hooks` | 103/103 (89 + los casos nuevos de `adb` y `maestro`, apartado 13) |
+| Guion en el Android | **No recorrido.** Ver el apartado 13 |
+
+`member_secrets` aparece en los tipos porque `gen types` lista todas las tablas, tengan o no
+permisos; que el cliente no la lee lo dicen c6 y `test:rls`. Las funciones internas salen por lo
+mismo, y nadie en `src/` las llama.
+
+Con esto los incrementos 3 y 4 quedan cerrados salvo el paso del Android, que se arrastra al
+apartado 13.
+
+## 13. La sesión prueba en el móvil (2026-11-02)
+
+El paso 6 del cierre de los incrementos 3 y 4 era un guion corto en el Android con el APK 1.3.1.
+Alejandro contó que a veces el móvil no se actualizaba a la versión que tocaba y no podía probar. Se
+montó que la sesión pruebe sola: el POCO F5 por USB, `adb` y Maestro CLI, gratis y fuera de npm.
+Las alternativas descartadas (emulador, Firebase Test Lab, Maestro Cloud) y su porqué están en
+`docs/tecnica/METODO-DE-TRABAJO.md`, apartado 10; el montaje y la seguridad, en
+`docs/guias/e2e-con-maestro.md`.
+
+### Lo que se encontró
+
+- **El POCO tenía la 1.2.0 `base`**, instalada el 2026-08-04 (`dumpsys package`, y el pie de la lista
+  lo confirma). Ningún update de la 1.3.x le podía llegar. Era el motivo de que «no se actualizara».
+- La 1.2.0 abre y carga su lista contra el esquema ya migrado, sin errores. Es la versión que
+  llevan casi todos los móviles instalados, así que cuenta como comprobación de que las dos
+  migraciones no los han roto en lo más básico. No se probó unirse ni el PIN con ella.
+- Los APK de los builds 1.3.0 y 1.3.1 ya no se pueden descargar de EAS: su enlace responde
+  `NoSuchKey`. Hace falta un build nuevo, que Alejandro lanzó el mismo día.
+- Maestro no arrancó en el POCO: `DeviceServerDiedException ... during 'deviceInfo'` y ningún
+  paquete `dev.mobile.maestro` instalado. Falta el interruptor «Instalar vía USB» de HyperOS.
+
+### Qué se hizo
+
+- `.maestro/pin-unirse.yaml`: el guion del PIN entero (crear como Ana, unirse como Bea, volver a
+  entrar como Ana, PIN equivocado, botón atrás), con `clearState` entre pasos para que cada entrada
+  sea una sesión nueva. **Sin ejecutar todavía.** Copia el código de invitación con una expresión
+  regular y lo normaliza, porque el `<Text>` del código lleva un `accessibilityLabel` con las letras
+  separadas; si Maestro devuelve la etiqueta en vez del texto, el `slice(-8)` lo cubre. Se escribe
+  el nombre tocando el placeholder porque `JoinCommunityScreen` no tiene `testID` en ese campo:
+  añadirlo era tocar `src/` y no habría llegado al APK que se estaba construyendo.
+- `.claude/hooks/bloquear-escrituras-git.mjs` deniega `maestro cloud` (de pago, regla 3) y
+  `adb uninstall`, también como `adb shell pm uninstall` (borra la app y sus datos). Siete casos más
+  en `scripts/test-hooks.mjs`.
+- Skills: `probar-en-android` empieza por la prueba de la sesión; `qa-runner` y `cerrar-paquete` la
+  citan. `CLAUDE.md`: la regla en «Plataforma» y las órdenes en «Órdenes».
+- `docs/guias/e2e-con-maestro.md`, `docs/tecnica/STACK.md` y `METODO-DE-TRABAJO.md`.
+
+### Decisiones sobre la marcha
+
+- **`clearState` en el POCO**, con permiso de Alejandro: la única lista que tenía era de prueba.
+  En un móvil con listas de verdad se pregunta antes.
+- **`adb` y Maestro en `~/tools`, sin tocar el `PATH` del sistema.** Se quitan borrando la carpeta.
+  El coste es que `npm run test:e2e` no los encuentra sin un `export PATH` previo.
+- **`camino-feliz.yaml` y `cola-offline.yaml` no se arreglan aquí.** No rellenan el PIN y el primero
+  pulsa «Salir de esta lista», que ya no existe. Deuda en el ROADMAP.
+- **La skill `supabase-data` estaba duplicada.** Desde la línea 321 repetía sus primeras 306 líneas,
+  frontmatter incluido, en medio de `` `^[0-9]{4}$` ``: un `String.replace` interpretó `` $` `` como
+  «todo lo anterior a la coincidencia». Se quitó la copia (de 1104 a 798 líneas) comprobando antes con
+  `diff` que era idéntica. Quien escriba una skill con un script, que use una función como reemplazo o
+  escape el `$`.
+
+### Qué falta
+
+1. En el POCO: «Instalar vía USB» y «Depuración USB (ajustes de seguridad)», con la cuenta Xiaomi, y
+   reiniciar.
+2. Cuando acabe el build 1.3.1: descargar el APK a `~/tools/apk/`, `adb install -r` y comprobar
+   `versionName=1.3.1` y el pie.
+3. `pin-unirse.yaml` hasta que pase, con capturas de cada paso, y sin red con `adb`.
+4. Anotar aquí el resultado. Hasta entonces el guion del Android de los incrementos 3 y 4 es «no
+   comprobado».

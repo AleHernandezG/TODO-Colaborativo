@@ -1,0 +1,81 @@
+appId: com.alejandrohernandez.listacompra
+name: Unirse con PIN, volver a entrar y PIN incorrecto
+tags:
+  - pin
+---
+- launchApp:
+    clearState: true
+
+- tapOn: 'Crear una lista'
+- tapOn:
+    id: 'create-community-name'
+- inputText: 'E2E PIN'
+- tapOn:
+    id: 'create-community-username'
+- inputText: 'Ana'
+- tapOn:
+    id: 'create-community-pin'
+- inputText: '1234'
+- hideKeyboard
+- tapOn: 'Crear la lista'
+- extendedWaitUntil:
+    visible: 'Estás dentro como Ana'
+    timeout: 20000
+
+- extendedWaitUntil:
+    visible:
+      text: '.*[A-Z2-9]{3}-[A-Z2-9]{4}.*'
+    timeout: 15000
+- copyTextFrom:
+    text: '.*[A-Z2-9]{3}-[A-Z2-9]{4}.*'
+- evalScript: ${output.joinCode = maestro.copiedText.replace(/[^A-Z0-9-]/g, '').slice(-8)}
+
+- launchApp:
+    clearState: true
+- tapOn: 'Tengo un código'
+- inputText: ${output.joinCode}
+- tapOn: 'Como te ven los demás'
+- inputText: 'Bea'
+- tapOn:
+    id: 'join-community-pin'
+- inputText: '5678'
+- hideKeyboard
+- tapOn: 'Entrar en la lista'
+- extendedWaitUntil:
+    visible: 'Estás dentro como Bea'
+    timeout: 20000
+
+- launchApp:
+    clearState: true
+- tapOn: 'Tengo un código'
+- inputText: ${output.joinCode}
+- tapOn: 'Como te ven los demás'
+- inputText: 'Ana'
+- tapOn:
+    id: 'join-community-pin'
+- inputText: '1234'
+- hideKeyboard
+- tapOn: 'Entrar en la lista'
+- extendedWaitUntil:
+    visible: 'Estás dentro como Ana'
+    timeout: 20000
+- assertNotVisible: 'Estás dentro como Ana2'
+
+- launchApp:
+    clearState: true
+- tapOn: 'Tengo un código'
+- inputText: ${output.joinCode}
+- tapOn: 'Como te ven los demás'
+- inputText: 'Ana'
+- tapOn:
+    id: 'join-community-pin'
+- inputText: '0000'
+- hideKeyboard
+- tapOn: 'Entrar en la lista'
+- extendedWaitUntil:
+    visible: 'El PIN no es correcto para este usuario.'
+    timeout: 20000
+- assertNotVisible: 'Estás dentro como Ana'
+
+- back
+- assertVisible: 'Tengo un código'

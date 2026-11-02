@@ -53,7 +53,7 @@ aquí los ADR siguen en `adr/` y el diario de cada paquete es `phases/fase-N.md`
 | [0023](./adr/ADR-0023-foto-en-alta-de-articulos-y-portada-de-recetas.md) | Foto en el alta de artículos y portada de recetas | Aceptado                          |
 | [0024](./adr/ADR-0024-modo-supermercado-y-categorias-de-articulos.md)    | Modo supermercado y categorías de artículos       | Aceptado                          |
 | [0025](./adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md) | Varias listas por usuario y lista activa             | Aceptado (RLS 70/70)              |
-| [0026](./adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md) | El PIN sale de `members`; identidad sin PIN no reclamable | Aceptado; migración A aplicada (vista el 2026-10-31, fecha exacta sin anotar), B pendiente |
+| [0026](./adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md) | El PIN sale de `members`; identidad sin PIN no reclamable | Aceptado; migración A aplicada (vista el 2026-10-31, comprobada el 2026-11-02), B pendiente |
 | [0027](./adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md) | Método de trabajo con paquetes, hooks y revisores        | Propuesto                         |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):

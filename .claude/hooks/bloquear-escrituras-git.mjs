@@ -141,10 +141,30 @@ function findBlockedSupabaseCommand(tokens, start) {
   return BLOCKED_SUPABASE_COMMANDS.get(group)?.has(action) ? `supabase ${group} ${action}` : null
 }
 
+function findBlockedDeviceCommand(tokens, start) {
+  const words = tokens.slice(start + 1).filter((token) => !token.startsWith('-'))
+  if (isExecutable(tokens[start], 'maestro') || isExecutable(tokens[start], 'maestro.bat')) {
+    return words[0]?.toLowerCase() === 'cloud' ? 'maestro cloud' : null
+  }
+  if (isExecutable(tokens[start], 'adb')) {
+    const args = tokens.slice(start + 1)
+    let index = 0
+    while (index < args.length && args[index].startsWith('-')) {
+      index += ['-s', '-t', '-H', '-P', '-L'].includes(args[index]) ? 2 : 1
+    }
+    const rest = args.slice(index).map((token) => token.toLowerCase())
+    if (rest[0] === 'uninstall') return 'adb uninstall'
+    if (rest[0] === 'shell' && rest[1] === 'pm' && rest[2] === 'uninstall') return 'adb uninstall'
+  }
+  return null
+}
+
 function findBlockedCommand(command) {
   for (const segment of splitIntoSegments(command)) {
     const tokens = tokenize(segment)
     const start = skipPackageRunner(tokens, skipEnvAssignments(tokens))
+    const blockedDevice = findBlockedDeviceCommand(tokens, start)
+    if (blockedDevice) return blockedDevice
     if (isExecutable(tokens[start], 'eas') || /^eas-cli(@.*)?$/i.test(tokens[start] ?? '')) {
       const blocked = findBlockedEasCommand(tokens, start)
       if (blocked) return blocked
@@ -167,12 +187,18 @@ function findBlockedCommand(command) {
 
 function deny(blocked) {
   const isRelease = /^(eas|supabase) /.test(blocked)
-  const reason =
-    `Bloqueado por la regla 4 de CLAUDE.md: \`${blocked}\` lo ejecuta solo Alejandro. ` +
-    (isRelease
-      ? 'Publica o cambia algo fuera del repo (EAS o el proyecto de Supabase). Prepara la orden exacta y la comprobación previa (skills publicar-version o aplicar-migracion) y entrégasela. '
-      : 'Deja los cambios en el árbol de trabajo y entrégale git status, qué entra y qué no, el mensaje de commit en inglés y las órdenes exactas. ') +
-    `Si quiere que se lance desde aquí, que lo escriba él con \`! ${blocked} ...\` en el prompt.`
+  const isDevice = /^(adb|maestro) /.test(blocked)
+  const reason = isDevice
+    ? `Bloqueado: \`${blocked}\` ${
+        blocked === 'maestro cloud'
+          ? 'sube el APK a Maestro Cloud, que es de pago (regla 3 de CLAUDE.md).'
+          : 'borra la app y sus datos del móvil conectado, que es de una persona.'
+      } Para probar en el móvil, \`docs/guias/e2e-con-maestro.md\`. Si hace falta de verdad, que lo lance Alejandro con \`! ${blocked} ...\`.`
+    : `Bloqueado por la regla 4 de CLAUDE.md: \`${blocked}\` lo ejecuta solo Alejandro. ` +
+      (isRelease
+        ? 'Publica o cambia algo fuera del repo (EAS o el proyecto de Supabase). Prepara la orden exacta y la comprobación previa (skills publicar-version o aplicar-migracion) y entrégasela. '
+        : 'Deja los cambios en el árbol de trabajo y entrégale git status, qué entra y qué no, el mensaje de commit en inglés y las órdenes exactas. ') +
+      `Si quiere que se lance desde aquí, que lo escriba él con \`! ${blocked} ...\` en el prompt.`
   process.stdout.write(
     JSON.stringify({
       hookSpecificOutput: {

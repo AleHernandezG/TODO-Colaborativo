@@ -288,21 +288,32 @@ export type Database = {
           attempted_at: string
           auth_user_id: string
           id: string
+          member_id: string | null
           succeeded: boolean
         }
         Insert: {
           attempted_at?: string
           auth_user_id: string
           id?: string
+          member_id?: string | null
           succeeded?: boolean
         }
         Update: {
           attempted_at?: string
           auth_user_id?: string
           id?: string
+          member_id?: string | null
           succeeded?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "join_attempts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meal_plan_slots: {
         Row: {
@@ -403,6 +414,35 @@ export type Database = {
           },
         ]
       }
+      member_secrets: {
+        Row: {
+          exposed: boolean
+          member_id: string
+          pin_hash: string
+          updated_at: string
+        }
+        Insert: {
+          exposed?: boolean
+          member_id: string
+          pin_hash: string
+          updated_at?: string
+        }
+        Update: {
+          exposed?: boolean
+          member_id?: string
+          pin_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_secrets_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           auth_user_id: string | null
@@ -410,7 +450,6 @@ export type Database = {
           created_at: string
           id: string
           is_admin: boolean
-          pin_hash: string | null
           removed_at: string | null
           username: string
         }
@@ -420,7 +459,6 @@ export type Database = {
           created_at?: string
           id?: string
           is_admin?: boolean
-          pin_hash?: string | null
           removed_at?: string | null
           username: string
         }
@@ -430,7 +468,6 @@ export type Database = {
           created_at?: string
           id?: string
           is_admin?: boolean
-          pin_hash?: string | null
           removed_at?: string | null
           username?: string
         }
@@ -660,6 +697,7 @@ export type Database = {
           expo_push_token: string
         }[]
       }
+      is_valid_pin: { Args: { p_pin: string }; Returns: boolean }
       join_code_lifetime: { Args: never; Returns: string }
       join_community: {
         Args: { p_join_code: string; p_pin?: string; p_username: string }
@@ -669,6 +707,10 @@ export type Database = {
         }[]
       }
       member_community_ids: { Args: never; Returns: string[] }
+      member_has_history: { Args: { p_member_id: string }; Returns: boolean }
+      my_member_pin_state: { Args: { p_community_id: string }; Returns: string }
+      pin_attempts_before_lock: { Args: never; Returns: number }
+      pin_attempts_per_hour: { Args: never; Returns: number }
       ping: { Args: never; Returns: string }
       register_push_token: {
         Args: {
@@ -682,6 +724,12 @@ export type Database = {
         Args: { p_community_id: string; p_member_id: string }
         Returns: {
           status: string
+        }[]
+      }
+      reset_member_pin: {
+        Args: { p_community_id: string; p_member_id: string }
+        Returns: {
+          temp_pin: string
         }[]
       }
       rotate_join_code: {
@@ -725,6 +773,20 @@ export type Database = {
           p_is_admin: boolean
           p_member_id: string
         }
+        Returns: undefined
+      }
+      set_member_pin: {
+        Args: {
+          p_community_id: string
+          p_current_pin?: string
+          p_new_pin: string
+        }
+        Returns: {
+          status: string
+        }[]
+      }
+      store_member_pin: {
+        Args: { p_member_id: string; p_pin: string }
         Returns: undefined
       }
       unregister_push_token: {

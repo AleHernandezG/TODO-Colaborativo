@@ -13,12 +13,16 @@ diario de su fase.
 
 **T-15 abierto desde el 2026-10-05 (varias listas a la vez, más el plan de arreglos de la
 auditoría del 2026-10-11).** Incrementos 1 y 2 hechos: `main` es SDK 57 y versión 1.3.1
-(`febae87`), y la runtime 1.2.0 ya no recibe el bundle roto (grupo de EAS `c3353939`). Las
-migraciones de los incrementos 3 y 4 (`20261012120000` y `20261012130000`) **están aplicadas en el
-proyecto real y en el de ensayo**, sin que nadie lo apuntara: se vio el 2026-10-31 (`fase-15.md`,
-apartado 12). Falta comprobarlas, regenerar `db.types.ts`, que sigue con `members.pin_hash`, y
-pasar `test:rls`. El 2026-10-31: Jest con 68 suites y 490 tests en verde,
-`npm run test:hooks` 89/89, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio. Diario en [`fase-15.md`](../phases/fase-15.md).
+(`febae87`). **Incrementos 3 y 4 cerrados el 2026-11-02, salvo su paso en el Android**: las dos
+migraciones están aplicadas con `db push` y comprobadas en el real, `db.types.ts` regenerado,
+`test:rls` 102/102 y `test:realtime` 18/18 contra el real, Jest con 68 suites y 490 tests,
+`test:hooks` 103/103, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio. Diario en
+[`fase-15.md`](../phases/fase-15.md), apartados 12 y 13.
+
+**Desde el 2026-11-02 la prueba en el Android la hace la sesión** por `adb` y Maestro, con el POCO
+F5 por USB (`fase-15.md`, apartado 13; `docs/guias/e2e-con-maestro.md`). El POCO tenía la 1.2.0 y
+por eso no le llegaban los updates. Los APK 1.3.x ya no se pueden descargar de EAS; Alejandro lanzó
+un build 1.3.1 nuevo ese día.
 
 **Método de trabajo montado el 2026-10-31**: seis hooks en `.claude/hooks/`, siete skills nuevas,
 tres agentes nuevos, los tests de la regla 6 y de las reglas del repositorio, y este ROADMAP.
@@ -28,17 +32,17 @@ Propuesto hasta que Alejandro lo acepte.
 
 Pendiente del T-15, en este orden (el porqué del orden, en la auditoría, apartado 7):
 
-- Incrementos 3 y 4: verificar en el real las dos migraciones ya aplicadas, regenerar los tipos y
-  pasar `test:rls` y `test:realtime`. Necesita el ordenador con `.env`.
-- Incremento 6: pantalla del PIN y migración B. Va antes que el 5: hasta la B, una fila sin PIN la
-  puede reclamar cualquiera con el código de la lista (ADR-0026).
+- Incremento 6: primero el Android de los 3 y 4 (`.maestro/pin-unirse.yaml` en el POCO con la
+  1.3.1), después la pantalla del PIN y la migración B. Va antes que el 5: hasta la B, una fila sin
+  PIN la puede reclamar cualquiera con el código de la lista (ADR-0026). Hay 12 listas cuyo único
+  admin no tiene PIN y 20 miembros activos sin PIN.
 - Incrementos 5, 7, 8, 9, 10 y 11, en el orden de la tabla de la auditoría.
 - El guion de la fase 15 en un Android real (`fase-15.md`, apartado 4). Nadie ha visto el selector de
   listas en un móvil.
 - P-01 de [`PREGUNTAS.md`](PREGUNTAS.md): el texto del diálogo de fin de compra que cambió la regla 6.
 
-**Siguiente: T-15, incrementos 3 y 4 · Verificar y cerrar las migraciones ya aplicadas.** El
-prompt está en
+**Siguiente: T-15, incremento 6 · Pantalla del PIN, mensajes de unirse y migración B**, empezando
+por cerrar el Android de los incrementos 3 y 4. El prompt está en
 [`prompts/T-15.md`](prompts/T-15.md).
 
 ## Lo que se arrastra de fases anteriores
@@ -54,8 +58,14 @@ de aquí y se apunta en el diario de la fase que lo cerró.
   «completada».
 - **Falta `EXPO_PUBLIC_SENTRY_DSN` en el entorno `preview` de EAS.** Sin ella ningún APK manda
   fallos. Cómo se añade: `docs/guias/despliegue.md`, apartado 2.
-- **El enlace del APK 1.3.1 caducó el 2026-10-23.** Para repartirlo hace falta otro build o colgar
-  el `.apk` en un sitio estable.
+- **Los APK de EAS caducan.** El 1.3.0 y el 1.3.1 (`5f8bd1c3`) daban `NoSuchKey` el 2026-11-02.
+  Cada APK se descarga al terminar su build y se guarda en `~/tools/apk/`; para repartirlo, un sitio
+  estable (lo decide el incremento 5).
+- **`generate_join_code()` la puede ejecutar `authenticated`** (fase 15, apartado 12, c3c). No
+  filtra datos. Su `revoke` va en la migración B del incremento 6.
+- **`camino-feliz.yaml` y `cola-offline.yaml` están desfasados desde la fase 15**: no rellenan el
+  PIN y el primero pulsa «Salir de esta lista», que ya no existe (ADR-0025). Hasta arreglarlos,
+  `npm run test:e2e` falla en ellos.
 - **TypeScript 6** sigue excluido de `expo doctor` a propósito (fase 15, apartado 6).
 - **La atribución de Open Food Facts** es obligatoria si el catálogo llega a traer datos suyos
   (`docs/guias/fuentes-de-datos-del-catalogo.md`).
@@ -134,7 +144,8 @@ diario de la fase.
 
 ## Qué bloquea el proyecto ahora mismo
 
-Que `db.types.ts` no cuadra con el esquema real. Las dos migraciones están aplicadas, pero los tipos
-siguen declarando `members.pin_hash` y no conocen `member_secrets` ni las tres RPC del PIN, así que
-el incremento 6 no puede escribir su adaptador hasta regenerarlos. Y hasta la migración B, una fila
-sin PIN la sigue pudiendo reclamar cualquiera con el código de la lista.
+Que la suplantación sigue abierta hasta la migración B: una fila sin PIN la puede reclamar
+cualquiera con el código de la lista, y los 120 PIN que fueron legibles siguen valiendo. La B no se
+puede aplicar sin más, porque hay 12 listas cuyo único admin no tiene PIN y se quedarían sin forma
+de recuperarlo. Antes hace falta la pantalla del PIN del incremento 6, y para probarla, el POCO con
+la 1.3.1 del build nuevo.

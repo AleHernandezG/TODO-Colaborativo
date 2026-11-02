@@ -41,7 +41,7 @@ El porqué de cada elección está en su ADR. Esta tabla no vuelve a decidir nad
 | `@testing-library/react-native` | 14.0.1 | MIT | Tests de hooks y componentes |
 | `eslint` y `eslint-config-expo` | 9.39.5 y 57.0.2 | MIT | Lint, con las reglas de capas de `eslint.config.js` |
 | `prettier` | 3.9.5 | MIT | Formato. Lo pasa el hook `formatear.mjs` al escribir |
-| Maestro CLI | fuera de npm | Apache-2.0 | E2E en el Android (`docs/guias/e2e-con-maestro.md`) |
+| Maestro CLI | 2.12.1, fuera de npm (2026-11-02) | Apache-2.0 | E2E en el Android y la prueba que hace la sesión sola (`docs/guias/e2e-con-maestro.md`). Nunca `maestro cloud`, que es de pago |
 
 ## Fuera de npm
 
@@ -49,7 +49,9 @@ El porqué de cada elección está en su ADR. Esta tabla no vuelve a decidir nad
 | --- | --- | --- |
 | Node | 22.14.0 | Los hooks y los scripts de `scripts/` son `.mjs` de Node |
 | CLI de Supabase | 2.122.0 (por `npx`) | Gratis. `db push` lo lanza solo Alejandro |
-| `eas-cli` | por `npx eas-cli@latest` | Plan gratuito de EAS: builds con cola y límite mensual |
+| `eas-cli` | por `npx eas-cli@latest` | Plan gratuito de EAS: builds con cola y límite mensual. Los APK caducan: se guardan en `~/tools/apk/` al terminar el build |
+| `adb` (Platform-Tools) | 37.0.1, en `~/tools/platform-tools` (2026-11-02) | Gratis, de `dl.google.com`. Sin tocar el `PATH` del sistema |
+| Java | 23.0.1 | Lo necesita Maestro (17 o superior) |
 | Supabase | plan Free | El proyecto se pausa tras una semana sin actividad; lo evita el ping diario (`docs/guias/despliegue.md`) |
 
 ## Lo que se miró y no entró

@@ -55,7 +55,8 @@ aislamiento por comunidad, y el rollback de una mutación optimista cuando la re
 
 ## 4. Prueba manual
 
-Los tests no ven la app. Deja escrito cómo probar el cambio a mano, con pasos concretos. Lo que
+Los tests no ven la app. Si el móvil está conectado por USB, pruébalo tú por `adb` y Maestro (skill
+`probar-en-android`). Lo que no se pueda así, déjalo escrito con pasos concretos. Lo que
 siempre entra en el guion (versión en el pie, sin red, botón atrás, TalkBack, fuente grande, área
 táctil) está en la skill `probar-en-android`:
 

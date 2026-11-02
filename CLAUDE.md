@@ -113,6 +113,12 @@ el APK del perfil `preview` o un update por aire, no cuando compila. `npx expo e
 android` es la comprobación de build. El botón atrás del sistema, el retroceso predictivo (apagado a
 propósito en `app.json`) y los permisos se tratan de forma explícita.
 
+**La prueba en el Android la hace la sesión, por `adb` y Maestro, con el móvil por USB.** Lo primero
+es mirar la `versionName` instalada: si no es la del incremento, se para. Se cambia de APK con
+`adb install -r`, nunca desinstalando, y `clearState` en un móvil con listas de verdad se pregunta
+antes. Nunca `maestro cloud`, que es de pago. Montaje y seguridad en `docs/guias/e2e-con-maestro.md`;
+procedimiento en la skill `probar-en-android`.
+
 ### Stack y versiones
 
 **SDK 57 (RN 0.86, React 19.2) y no se sube por tu cuenta.** Se subió de 54 por decisión mía cuando
@@ -449,8 +455,7 @@ npx expo start
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
 # Aislamiento entre listas, catálogo, gastos idempotentes, varias listas, PIN fuera de members y
-# RPC de recetas, gastos y menús. 102/102 (101/102 sin SUPABASE_SECRET_KEY). 32 comprobaciones
-# necesitan las migraciones 20261012120000 y 20261012130000, ya aplicadas en el real y el ensayo.
+# RPC de recetas, gastos y menús. 102/102 contra el real (101/102 sin SUPABASE_SECRET_KEY)
 npm run test:rls
 
 # Realtime: artículos, gastos, miembros, filtro por lista, aislamiento y presencia. 18/18
@@ -466,8 +471,12 @@ npm run users
 npm run users -- --delete-orphans
 
 # E2E con Maestro (CLI fuera de npm, adb y el APK instalado; no con Expo Go). Deja una lista real
-# en Supabase. Detalle en docs/guias/e2e-con-maestro.md
+# en Supabase y clearState borra la sesión del móvil. adb y Maestro viven en ~/tools, sin PATH:
+# docs/guias/e2e-con-maestro.md. camino-feliz y cola-offline están desfasados desde la fase 15
 npm run test:e2e
+export PATH="$HOME/tools/platform-tools:$PATH"   # desde Git Bash, para un flujo suelto
+cmd //c "%USERPROFILE%\tools\maestro\bin\maestro.bat" test .maestro/pin-unirse.yaml
+~/tools/platform-tools/adb.exe shell dumpsys package com.alejandrohernandez.listacompra | grep versionName
 ```
 
 ## Reglas añadidas por Alejandro

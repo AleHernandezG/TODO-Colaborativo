@@ -6,9 +6,9 @@ description: Prepara y recorre la prueba de un cambio en un Android real, con el
 # Probar en el Android real
 
 Android manda (`CLAUDE.md`, Plataforma objetivo). Un incremento no está terminado porque compile:
-está terminado cuando se ha visto en el móvil. La sesión no tiene el móvil delante, así que su
-trabajo es dejar el guion exacto, preparar lo que se puede automatizar y leer bien lo que Alejandro
-cuenta que ve.
+está terminado cuando se ha visto en el móvil. Si el móvil está conectado por USB, la sesión lo
+recorre ella misma (apartado siguiente). Lo que no pueda ver, lo deja en un guion exacto y lee bien
+lo que Alejandro cuenta que ve.
 
 ## Antes de probar
 
@@ -36,6 +36,30 @@ Pasos numerados, cada uno con lo que se hace y lo que se tiene que ver. Siempre 
 - **tamaño de fuente del sistema al máximo** y **modo oscuro**
 - **área táctil**: Android recomienda 48 × 48 dp con 8 dp de separación; Accessibility Scanner de
   Google lo mide en el propio móvil. `CLAUDE.md` pide ≥ 44 pt (pregunta P-02 abierta)
+
+## Primero lo prueba la sesión, por `adb` y Maestro
+
+Desde el 2026-11-02 la sesión puede recorrer el guion ella sola con el móvil conectado por USB. Se
+intenta eso antes de pasarle un guion a Alejandro, que a veces no tiene la versión que toca. El
+montaje (herramientas en `~/tools`, los tres interruptores de Xiaomi, por qué es seguro) está en
+`docs/guias/e2e-con-maestro.md`.
+
+1. `adb devices`. Si sale `unauthorized`, Alejandro acepta el diálogo en el móvil. Si no sale nada,
+   se le pide conectar; no se busca otra vía.
+2. `adb shell dumpsys package com.alejandrohernandez.listacompra | grep versionName` y una captura
+   del pie de la lista. **Si la versión no es la del incremento, se para**: lo que se pruebe ahí no
+   vale. Un update solo llega a un APK de su misma `version`, y se aplica en la segunda apertura.
+3. Otra versión se pone con `adb install -r <apk>`. Nunca `adb uninstall` ni desinstalar a mano:
+   borra los datos, y el hook lo deniega.
+4. El flujo de `.maestro/` del incremento, o uno nuevo con su etiqueta. `clearState` borra la sesión
+   de ese móvil: antes de usarlo en un móvil con listas de verdad, se pregunta.
+5. Capturas con `adb exec-out screencap -p` al scratchpad, y mirarlas. Un paso sin captura o sin
+   aserción de Maestro es «no comprobado».
+6. Sin red, con `adb shell cmd connectivity airplane-mode enable` y `disable`.
+7. Al terminar, recordarle a Alejandro que apague los interruptores de depuración.
+
+Nunca `maestro cloud`, que es de pago (regla 3). Lo que no ve Maestro sigue en el guion a mano:
+TalkBack, letra al máximo, modo oscuro y si algo se lee bien.
 
 ## Lo que se automatiza
 

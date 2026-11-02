@@ -51,7 +51,7 @@ procedimiento entero llega al invocarla.
 | `documentar-cambio` | Plantilla genérica, con la tabla de este repo | Al terminar cualquier cambio |
 | `cerrar-paquete` | Plantilla genérica, con las órdenes y los revisores de aquí | Cerrar un paquete o una fase |
 | `prompt-de-paquete` | Plantilla genérica, con la forma de los prompts de DietMetric y de la auditoría | Dejar listo el siguiente incremento |
-| `probar-en-android` | Nueva, de `probar-app` de PIEZAS, rehecha para móvil | El guion en el Android real |
+| `probar-en-android` | Nueva, de `probar-app` de PIEZAS, rehecha para móvil. Desde el 2026-11-02 empieza por la prueba que hace la sesión sola por `adb` y Maestro | El guion en el Android real |
 | `publicar-version` | Nueva, del patrón «skill que solo lanza Alejandro» | `eas update` o `eas build` |
 | `aplicar-migracion` | Nueva, del patrón «skill que solo lanza Alejandro» | `supabase db push` y lo de antes y después |
 
@@ -87,7 +87,7 @@ este, cómo se ve y qué promete la pantalla.
 
 Scripts de Node en `.claude/hooks/`, configurados en `.claude/settings.json`. Node porque corre igual
 en Windows y no depende del proyecto. Un bloqueo no se esquiva con otra herramienta: el mensaje dice
-qué hacer en su lugar. Se prueban con `npm run test:hooks` (89 comprobaciones el 2026-10-31), que
+qué hacer en su lugar. Se prueban con `npm run test:hooks` (89 comprobaciones el 2026-10-31, 103 el 2026-11-02), que
 parte las órdenes en trozos para que el hook de git no bloquee su propia prueba.
 
 | Hook | Evento | Qué hace |
@@ -101,6 +101,8 @@ parte las órdenes en trozos para que el hook de git no bloquee su propia prueba
 
 El hook de git sustituye a `scripts/block-git-write-commands.mjs`, que solo miraba `commit` y
 `push`. El de la fase 5 está contado en su diario; el script viejo se borró el 2026-10-31.
+
+Desde el 2026-11-02 deniega también `maestro cloud`, que es de pago (regla 3), y `adb uninstall`, que borra la app y sus datos del móvil conectado.
 
 La extensión a `eas` y `supabase` no está en el método: salió de este proyecto. Publicar un update o
 aplicar una migración llega a los móviles o a la base de otras personas, que es lo mismo que un push
@@ -190,3 +192,27 @@ Lo que se miró y no entró:
   rojo devuelve 2.
 - Con `core.autocrlf=true`, un `.gitattributes` con `eol=lf` puede ensuciar el árbol si el índice
   tiene CRLF. Aquí no lo tenía (`git ls-files --eol`, 0 ficheros `i/crlf`).
+
+## 10. La sesión prueba en el móvil (2026-11-02)
+
+La regla de la plataforma pide ver cada incremento en el Android real, y la sesión no tenía móvil:
+dejaba un guion y Alejandro lo recorría. Fallaba por donde menos se veía. El POCO F5 llevaba la 1.2.0
+desde agosto y ningún update de la 1.3.x le podía llegar, así que algunas pruebas se hacían sobre
+una versión que no era la del incremento.
+
+Ahora la sesión lo prueba sola, con el móvil por USB, `adb` y Maestro CLI, los dos gratis y fuera de
+npm. Lo primero que mira es la versión instalada, y si no es la que toca se para. El montaje y por qué
+es seguro para el móvil están en `docs/guias/e2e-con-maestro.md`; el procedimiento, en la skill
+`probar-en-android`.
+
+Lo que se descartó:
+
+- **Un emulador en el PC.** No necesita el móvil, pero con 5,8 GB de RAM va justo, son de 4 a 6 GB de
+  descarga, puede pedir activar WHPX como administrador y no es el «Android real» que pide la regla.
+  Queda como alternativa si el móvil no está.
+- **Firebase Test Lab en su plan gratis.** Móviles en la nube, pero solo con Robo o instrumentación,
+  no con flujos guiados como los de `.maestro/`.
+- **Maestro Cloud.** De pago.
+
+Lo que cuesta: el móvil tiene que estar enchufado durante la prueba, y `clearState` borra la sesión
+de la app en ese móvil. Los tres interruptores de depuración se apagan al terminar.
