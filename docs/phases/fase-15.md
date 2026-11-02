@@ -1075,12 +1075,32 @@ Salieron cinco hallazgos. Ninguno se arregla aquí, porque todos piden tocar `sr
 
 Al ver las pantallas, Alejandro pidió rediseñar todas las interfaces, mirando apps parecidas y
 patrones actuales, porque «ahora es imposible». Es un paquete aparte (T-16 propuesto, P-04 de
-`PREGUNTAS.md`), con su plan y sus prompts, y no entra en este incremento.
+`PREGUNTAS.md`), con su plan y sus prompts, y no entra en este incremento. Superado esa misma
+noche: P-04 está respondida y el T-16 aprobado (ver «Decisiones sobre la marcha», abajo).
 
 ### Qué falta
 
 1. Los hallazgos 1 y 2, en `src/`. El 1 bloquea Gastos para cualquiera con la 1.3.1.
 2. El 3, investigarlo antes del incremento 5.
-3. El rediseño: plan y prompts, con el OK de Alejandro.
+3. El rediseño: plan y prompts, con el OK de Alejandro. Hecho, ver abajo.
 4. Los incrementos 3 y 4 quedan probados en el Android en lo suyo (unirse, PIN, PIN equivocado, atrás
    y sin red). Lo que falla es de otras pantallas.
+
+### Decisiones sobre la marcha (2026-11-02, noche)
+
+- P-04 respondida: A con A1. Rediseño completo en un paquete propio, el T-16, y este orden: el
+  arreglo de Gastos ([`prompts/T-15-gastos.md`](../plan/prompts/T-15-gastos.md), que también
+  averigua el hallazgo 3), T-16.1 (herramientas y foto de partida), T-16.2 (diseño sin código), el
+  incremento 6 de este paquete con la pantalla del PIN según el diseño nuevo, y el resto del T-16.
+  El hallazgo 2 lo resuelven T-16.2 y T-16.3; el 4, T-16.4.
+- Lo que el T-15 deja de hacer. Del incremento 7 de la auditoría, los puntos 1 a 3 y los respaldos
+  del canal de miembros (punto 7) van al arreglo de Gastos; los puntos 4 a 6, al T-16. Del incremento 8, el bloque 3
+  (accesibilidad y diseño) y los mensajes concatenados de miembros van al T-16. El reparto exacto,
+  en la ficha del T-16 del ROADMAP, «Absorbe».
+- ADR-0028 queda para la navegación del T-16.2. Si la migración B del incremento 6 se aparta de
+  ADR-0026, su ADR será el siguiente libre.
+- Herramientas miradas y descartadas para el T-16, con su motivo en el prompt del T-16.1: Maestro
+  MCP (trae herramientas de Maestro Cloud que se saltarían el hook, y HyperOS sigue sin dejar
+  `launchApp`), las skills de Callstack (fuera del marketplace oficial) y `frontend-design` y
+  `playground` (son para la web). Lo que sí se monta, un script de inspección y un test de diseño, lo
+  decide el T-16.1 con su plan.

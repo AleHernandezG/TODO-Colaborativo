@@ -47,7 +47,7 @@ vigilan el lint (`no-restricted-imports`) y el hook `comprobar-nucleo.mjs`.
 | Carpeta | Contiene |
 | --- | --- |
 | `docs/especificacion-y-roadmap.md` | El documento maestro de producto. Referencia |
-| `docs/plan/` | `ROADMAP.md` con el bloque «Estado», `PREGUNTAS.md` y `prompts/T-NN.md` |
+| `docs/plan/` | `ROADMAP.md` con el bloque «Estado», `PREGUNTAS.md` y `prompts/` (`T-NN.md`; `T-NN-<n>-<tema>.md` si el paquete lleva un prompt por incremento, y `T-NN-<tema>.md` para uno suelto, como `T-15-gastos.md`) |
 | `docs/tecnica/` | Este fichero, `STACK.md`, `GLOSARIO.md` y `METODO-DE-TRABAJO.md` |
 | `docs/adr/` | Decisiones, `ADR-NNNN-...md`. No se editan una vez aceptadas |
 | `docs/phases/` | El diario de cada fase o paquete |

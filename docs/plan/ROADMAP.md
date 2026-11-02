@@ -28,8 +28,8 @@ deja usar `launchApp` y el flujo va en tramos. Salieron cinco hallazgos (`fase-1
 
 - **Gastos tumba la app en la 1.3.1**: canal `members:<id>` repetido en `subscribeMembers`.
 - **La cabecera de la lista aplasta el título a 19 px** con la letra al 115 %, y con él el selector
-  de listas. Alejandro pide rediseñar todas las pantallas: paquete nuevo, con plan y prompts por
-  aprobar ([P-04](PREGUNTAS.md#p-04--alcance-y-orden-del-rediseño)).
+  de listas. Alejandro pidió rediseñar todas las pantallas y lo decidió en
+  [P-04](PREGUNTAS.md#p-04--alcance-y-orden-del-rediseño): paquete T-16, con su ficha abajo.
 
 Además, al pasar de la 1.2.0 a la 1.3.1 el POCO perdió su lista. Hay que averiguarlo antes del
 incremento 5.
@@ -40,22 +40,26 @@ Detalle en [`METODO-DE-TRABAJO.md`](../tecnica/METODO-DE-TRABAJO.md) y en el apa
 `fase-15.md`. [ADR-0027](../adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md) en
 Propuesto hasta que Alejandro lo acepte.
 
-Pendiente del T-15, en este orden (el porqué del orden, en la auditoría, apartado 7):
+Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `prompts/`:
 
-- El arreglo de Gastos (canal de miembros repetido). Un fallo que tumba la app en la versión que se
-  va a repartir va antes que todo lo demás.
-- Incremento 6: la pantalla del PIN y la migración B. Va antes que el 5: hasta la B, una fila sin
-  PIN la puede reclamar cualquiera con el código de la lista (ADR-0026). Hay 12 listas cuyo único
-  admin no tiene PIN y 20 miembros activos sin PIN.
-- Incrementos 5, 7, 8, 9, 10 y 11, en el orden de la tabla de la auditoría.
+1. El arreglo de Gastos (canal de miembros repetido) y averiguar la lista perdida:
+   [`T-15-gastos.md`](prompts/T-15-gastos.md). Un fallo que tumba la app en la versión que se va
+   a repartir va antes que todo lo demás.
+2. T-16.1, herramientas para medir y foto de partida: [`T-16-1-herramientas.md`](prompts/T-16-1-herramientas.md).
+3. T-16.2, el diseño sin código: [`T-16-2-diseno.md`](prompts/T-16-2-diseno.md).
+4. Incremento 6 del T-15, la pantalla del PIN con el diseño nuevo y la migración B:
+   [`T-15.md`](prompts/T-15.md). Hasta la B, una fila sin PIN la puede reclamar cualquiera con el
+   código de la lista (ADR-0026). Hay 12 listas cuyo único admin no tiene PIN y 20 miembros activos
+   sin PIN.
+5. T-16.3 a T-16.8, con sus prompts en `prompts/T-16-*.md`.
+6. Incrementos 5, 7, 8, 9, 10 y 11 del T-15, en el orden de la tabla de la auditoría, sin lo que
+   absorbieron el arreglo de Gastos y el T-16 (ficha del T-16, «Absorbe»).
 - El guion de la fase 15 en un Android real (`fase-15.md`, apartado 4). El selector de listas ya se
   vio en el POCO (se abre y atrás lo cierra); falta cambiar de lista y el resto del guion.
 - P-01 de [`PREGUNTAS.md`](PREGUNTAS.md): el texto del diálogo de fin de compra que cambió la regla 6.
 
-**Siguiente: el incremento 6 del T-15** (pantalla del PIN y migración B), con su prompt en
-[`prompts/T-15.md`](prompts/T-15.md), salvo que [P-04](PREGUNTAS.md#p-04--alcance-y-orden-del-rediseño)
-ponga antes el arreglo de Gastos o el diseño del T-16. El de Gastos aún no tiene prompt: se escribe
-con `prompt-de-paquete` cuando se decida.
+**Siguiente: el arreglo de Gastos del T-15**, con su prompt en
+[`prompts/T-15-gastos.md`](prompts/T-15-gastos.md).
 
 ## Lo que se arrastra de fases anteriores
 
@@ -115,7 +119,7 @@ detrás de los dos incrementos que cambian código.
 | ------- | ----------------------------------------- | -------------------------- | ------------------------------------------ |
 | T-0…T-14 | MVP y fases post-MVP                     | Cerradas                   | [`docs/phases/`](../phases/)               |
 | T-15    | Varias listas y plan de arreglos          | Abierto, incrementos 3 a 11 | [`fase-15.md`](../phases/fase-15.md)      |
-| T-16    | Rediseño de las pantallas (propuesto)     | Plan pendiente del OK de Alejandro | —                                  |
+| T-16    | Rediseño de las pantallas                 | Aprobado (P-04), sin empezar | `fase-16.md`, lo crea el incremento 1    |
 
 ## Fichas
 
@@ -139,6 +143,36 @@ real con la versión que diga el pie de la lista; los once incrementos con su es
 **Cuidado con:** entre la migración A y la B la suplantación sigue abierta. `join_community` solo
 puede devolver sus seis estados actuales, porque los APK instalados tratan cualquier otro como error.
 Nada se publica contra la runtime 1.2.0.
+
+### T-16 · Rediseño de las pantallas
+
+**Qué resuelve.** Que la app se pueda usar en un Android real con la letra del sistema grande: el
+2026-11-02, en el POCO con la letra al 115 %, la cabecera de la lista dejó el título en 19 px, el
+código de invitación quedó a dos deslizamientos y nada de eso lo vio ningún test. Navegación nueva,
+cabecera nueva y las 15 pantallas de `src/app/` rehechas según un `DESIGN.md` reescrito.
+**Entra:** la 1.3.1 en el POCO con el arreglo de Gastos por aire, el `DESIGN.md` de hoy, los tokens
+de `src/theme/tokens.js` y la prueba por `adb` y Maestro.
+**Sale:** un script que mide una pantalla desde su árbol de `uiautomator` y un test que caza los
+estilos fuera de los tokens (incremento 1); `DESIGN.md` nuevo, ADR-0028 de navegación y bocetos
+(2); navegación y cabecera (3); lista y modo supermercado (4); recetas y menú (5); gastos y
+miembros (6); bienvenida, crear y unirse (7); cierre con TalkBack, letra al máximo, modo oscuro y
+los tres flujos de Maestro al día (8).
+**Absorbe del T-15:** del incremento 7 de la auditoría, los puntos 1 a 3 y los respaldos del canal
+de miembros del 7 (los hace el arreglo de Gastos), los puntos 4 y 5 (T-16.3) y el 6 (T-16.4); del
+incremento 8, el bloque 3 de accesibilidad y diseño (T-16.4 a T-16.6) y, en miembros, los mensajes
+concatenados del bloque 2 (T-16.6). El fallo 23, blanco sobre el primario en oscuro, va al T-16.3
+por `src/shared/ui`; el aviso de unos 12 s sin red (hallazgo 5 de `fase-15.md`) se diseña en el
+T-16.2 y se pinta en el T-16.7, sin tocar el timeout. Los bloques 1 y 2 del incremento 8 y el resto
+del 7 se quedan en el T-15.
+**Manda:** `DESIGN.md`, ADR-0028 cuando exista, [ADR-0004](../adr/ADR-0004-libreria-de-ui.md) y
+[ADR-0025](../adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md).
+**Terminado cuando:** las cinco condiciones de «Cómo se cierra un paquete»; la lista de excepciones
+del test de diseño vacía; el script de inspección sin marcas en las 15 pantallas con la letra al máximo,
+o cada una explicada; `pin-unirse`, `camino-feliz` y `cola-offline` pasan en el POCO.
+**Cuidado con:** si la navegación pide código nativo, la versión pasa a 1.4.0 con build nuevo y nada
+del T-16 llega a la 1.3.1 hasta entonces; lo decide Alejandro en el incremento 2. `NativeTabs` es API
+inestable en el SDK 57 y cambia de ruta en el 58. P-02 (44 pt o 48 dp) fija las medidas: mejor
+respondida antes del incremento 2.
 
 ## Cómo se cierra un paquete
 

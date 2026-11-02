@@ -9,9 +9,9 @@ El siguiente número libre es **P-05**.
 | Pregunta | Sobre qué | Bloquea | Estado |
 | --- | --- | --- | --- |
 | [P-01](#p-01--el-texto-del-diálogo-de-fin-de-compra) | Texto del diálogo de fin de compra | Nada | Abierta |
-| [P-02](#p-02--área-táctil-mínima-44-pt-o-48-dp) | Área táctil mínima | Incrementos 6 y 8 del T-15 | Abierta |
+| [P-02](#p-02--área-táctil-mínima-44-pt-o-48-dp) | Área táctil mínima | Incrementos 6 y 8 del T-15 y el diseño del T-16 | Abierta |
 | [P-03](#p-03--aceptar-el-adr-0027) | Aceptar el ADR-0027 | Nada | Abierta |
-| [P-04](#p-04--alcance-y-orden-del-rediseño) | Alcance y orden del rediseño | Incremento 6 del T-15 y el T-16 | Abierta |
+| [P-04](#p-04--alcance-y-orden-del-rediseño) | Alcance y orden del rediseño | Nada | Respondida: A con A1 |
 
 ---
 
@@ -47,7 +47,8 @@ Ningún flujo de `.maestro/` cita el texto viejo (comprobado con `grep`).
 
 ## P-02 · Área táctil mínima: 44 pt o 48 dp
 
-**Bloquea los incrementos 6 y 8 del T-15**, que tocan pantallas y accesibilidad.
+**Bloquea los incrementos 6 y 8 del T-15 y el diseño del T-16 (incremento 2)**, que fija las
+medidas de todas las pantallas.
 
 `CLAUDE.md` pide ≥ 44 × 44 pt, que es la cifra de Apple. Android, que es la plataforma que manda,
 recomienda 48 × 48 dp con 8 dp de separación entre controles. En Android 1 pt de React Native es
@@ -87,7 +88,8 @@ bloquea de más.
 
 ## P-04 · Alcance y orden del rediseño
 
-**Bloquea el incremento 6 del T-15** (su pantalla del PIN) y la apertura del T-16.
+Bloqueaba el incremento 6 del T-15 (su pantalla del PIN) y la apertura del T-16. Respondida el
+2026-11-02, al final de este apartado.
 
 El 2026-11-02, viendo la 1.3.1 en el POCO, pediste rediseñar todas las pantallas. Lo que se midió
 ese día (`fase-15.md`, apartado 13):
@@ -97,7 +99,7 @@ ese día (`fase-15.md`, apartado 13):
 - El código de invitación queda a dos deslizamientos, debajo del formulario y del estado vacío.
 - Gastos tumba la app en la 1.3.1. No es de diseño, pero es la otra pantalla que no se puede usar.
 
-La app tiene 16 rutas en `src/app/`.
+La app tiene 15 pantallas en `src/app/` (16 ficheros contando `_layout.tsx`).
 
 Alcance:
 
@@ -115,3 +117,9 @@ Orden, si es A:
 **Recomendación: A con A1.** El arreglo de Gastos es pequeño y bloquea una pantalla entera. El diseño
 sin código cabe en una sesión y evita hacer dos veces la pantalla del PIN. Con A2, la suplantación
 se cierra una o dos sesiones antes, a cambio de rehacer esa pantalla.
+
+**Respuesta (2026-11-02): A con A1.** Rediseño completo en el paquete T-16, en este orden: arreglo de
+Gastos ([`prompts/T-15-gastos.md`](prompts/T-15-gastos.md)), herramientas y medición
+(T-16.1), diseño sin código (T-16.2), incremento 6 del T-15 con la pantalla del PIN según el diseño
+nuevo, y después el resto del T-16. La ficha y los prompts están en el
+[ROADMAP](ROADMAP.md#t-16--rediseño-de-las-pantallas) y en `docs/plan/prompts/T-16-*.md`.
