@@ -990,12 +990,34 @@ Las alternativas descartadas (emulador, Firebase Test Lab, Maestro Cloud) y su p
   `diff` que era idéntica. Quien escriba una skill con un script, que use una función como reemplazo o
   escape el `$`.
 
+### Preparación en el ordenador del POCO (2026-11-02, tarde)
+
+Con el prompt `T-15-preparar-android.md`, se hizo su paso 1 y se paró en el 2, como dice el prompt.
+
+- **Herramientas**: en este ordenador no había `~/tools`. Se instalaron `adb` 37.0.1 y Maestro 2.12.1
+  con las órdenes de `e2e-con-maestro.md`, cada descarga en su carpeta, y se miró antes de
+  descomprimir que cada zip traía una sola carpeta y ninguna ruta con `..`.
+- **Java**: el del sistema es el `1.8.0_511` y Maestro pide 17 o más. Se puso Temurin 21.0.13 en zip
+  en `~/tools/jdk-21`, con `JAVA_HOME` solo en la orden. Se descartó el MSI y actualizar el Java 8,
+  porque tocan el `PATH` del sistema y otra cosa puede depender del 8. La licencia de OpenJDK (GPLv2
+  con Classpath Exception) no está en la lista de la regla 3: Alejandro dio el OK el 2026-11-02, con
+  el plan que lo planteaba, porque solo se ejecuta en local y no hay Maestro sin JVM.
+- **El móvil**: `adb devices` ve el POCO (`1e5b87b9`) como `unauthorized`. No se ha aceptado el
+  diálogo RSA ni mirado la versión instalada.
+- **El build**: según `npx eas-cli build:list --platform android --limit 3 --non-interactive` y
+  `build:view`, el 1.3.1 nuevo (`08f58498`, campo Commit `64e27b1`, Started at 19:08) seguía
+  `in queue` a las 19:40. En la misma lista, los dos anteriores (`5f8bd1c3` y `a8a36a6b`) van del
+  2026-10-09 al 2026-10-18 entre Started at y Finished at. Sin APK no se instaló nada ni se ejecutó
+  el flujo.
+
+Todo lo de abajo sigue «no comprobado».
+
 ### Qué falta
 
-1. En el POCO: «Instalar vía USB» y «Depuración USB (ajustes de seguridad)», con la cuenta Xiaomi, y
-   reiniciar.
-2. Cuando acabe el build 1.3.1: descargar el APK a `~/tools/apk/`, `adb install -r` y comprobar
-   `versionName=1.3.1` y el pie.
+1. En el POCO: aceptar la clave RSA de este ordenador, activar «Instalar vía USB» y «Depuración USB
+   (ajustes de seguridad)», con la cuenta Xiaomi, y reiniciar.
+2. Cuando acabe el build `08f58498`: descargar el APK a `~/tools/apk/agora-1.3.1-08f58498.apk` con su
+   SHA-256, `adb install -r` y comprobar `versionName=1.3.1` y el pie.
 3. `pin-unirse.yaml` hasta que pase, con capturas de cada paso, y sin red con `adb`.
 4. Anotar aquí el resultado. Hasta entonces el guion del Android de los incrementos 3 y 4 es «no
    comprobado».

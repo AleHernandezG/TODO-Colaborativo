@@ -22,7 +22,10 @@ migraciones están aplicadas con `db push` y comprobadas en el real, `db.types.t
 **Desde el 2026-11-02 la prueba en el Android la hace la sesión** por `adb` y Maestro, con el POCO
 F5 por USB (`fase-15.md`, apartado 13; `docs/guias/e2e-con-maestro.md`). El POCO tenía la 1.2.0 y
 por eso no le llegaban los updates. Los APK 1.3.x ya no se pueden descargar de EAS; Alejandro lanzó
-un build 1.3.1 nuevo ese día.
+un build 1.3.1 nuevo ese día (`08f58498`), que a las 19:40 seguía `in queue`. En el ordenador del
+POCO ya están `adb`, Maestro y un JDK 21 en `~/tools` (el Java del sistema es el 8); el POCO se ve
+por USB, pendiente de aceptar la clave RSA. **El paso del Android de los 3 y 4 sigue «no
+comprobado»** hasta que el build termine.
 
 **Método de trabajo montado el 2026-10-31**: seis hooks en `.claude/hooks/`, siete skills nuevas,
 tres agentes nuevos, los tests de la regla 6 y de las reglas del repositorio, y este ROADMAP.
@@ -41,8 +44,8 @@ Pendiente del T-15, en este orden (el porqué del orden, en la auditoría, apart
   listas en un móvil.
 - P-01 de [`PREGUNTAS.md`](PREGUNTAS.md): el texto del diálogo de fin de compra que cambió la regla 6.
 
-**Siguiente: T-15 · Preparar la prueba en el Android** y cerrar el paso del móvil de los
-incrementos 3 y 4, en el ordenador donde se conecte el POCO. Prompt en
+**Siguiente: T-15 · Preparar la prueba en el Android**, desde su paso 2, en cuanto el build
+`08f58498` diga `finished`: el paso 1 (herramientas) está hecho. Prompt en
 [`prompts/T-15-preparar-android.md`](prompts/T-15-preparar-android.md). Después, el incremento 6
 (pantalla del PIN y migración B), con el suyo en [`prompts/T-15.md`](prompts/T-15.md).
 

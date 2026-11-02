@@ -132,7 +132,7 @@ cual. Todo es gratis y de fuentes oficiales; para quitarlo basta con borrar la c
 | --- | --- | --- | --- |
 | `adb` (Android SDK Platform-Tools) | `https://dl.google.com/android/repository/platform-tools-latest-windows.zip` | 37.0.1 | Gratis; el paquete binario lleva los términos del SDK de Android y el código es Apache-2.0 |
 | Maestro CLI | `https://github.com/mobile-dev-inc/maestro/releases/latest/download/maestro.zip` | 2.12.1 | Apache-2.0 |
-| Java | El que haya instalado, 17 o superior | 23.0.1 | Maestro corre sobre la JVM |
+| Java | El que haya instalado, 17 o superior. Si no llega, Temurin 21 en zip: `https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk` | 23.0.1; 21.0.13 (Temurin) | GPLv2 con Classpath Exception, como todo OpenJDK. Fuera de la lista de la regla 3; aceptado por Alejandro el 2026-11-02 porque solo se ejecuta en local y no se distribuye ni se enlaza con la app |
 
 Desde Git Bash:
 
@@ -152,6 +152,23 @@ Maestro tiene que encontrar `adb` en el `PATH` de la orden que lo lanza, no en e
 export PATH="$HOME/tools/platform-tools:$PATH"
 cmd //c "%USERPROFILE%\tools\maestro\bin\maestro.bat" test .maestro/pin-unirse.yaml
 ```
+
+Si el Java del sistema es anterior al 17, el JDK va también en `~/tools` y se apunta en la misma
+orden. El 2026-11-02, en el segundo ordenador del POCO, `java -version` decía `1.8.0_511`:
+
+```bash
+T="$HOME/tools"; mkdir -p "$T/dl-jdk"
+curl -sSfL -o "$T/dl-jdk/jdk.zip" "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk"
+unzip -Z1 "$T/dl-jdk/jdk.zip" | cut -d/ -f1 | sort -u    # una sola carpeta, jdk-21.0.x+y
+unzip -q -o "$T/dl-jdk/jdk.zip" -d "$T" && mv "$T"/jdk-21.* "$T/jdk-21"
+
+export JAVA_HOME="$(cygpath -w "$T/jdk-21")"
+export PATH="$T/jdk-21/bin:$T/platform-tools:$PATH"
+cmd //c "%USERPROFILE%\tools\maestro\bin\maestro.bat" --version
+```
+
+`maestro --version` pinta una línea de interrogaciones antes del número: es el banner en una consola
+sin UTF-8 y no afecta a nada.
 
 `npm run test:e2e` llama a `maestro` a secas y solo funciona si está en el `PATH`. **Nunca `maestro
 cloud`**: es el servicio de pago de Maestro y el hook `bloquear-escrituras-git.mjs` lo deniega.
@@ -243,6 +260,10 @@ móvil. Es lo que pide la skill `probar-en-android` antes de pasar un guion a ma
 Lo que sigue siendo a mano: TalkBack, el tamaño de letra máximo y si algo se ve bien. Maestro dice si
 un texto está, no si se lee.
 
-**Pendiente el 2026-11-02:** activar «Instalar vía USB» en el POCO, instalar la 1.3.1 del build nuevo
-y ejecutar `pin-unirse.yaml` por primera vez. La parte que lee el código de invitación no se ha podido
-comprobar porque Maestro no arrancó.
+**Pendiente el 2026-11-02, actualizado a las 19:40:** en el segundo ordenador ya están `adb`
+37.0.1, Maestro 2.12.1 y Temurin 21.0.13 en `~/tools`, y `adb devices` ve el POCO (`1e5b87b9`) como
+`unauthorized` hasta aceptar la clave RSA. Falta todo lo que depende del APK: el build 1.3.1 nuevo
+(`08f58498`, commit `64e27b1`) seguía `in queue`. Cuando termine, se descarga a
+`~/tools/apk/agora-1.3.1-08f58498.apk`, se apunta aquí su tamaño y su SHA-256, se activan «Instalar
+vía USB» y «Depuración USB (ajustes de seguridad)» y se ejecuta `pin-unirse.yaml` por primera vez. La parte que
+lee el código de invitación sigue sin comprobar.
