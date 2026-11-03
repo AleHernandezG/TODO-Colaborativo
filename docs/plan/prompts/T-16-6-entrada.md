@@ -1,11 +1,11 @@
-# Prompt de arranque · T-16 · Incremento 7 · Bienvenida, crear una lista y unirse
+# Prompt de arranque · T-16 · Incremento 6 · Bienvenida, crear una lista y unirse
 
 Rehace las tres pantallas por las que se entra: la bienvenida (`src/app/index.tsx`), crear una
 lista y unirse con código, nombre y PIN. Es lo primero que ve una persona nueva y lo que más le
 cuesta a quien no sabe usar apps.
 
-Escrito el 2026-11-02, antes del diseño. Si el incremento 2 cambió el reparto, manda lo que diga el
-ROADMAP y este prompt se corrige.
+Escrito el 2026-11-02 como incremento 7 y renumerado el 2026-11-03, cuando ADR-0028 sacó Recetas y
+Menú de la app. Si algo de aquí no coincide con `DESIGN.md` o con los bocetos, mandan ellos.
 
 Lo que se encuentra:
 
@@ -14,13 +14,15 @@ Lo que se encuentra:
 - `pin-unirse.yaml` recorre estas pantallas y cita sus textos y testID. Tiene que seguir pasando.
 - `join_community` solo devuelve seis estados, porque los APK instalados no conocen otros
   (ADR-0026).
+- Estas tres pantallas van sin pestañas, porque aún no hay lista (ADR-0028). ScreenHeader,
+  ActionBar y StatusStrip ya existen.
 
 Recuentos de partida: los del bloque «Estado» del ROADMAP. Se pega tal cual en la sesión.
 
 ---
 
 ```
-Vas a hacer el incremento 7 del paquete T-16 de docs/plan/ROADMAP.md: rehacer la bienvenida,
+Vas a hacer el incremento 6 del paquete T-16 de docs/plan/ROADMAP.md: rehacer la bienvenida,
 crear una lista y unirse según DESIGN.md. domain/ decide qué estado de unirse pide qué mensaje;
 presentation/ cambia cómo se ve. Ni las RPC ni los estados cambian.
 
@@ -33,7 +35,8 @@ alternativa que descartas. Si contesto «adelante», van como las propones. A pa
 paras en los casos de «Donde sí te paras».
 
 Antes de nada, lee en este orden:
-  1. DESIGN.md y docs/diseno/bocetos.html, las tres pantallas
+  1. DESIGN.md y docs/diseno/bocetos.html, el apartado «Entrada» y «Teclado abierto en un
+     formulario» de «Casos límite»
   2. docs/diseno/estado-de-partida.md, esas pantallas
   3. docs/adr/ADR-0011 (join_code), ADR-0025 (entrar con useEnterCommunity) y ADR-0026 (los seis
      estados de join_community)
@@ -59,9 +62,19 @@ Qué no tocas:
 Decisiones que tienes que tomar:
   1. Cómo se escribe el código de invitación (mayúsculas, sin O/0 ni I/1, el guion) para que se
      pueda dictar por teléfono
-  2. Si nombre y PIN van en la misma pantalla que el código o en un paso aparte, con la letra al
-     máximo y el teclado abierto
-  3. Qué ve quien ya tiene listas al abrir la app: la última lista, el selector o la bienvenida
+  2. Qué ve quien ya tiene listas al abrir la app: recomiendo la lista activa, como hoy
+     (ADR-0025). Descartado abrir el selector, que pide un toque más cada vez
+  3. Lo que falta por dibujar antes de escribir, y esperas OK: las casillas «Inc. T-16.6» de la
+     matriz de DESIGN.md, error de carga y sin red en Bienvenida, Crear y Unirse. Se añaden a
+     docs/diseno/bocetos.html
+Ya decidido en el diseño, no se vuelve a abrir:
+  - código, nombre y PIN en la misma pantalla, sin teclado al entrar; la acción en la ActionBar,
+    que sube con el teclado
+  - la ayuda del PIN en text-sm debajo del campo, en las líneas que haga falta; en Unirse explica
+    el caso de volver a una lista
+  - los seis estados de join_community salen como error del campo que toca, con su código
+  - la bienvenida, con dos botones de 48 dp a todo el ancho, uno principal, y el pie con la versión
+  - crear se queda en carga y, si tarda, el botón dice qué espera
 
 Casos límite y errores (ADR-0016):
   - sin red: ni crear ni unirse se encolan; la pantalla dice que no hay conexión y el botón vuelve
@@ -95,9 +108,10 @@ Orden de trabajo:
   6. qa-runner y, el último, revisor-documentacion
 
 Documentación que cambia:
-  - fase-16.md: el incremento 7, con la medida antes y después
+  - fase-16.md: el incremento 6, con la medida antes y después
   - docs/guias/e2e-con-maestro.md si cambian los selectores
-  - ROADMAP: el bloque «Estado»; «Siguiente» es el incremento 8, el cierre
+  - ROADMAP: el bloque «Estado»; «Siguiente» es el incremento 7, el cierre, con su prompt en
+    docs/plan/prompts/T-16-7-cierre.md
 
 Terminado cuando:
   - pin-unirse.yaml pasa entero en el POCO con la versión del pie de este incremento

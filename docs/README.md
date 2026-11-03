@@ -18,6 +18,7 @@ Organizada por **para qué sirve cada documento**, no por tema. Si buscas algo:
 | Las reglas duras que sigue el proyecto         | [`../CLAUDE.md`](../CLAUDE.md)                                 |
 | Saber qué aspecto tiene que tener una pantalla | [`../DESIGN.md`](../DESIGN.md)                                 |
 | Ver qué falla hoy en cada pantalla del móvil   | [`diseno/estado-de-partida.md`](./diseno/estado-de-partida.md) |
+| Ver cómo quedará cada pantalla, en claro, oscuro y al 200 % | [`diseno/bocetos.html`](./diseno/bocetos.html)       |
 
 El criterio y sus motivos están en
 [ADR-0003](./adr/ADR-0003-estructura-del-repositorio.md), ampliado por
@@ -56,6 +57,7 @@ aquí los ADR siguen en `adr/` y el diario de cada paquete es `phases/fase-N.md`
 | [0025](./adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md) | Varias listas por usuario y lista activa             | Aceptado (RLS 70/70)              |
 | [0026](./adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md) | El PIN sale de `members`; identidad sin PIN no reclamable | Aceptado; migración A aplicada (vista el 2026-10-31, comprobada el 2026-11-02), B pendiente |
 | [0027](./adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md) | Método de trabajo con paquetes, hooks y revisores        | Aceptado                          |
+| [0028](./adr/ADR-0028-navegacion-por-pestanas.md) | Navegación por pestañas con Lista y Gastos, sin Recetas ni Menú | Propuesto                  |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin

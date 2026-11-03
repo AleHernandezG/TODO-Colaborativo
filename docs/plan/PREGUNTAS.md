@@ -4,7 +4,7 @@ Las dudas que decide Alejandro. Cada una lleva los hechos, las opciones y una re
 respuesta va debajo con la fecha y el enlace a dónde acabó. Una pregunta respondida no se borra.
 Si la respuesta es «no me convence», se da otra vuelta en la misma pregunta.
 
-El siguiente número libre es **P-05**.
+El siguiente número libre es **P-06**.
 
 | Pregunta | Sobre qué | Bloquea | Estado |
 | --- | --- | --- | --- |
@@ -12,6 +12,7 @@ El siguiente número libre es **P-05**.
 | [P-02](#p-02--área-táctil-mínima-44-pt-o-48-dp) | Área táctil mínima | Nada | Respondida: A, 48 dp |
 | [P-03](#p-03--aceptar-el-adr-0027) | Aceptar el ADR-0027 | Nada | Respondida: aceptado |
 | [P-04](#p-04--alcance-y-orden-del-rediseño) | Alcance y orden del rediseño | Nada | Respondida: A con A1 |
+| [P-05](#p-05--marca-de-pendiente-de-enviar-en-cada-fila) | Marca de «pendiente de enviar» en cada fila | El T-16.4, solo la fila | Abierta |
 
 ---
 
@@ -137,3 +138,35 @@ Gastos ([`prompts/T-15-gastos.md`](prompts/T-15-gastos.md)), herramientas y medi
 (T-16.1), diseño sin código (T-16.2), incremento 6 del T-15 con la pantalla del PIN según el diseño
 nuevo, y después el resto del T-16. La ficha y los prompts están en el
 [ROADMAP](ROADMAP.md#t-16--rediseño-de-las-pantallas) y en `docs/plan/prompts/T-16-*.md`.
+
+---
+
+## P-05 · Marca de «pendiente de enviar» en cada fila
+
+Bloquea solo el aspecto de la fila del T-16.4; el resto del incremento puede avanzar. Abierta el
+2026-11-03 por el hallazgo 3 de `revisor-interfaz` sobre los bocetos del T-16.2.
+
+Sin red, la `StatusStrip` dice «Sin conexión. Lo que cambies se enviará al recuperarla.» y un
+`Snackbar` avisa de cada mutación encolada. Pero al cerrar el aviso nada dice qué artículo en
+concreto está en la cola: quien añade cinco cosas en el sótano del súper y vuelve a tener red no
+sabe cuáles han salido. La regla 6 se cumple igual, porque nada dice «guardado».
+
+Lo que hay hoy: la cola de TanStack Query sabe qué mutaciones están en pausa y con qué `variables`,
+`id` del artículo incluido (ADR-0009 y ADR-0010). Leerla desde la fila es un `useMutationState`
+filtrado por `mutationKey` y por id, sin tocar el servidor ni el esquema.
+
+Opciones:
+
+- **A. Marca en la fila.** Segunda línea en `text-sm muted` con el icono `hourglass_top` y «Se
+  enviará al recuperar la conexión», solo en los artículos encolados. TalkBack lo lee como parte
+  de la fila. Cuesta un hook en `features/items/presentation` y un test, y la fila pasa de una a
+  dos líneas en esos artículos, así que al 200 % cabe uno menos.
+- **B. Solo la franja y el aviso**, como ahora. Cero trabajo. Quien quiere saber qué falta no tiene
+  dónde mirarlo.
+- **C. Contador en la franja**: «Sin conexión. 5 cambios se enviarán al recuperarla.» Un dato más
+  sin tocar las filas; dice cuántos, no cuáles.
+- **D. A y C juntas.** Lo más claro y lo más caro, y la franja crece al 200 %.
+
+**Recomendación: A.** Es la que contesta la pregunta que se hace la persona («¿esto ha salido?») en
+el sitio donde mira, y solo aparece cuando hay algo encolado. C se puede sumar después sin rehacer
+nada.

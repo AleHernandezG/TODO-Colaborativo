@@ -230,12 +230,19 @@ Cada requisito se descompone en **Qué pide** → **Cómo se lleva a cabo** → 
 
 ### RF-14 · Módulo de Recetas Compartidas y volcado a lista (post-MVP)
 
+> Fuera de la app desde el T-16.3 por decisión de Alejandro del 2026-11-03
+> ([ADR-0028](adr/ADR-0028-navegacion-por-pestanas.md)). Se esconde la pantalla; el código, las
+> tablas y las recetas guardadas se quedan para poder volver.
+
 - **Qué:** crear, editar y compartir recetas culinarias dentro de la comunidad, vincular ingredientes con productos del catálogo de Mercadona, ajustar comensales con cálculo dinámico de cantidades y volcar ingredientes a la lista de compra en un solo toque.
 - **Cómo:** tablas `recipes` y `recipe_ingredients` con RLS, procedimiento almacenado atómico `save_recipe`, suscripción Realtime en `useRecipesRealtime`, e inserción en bloque `addMany` en `items` con IDs de cliente (ADR-0010) y alertas push colaborativas (ADR-0020).
 - **Aceptación:** cualquier miembro de la comunidad puede crear recetas, ver los ingredientes con sus cantidades escaladas al número de comensales seleccionado, y pulsar «Añadir a la lista de compra» para que los ingredientes aparezcan inmediatamente en la lista compartida de la compra.
 - **Depende de:** nada adicional; enlaza opcionalmente con el catálogo de supermercado (RF-10) y utiliza la lista de la compra (RF-1). Decidido en [ADR-0021](adr/ADR-0021-modulo-de-recetas-y-volcado-a-lista.md).
 
 ### RF-15 · Planificador Semanal de Menús y consolidación de ingredientes (post-MVP)
+
+> Fuera de la app desde el T-16.3, con RF-14, porque cada hueco del menú es una receta
+> ([ADR-0028](adr/ADR-0028-navegacion-por-pestanas.md)).
 
 - **Qué:** organizar comidas y cenas por día de la semana (Lunes a Domingo) vinculando recetas guardadas o platos libres, y volcar los ingredientes consolidados a la lista de la compra de forma acumulativa y sin duplicados.
 - **Cómo:** tabla `meal_plan_slots` con restricción de unicidad por `(community_id, date, meal_type)`, RPC `upsert_meal_slot` y `delete_meal_slot`, función pura `consolidateMealPlanIngredients` que agrupa ingredientes repetidos y suma cantidades escaladas por comensales, y revisión interactiva antes de volcar por lotes a `items` con push notification.

@@ -1,0 +1,776 @@
+<meta charset="utf-8">
+<title>Bocetos del T-16</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Roboto+Mono:wght@400;500&family=Roboto:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=block">
+<style>
+:root {
+  --page: #F4F6FA;
+  --paper: #FFFFFF;
+  --ink: #141A26;
+  --ink-soft: #4A5468;
+  --rule: #D5DBE6;
+  --mark: #1D4ED8;
+  --warn: #9A3412;
+  --font-body: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, 'Cascadia Mono', monospace;
+  --font-app: 'Roboto', system-ui, sans-serif;
+  --z: .62;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0E121B; --paper: #161B27; --ink: #E8ECF4; --ink-soft: #A3ADC2; --rule: #2B3346; --mark: #7FB2FF; --warn: #FDBA74;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0E121B; --paper: #161B27; --ink: #E8ECF4; --ink-soft: #A3ADC2; --rule: #2B3346; --mark: #7FB2FF; --warn: #FDBA74;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--page); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 64px;
+}
+main { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(28px, 5vw, 40px); }
+h2 { font-size: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); }
+h3 { font-size: 18px; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: .86em; }
+.intro { display: flex; flex-direction: column; gap: 12px; }
+.intro .meta { color: var(--ink-soft); font-size: 14px; }
+.controls { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; padding: 16px; background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; }
+.controls fieldset { border: 0; padding: 0; margin: 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.controls legend { float: left; margin-right: 8px; font-weight: 700; font-size: 14px; }
+.controls label { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; cursor: pointer; font-size: 14px; }
+.controls input { accent-color: var(--mark); }
+.controls label:has(input:checked) { border-color: var(--mark); color: var(--mark); font-weight: 700; }
+.controls label:focus-within { outline: 2px solid var(--mark); outline-offset: 2px; }
+section { display: flex; flex-direction: column; gap: 24px; }
+section > p { color: var(--ink-soft); }
+.screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 40px 32px; }
+.screen { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.screen header { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.route { font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); }
+.inc { font-family: var(--font-mono); font-size: 12px; padding: 1px 8px; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-soft); }
+.frames { display: flex; flex-wrap: wrap; gap: 16px; }
+.frame { display: flex; flex-direction: column; gap: 6px; }
+.frame figcaption { font-size: 12px; color: var(--ink-soft); font-family: var(--font-mono); }
+.only-l .frame.d, .only-d .frame.l { display: none; }
+.notes { margin: 0; padding-left: 20px; font-size: 15px; display: flex; flex-direction: column; gap: 4px; max-width: 70ch; }
+.notes b { font-weight: 700; }
+.warn { color: var(--warn); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 14px; min-width: 520px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 700; }
+td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+.swatches { display: flex; flex-wrap: wrap; gap: 16px; }
+.swatch { display: flex; align-items: center; justify-content: center; min-width: 220px; min-height: 64px; border-radius: 10px; font-family: var(--font-app); font-size: 18px; font-weight: 600; background: #60A5FA; }
+.swatch.bad { color: #FFFFFF; }
+.swatch.good { color: #0B0F19; }
+.swatch-cap { font-size: 13px; color: var(--ink-soft); }
+@media (prefers-reduced-motion: no-preference) { .controls label { transition: border-color .15s; } }
+
+.app-l { --a-bg:#FFFFFF; --a-surface:#F3F4F6; --a-text:#111827; --a-muted:#4B5563; --a-line:#D1D5DB; --a-strong:#6B7280; --a-primary:#1D4ED8; --a-on:#FFFFFF; --a-danger:#B91C1C; --a-success:#15803D; --a-key:#E5E7EB; --a-keyface:#FFFFFF; }
+.app-d { --a-bg:#0B0F19; --a-surface:#161B26; --a-text:#F3F4F6; --a-muted:#9CA3AF; --a-line:#2A3140; --a-strong:#6B7280; --a-primary:#60A5FA; --a-on:#0B0F19; --a-danger:#F87171; --a-success:#4ADE80; --a-key:#1F2430; --a-keyface:#2E3442; }
+.phone { --fs: 1; zoom: var(--z); width: 392px; height: 852px; flex: none; position: relative; overflow: hidden; border-radius: 34px; outline: 1px solid var(--rule); outline-offset: 0; background: var(--a-bg); color: var(--a-text); font-family: var(--font-app); display: flex; flex-direction: column; line-height: 1.3; font-size: calc(16px * var(--fs)); }
+.big .phone, .phone.big { --fs: 2; }
+.phone.normal { --fs: 1; }
+.phone * { box-sizing: border-box; }
+.phone p { margin: 0; max-width: none; }
+.t-xs { font-size: calc(12px * var(--fs)); }
+.t-sm { font-size: calc(14px * var(--fs)); }
+.t-base { font-size: calc(16px * var(--fs)); }
+.t-lg { font-size: calc(18px * var(--fs)); }
+.t-xl { font-size: calc(20px * var(--fs)); }
+.t-3xl { font-size: calc(30px * var(--fs)); }
+.t-4xl { font-size: calc(36px * var(--fs)); }
+.fw5 { font-weight: 500; } .fw6 { font-weight: 600; } .fw7 { font-weight: 700; }
+.muted { color: var(--a-muted); }
+.danger { color: var(--a-danger); }
+.success { color: var(--a-success); }
+.tab { font-variant-numeric: tabular-nums; }
+.ms { font-family: 'Material Symbols Outlined'; font-weight: normal; font-style: normal; font-size: 24px; width: 24px; height: 24px; line-height: 1; display: inline-block; flex: none; overflow: hidden; white-space: nowrap; letter-spacing: normal; text-transform: none; direction: ltr; font-feature-settings: 'liga'; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+.ms.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+.ms.s16 { font-size: 16px; width: 16px; height: 16px; }
+.ms.s20 { font-size: 20px; width: 20px; height: 20px; }
+.sb { height: 32px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 13px; font-weight: 500; }
+.sb span:last-child { display: flex; gap: 4px; }
+.gb { height: 20px; flex: none; display: flex; align-items: center; justify-content: center; }
+.gb i { width: 108px; height: 4px; border-radius: 2px; background: var(--a-strong); }
+.hdr { flex: none; display: flex; align-items: flex-start; gap: 8px; padding: 4px 8px 4px 4px; border-bottom: 1px solid var(--a-line); }
+.hdr .title-btn { flex: 1; min-width: 0; min-height: 48px; display: flex; align-items: center; gap: 2px; padding: 4px 4px 4px 12px; border-radius: 10px; }
+.hdr .title { min-width: 0; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.hdr .acts { display: flex; gap: 8px; flex: none; }
+.hdr.sub { padding-left: 4px; align-items: flex-start; }
+.hdr.sub .title { padding-top: 10px; flex: 1; }
+.iconbtn { width: 48px; height: 48px; flex: none; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; color: var(--a-text); }
+.iconbtn.danger { color: var(--a-danger); }
+.iconbtn.boxed { border: 1px solid var(--a-strong); border-radius: 9999px; }
+.strip { flex: none; display: flex; gap: 10px; align-items: flex-start; padding: 10px 16px; background: var(--a-surface); border-bottom: 1px solid var(--a-line); }
+.strip .ms { margin-top: 1px; }
+.content { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.content > *, .content.pad > * { flex-shrink: 0; }
+.pad { padding: 16px; gap: 12px; }
+.px { padding-left: 16px; padding-right: 16px; }
+.abar { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--a-line); background: var(--a-bg); }
+.btn { min-height: 48px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 24px; border-radius: 10px; font-weight: 600; text-align: center; }
+.btn.primary { background: var(--a-primary); color: var(--a-on); }
+.btn.secondary { border: 1px solid var(--a-strong); color: var(--a-text); }
+.btn.danger { border: 1px solid var(--a-danger); color: var(--a-danger); }
+.btn.text { color: var(--a-primary); padding: 10px 12px; width: auto; justify-content: flex-start; }
+.btn.sm { width: auto; padding: 8px 16px; }
+.btn.loading { opacity: .5; }
+.tabs { flex: none; display: flex; background: var(--a-surface); border-top: 1px solid var(--a-line); min-height: 80px; padding: 12px 0 14px; }
+.tabs .t { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--a-muted); }
+.tabs .pill { width: 64px; height: 32px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; }
+.tabs .t.on { color: var(--a-text); }
+.tabs .t.on .pill { background: var(--a-primary); color: var(--a-on); }
+.tabs .lbl { font-weight: 600; max-width: 100%; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field .lab { font-weight: 600; }
+.field .box { min-height: 48px; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--a-strong); border-radius: 10px; }
+.field .box.focus { border: 2px solid var(--a-primary); padding: 9px 11px; }
+.field .box .ph { color: var(--a-muted); }
+.field .help { color: var(--a-muted); }
+.field .err { color: var(--a-danger); }
+.caret { width: 2px; align-self: stretch; background: var(--a-primary); margin-left: -6px; }
+.addrow { display: flex; gap: 8px; align-items: stretch; padding: 12px 16px; border-bottom: 1px solid var(--a-line); flex: none; }
+.addrow .box { flex: 1; min-width: 0; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--a-line); }
+.row.r64 { min-height: 64px; }
+.row .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.row .main > * { overflow-wrap: anywhere; }
+.chk { width: 48px; height: 48px; flex: none; display: flex; align-items: center; justify-content: center; margin: -4px -6px -4px -10px; }
+.chk i { width: 28px; height: 28px; border: 2px solid var(--a-strong); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-style: normal; }
+.chk.on i { background: var(--a-primary); border-color: var(--a-primary); color: var(--a-on); }
+.radio i { border-radius: 9999px; }
+.radio.on i { background: transparent; border-color: var(--a-primary); }
+.radio.on i::after { content: ""; width: 14px; height: 14px; border-radius: 9999px; background: var(--a-primary); }
+.thumb { width: 44px; height: 44px; flex: none; border-radius: 6px; background: var(--a-surface); border: 1px solid var(--a-line); display: flex; align-items: center; justify-content: center; color: var(--a-muted); }
+.done .name { text-decoration: line-through; color: var(--a-muted); }
+.qty { flex: none; font-weight: 500; font-variant-numeric: tabular-nums; }
+.sect { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 16px; font-weight: 700; border-bottom: 1px solid var(--a-line); }
+.sect .grow { flex: 1; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 48px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 9999px; border: 1px solid var(--a-strong); font-weight: 600; }
+.chip.on { background: var(--a-primary); border-color: var(--a-primary); color: var(--a-on); }
+.progress { height: 12px; border-radius: 9999px; background: var(--a-surface); border: 1px solid var(--a-line); overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--a-primary); }
+.card { background: var(--a-surface); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.card.edge { border: 1px solid var(--a-strong); }
+.code { font-weight: 700; letter-spacing: .08em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.btnrow .btn { flex: 1 1 140px; width: auto; }
+.avatar { min-width: 40px; min-height: 40px; padding: 0 6px; flex: none; border-radius: 9999px; background: var(--a-surface); border: 1px solid var(--a-line); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+.badge { display: inline-flex; align-items: center; padding: 0 8px; border-radius: 9999px; border: 1px solid var(--a-strong); font-weight: 500; }
+.empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; }
+.kb { flex: none; height: 300px; background: var(--a-key); padding: 8px 4px 4px; display: flex; flex-direction: column; gap: 8px; }
+.kb .sugg { height: 36px; display: flex; justify-content: space-around; align-items: center; font-size: 15px; color: var(--a-text); }
+.kb .krow { display: flex; gap: 6px; justify-content: center; }
+.kb .krow i { flex: 1; max-width: 34px; height: 44px; border-radius: 6px; background: var(--a-keyface); }
+.kb.num .krow i { max-width: 120px; }
+.scrim { position: absolute; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 5; }
+.dialog { width: 100%; max-height: 100%; overflow: hidden; background: var(--a-bg); border-radius: 16px; padding: 24px 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+.dialog .opts { display: flex; flex-direction: column; }
+.dialog .opt { display: flex; align-items: center; gap: 8px; min-height: 56px; border-bottom: 1px solid var(--a-line); }
+.dialog .opt .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dialog .acts { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.snack { position: absolute; left: 12px; right: 12px; z-index: 4; display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 16px; border-radius: 10px; background: var(--a-text); color: var(--a-bg); }
+.snack .grow { flex: 1; min-width: 0; }
+.snack .act { color: var(--a-bg); font-weight: 700; min-height: 48px; display: flex; align-items: center; padding: 0 12px; text-decoration: underline; }
+.tb { position: relative; z-index: 3; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex: none; border-radius: 9999px; background: #B45309; color: #FFFFFF; font: 700 13px/1 var(--font-mono); }
+.slot { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--a-line); }
+.slot.empty-slot { border-style: dashed; border-color: var(--a-strong); color: var(--a-primary); font-weight: 600; }
+.slot .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.day { display: flex; flex-direction: column; gap: 8px; }
+.total { display: flex; flex-direction: column; gap: 2px; }
+.grow { flex: 1; min-width: 0; }
+.welcome { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; padding: 24px; }
+.buildtag { text-align: center; padding: 6px 0 2px; }
+.pinbig { display: flex; justify-content: center; gap: 12px; }
+.pinbig span { min-width: 52px; padding: 8px 0; text-align: center; border-radius: 10px; background: var(--a-surface); font-weight: 700; font-variant-numeric: tabular-nums; }
+</style>
+
+<main id="app">
+  <div class="intro">
+    <h1>Bocetos del T-16</h1>
+    <p>Las diez pantallas que quedan en <code>src/app</code>, más las del PIN que hace el incremento 6 del T-15, con la navegación por pestañas de ADR-0028. Recetas y Menú salen de la app: se quitan sus pantallas y la base de datos no se toca, así que volver atrás es reponerlas. Cada móvil mide 392 × 852 dp, como el POCO F5, y sus colores salen de <code>src/theme/tokens.js</code>. Los iconos son Material Symbols, la misma fuente que dibuja la barra nativa.</p>
+    <p class="meta">T-16.2 · 2026-11-03 · Los datos son de ejemplo: la lista «Casa» con Ana (tú, admin), Bea, Carla, Dani y Eva, invitada.</p>
+  </div>
+
+  <div class="controls" role="group" aria-label="Cómo ver los bocetos">
+    <fieldset>
+      <legend>Tema</legend>
+      <label><input type="radio" name="theme" id="th-both" value="both" checked> Claro y oscuro</label>
+      <label><input type="radio" name="theme" id="th-l" value="l"> Solo claro</label>
+      <label><input type="radio" name="theme" id="th-d" value="d"> Solo oscuro</label>
+    </fieldset>
+    <fieldset>
+      <legend>Letra</legend>
+      <label><input type="radio" name="font" id="fs-1" value="1" checked> 100 %</label>
+      <label><input type="radio" name="font" id="fs-2" value="2"> 200 %</label>
+    </fieldset>
+  </div>
+
+  <div id="sections"></div>
+
+  <section>
+    <h2>Reglas que salen de los bocetos</h2>
+    <p>Lo que DESIGN.md recoge de aquí. Los valores nuevos van antes a <code>tokens.js</code>.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Regla</th><th>Valor</th><th>Dónde se ve</th></tr></thead>
+        <tbody>
+          <tr><td>Área táctil y hueco entre pulsables</td><td class="num">48 dp · 8 dp</td><td>Todo. El token pasa de 44 a 48 en el T-16.3</td></tr>
+          <tr><td>Alto mínimo de fila</td><td class="num">56 dp</td><td>Lista, miembros, gastos, diálogos</td></tr>
+          <tr><td>Alto mínimo de fila en el modo supermercado</td><td class="num">64 dp</td><td>RF-16 pide al menos 60</td></tr>
+          <tr><td>Icono</td><td class="num">24 dp</td><td>Cabecera, filas, barra. No crece con la letra</td></tr>
+          <tr><td>Título de cabecera</td><td class="num">text-xl · 2 líneas</td><td>Después, elipsis; el nombre entero en TalkBack y en el selector</td></tr>
+          <tr><td>Acciones en la cabecera</td><td class="num">2 iconos como mucho</td><td>Ninguna con texto: el texto es lo que no cabe al 200 %</td></tr>
+          <tr><td>Guardar y la acción principal</td><td class="num">ActionBar abajo</td><td>Nunca en la cabecera. Sube con el teclado</td></tr>
+          <tr><td>Teclado al entrar</td><td class="num">no</td><td>Salvo en una pantalla de un solo campo, como el PIN</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const I = (n, c = '') => `<span class="ms ${c}" aria-hidden="true">${n}</span>`;
+  const TB = (o, n) => (o.tb ? `<span class="tb">${n}</span>` : '');
+
+  const statusBar = () => `<div class="sb"><span>9:41</span><span>${I('signal_cellular_alt', 's16')}${I('wifi', 's16')}${I('battery_full', 's16')}</span></div>`;
+
+  const appHeader = (o, title, acts) => `<div class="hdr">
+      <div class="title-btn">${TB(o, 1)}<span class="title t-xl">${title}</span>${I('expand_more')}</div>
+      <div class="acts">${acts.map((a, i) => `<span class="iconbtn">${TB(o, i + 2)}${I(a)}</span>`).join('')}</div>
+    </div>`;
+
+  const subHeader = (title, act, backIcon = 'arrow_back') => `<div class="hdr sub">
+      <span class="iconbtn">${I(backIcon)}</span>
+      <span class="title t-xl">${title}</span>
+      ${act ? `<span class="iconbtn">${I(act)}</span>` : ''}
+    </div>`;
+
+  const STRIPS = {
+    offline: ['cloud_off', 'Sin conexión. Lo que cambies se enviará al recuperarla.'],
+    checking: ['sync', 'Comprobando la conexión. Puedes seguir: lo que cambies se enviará cuando llegue.'],
+    unreachable: ['error', 'No se llega al servidor. Lo que cambies se enviará cuando responda. (timeout)'],
+  };
+  const strip = (o, k) => (k ? `<div class="strip t-sm" role="status">${TB(o, 4)}${I(STRIPS[k][0], 's20')}<span>${STRIPS[k][1]}</span></div>` : '');
+
+  const TABS = [['checklist', 'Lista'], ['payments', 'Gastos']];
+  const tabBar = (o, on) => `<div class="tabs">${TABS.map(([ic, l], i) => `<div class="t ${i === on ? 'on' : ''}">${i === 0 ? TB(o, 10) : ''}<span class="pill">${I(ic, i === on ? 'fill' : '')}</span><span class="lbl t-sm">${l}</span></div>`).join('')}</div>`;
+
+  const btn = (label, kind = 'primary', icon, extra = '') => `<span class="btn ${kind} t-lg ${extra}">${icon ? I(icon) : ''}<span>${label}</span></span>`;
+  const abar = (...b) => `<div class="abar">${b.join('')}</div>`;
+
+  const field = (label, value, opt = {}) => `<div class="field">
+      <span class="lab t-base">${label}</span>
+      <span class="box t-base ${opt.focus ? 'focus' : ''}">${opt.icon ? I(opt.icon, 'muted') : ''}${value ? `<span class="${opt.big ? 't-3xl fw7 tab' : ''}">${value}</span>` : `<span class="ph">${opt.ph || ''}</span>`}${opt.focus ? '<i class="caret"></i>' : ''}${opt.trail || ''}</span>
+      ${opt.help ? `<span class="help t-sm">${opt.help}</span>` : ''}
+      ${opt.err ? `<span class="err t-sm" role="alert">${opt.err}</span>` : ''}
+    </div>`;
+
+  const chk = (on, radio) => `<span class="chk ${radio ? 'radio' : ''} ${on ? 'on' : ''}"><i>${on && !radio ? I('check', 's20') : ''}</i></span>`;
+
+  const keyboard = (num) => `<div class="kb ${num ? 'num' : ''}" aria-hidden="true">
+      ${num ? '' : '<div class="sugg"><span>leche</span><span>lentejas</span><span>levadura</span></div>'}
+      ${(num ? [3, 3, 3, 3] : [10, 9, 9, 5]).map((n) => `<div class="krow">${'<i></i>'.repeat(n)}</div>`).join('')}
+    </div>`;
+
+  const snack = (text, action, bottom) => `<div class="snack t-base" style="bottom:${bottom}px"><span class="grow">${text}</span>${action ? `<span class="act">${action}</span>` : ''}</div>`;
+
+  const buildTag = '<div class="buildtag t-xs muted">v1.3.1 · base</div>';
+
+  function phone(o, p) {
+    const cls = ['phone', o.dark ? 'app-d' : 'app-l'];
+    if (o.force === 2) cls.push('big');
+    if (o.force === 1) cls.push('normal');
+    return `<div class="${cls.join(' ')}">
+      ${statusBar()}
+      ${p.header || ''}
+      ${p.strip || ''}
+      <div class="content ${p.bodyClass || ''}">${p.body || ''}</div>
+      ${p.snack || ''}
+      ${p.kb ? (p.abar || '') + keyboard(p.kbNum) : (p.abar || '') + (p.tabs != null ? tabBar(o, p.tabs) : '')}
+      ${p.footer || ''}
+      <div class="gb"><i></i></div>
+      ${p.overlay || ''}
+    </div>`;
+  }
+
+  const ITEMS = [
+    ['Leche entera', '×2', 'Lácteos · 0,95 € orientativo, visto hace 6 días', 'water_full'],
+    ['Huevos camperos', '×1', 'Huevos · 2,35 € orientativo, visto hace 6 días', 'egg'],
+    ['Tomates pera', '×6', 'Fruta y verdura', 'nutrition'],
+    ['Pan de molde integral', '×1', 'Panadería · 1,45 € orientativo, visto hace 6 días', 'bakery_dining'],
+    ['Yogures naturales', '×8', 'Lácteos · tu foto', 'photo_camera'],
+    ['Lentejas pardinas', '×1', 'Legumbres', 'grain'],
+    ['Detergente líquido', '×1', 'Limpieza', 'soap'],
+    ['Aceite de oliva virgen extra', '×1', 'Aceites', 'water_drop'],
+  ];
+  const itemRow = (o, [n, q, m, ph], done, r64, tbn) => `<div class="row ${r64 ? 'r64' : ''} ${done ? 'done' : ''}">
+      ${tbn ? TB(o, tbn) : ''}${chk(done)}<span class="thumb">${I(ph)}</span>
+      <span class="main"><span class="name t-lg">${n}</span><span class="t-sm muted">${m}</span></span>
+      <span class="qty t-base">${q}</span>
+    </div>`;
+
+  const addRow = (o, focus, value) => `<div class="addrow">
+      <span class="field grow"><span class="box t-base ${focus ? 'focus' : ''}">${TB(o, 5)}${value ? `<span>${value}</span><i class="caret"></i>` : '<span class="ph">Añadir a la lista</span>'}</span></span>
+      <span class="iconbtn boxed" style="background:var(--a-primary);color:var(--a-on);border-color:var(--a-primary)">${TB(o, 6)}${I('add')}</span>
+    </div>`;
+
+  const listBody = (o, n = 6, opts = {}) => `${addRow(o, opts.focus, opts.value)}${opts.pinCard || ''}${opts.sugg || ''}
+      <div class="sect t-base"><span class="grow">Por comprar · ${opts.pending || 8}</span></div>
+      ${ITEMS.slice(0, n).map((it, i) => itemRow(o, it, false, false, i === 0 ? 7 : 0)).join('')}
+      <div class="sect t-base">${TB(o, 8)}<span class="grow">Comprados (${opts.bought || 4})</span>${I('expand_more')}</div>`;
+
+  const goShopping = (o) => `<div class="abar">${TB(o, 9)}${btn('Ir a comprar', 'secondary', 'shopping_cart')}</div>`;
+
+  const S = {};
+
+  S.list = (o) => phone(o, {
+    header: appHeader(o, o.longName ? 'Compra semanal de la casa de los abuelos' : 'Casa', ['group', 'picture_as_pdf']),
+    strip: strip(o, o.strip),
+    body: listBody(o, o.rows || 6, o),
+    abar: o.kb ? '' : goShopping(o),
+    snack: o.snack || '',
+    kb: o.kb,
+    tabs: 0,
+  });
+
+  S.listEmpty = (o) => phone(o, {
+    header: appHeader(o, 'Casa', ['group', 'picture_as_pdf']),
+    body: `${addRow(o)}<div class="empty">
+        <span class="t-xl fw7">La lista está vacía</span>
+        <span class="t-base muted">Escribe arriba lo que hace falta.</span>
+        ${btn('Invitar a alguien', 'secondary', 'person_add', 'sm')}
+      </div>`,
+    tabs: 0,
+  });
+
+  S.list200 = (o) => phone(o, {
+    header: appHeader(o, 'Casa', ['group', 'picture_as_pdf']),
+    strip: strip(o, 'offline'),
+    body: `${addRow(o)}<div class="sect t-base"><span class="grow">Por comprar · 20</span></div>
+      ${ITEMS.slice(0, 5).map((it) => itemRow(o, it, false)).join('')}`,
+    abar: goShopping(o),
+    tabs: 0,
+  });
+
+  S.list200items = (o) => phone(o, {
+    header: appHeader(o, 'Casa', ['group', 'picture_as_pdf']),
+    body: `${addRow(o)}<div class="sect t-base"><span class="grow">Por comprar · 20</span></div>
+      ${ITEMS.slice(2, 8).map((it) => itemRow(o, it, false)).join('')}
+      <div class="sect t-base"><span class="grow">Comprados (180)</span>${I('expand_more')}</div>`,
+    abar: goShopping(o),
+    tabs: 0,
+  });
+
+  S.listBought = (o) => phone(o, {
+    header: appHeader(o, 'Casa', ['group', 'picture_as_pdf']),
+    body: `${addRow(o)}<div class="sect t-base"><span class="grow">Por comprar · 2</span></div>
+      ${ITEMS.slice(0, 2).map((it) => itemRow(o, it, false)).join('')}
+      <div class="sect t-base"><span class="grow">Comprados (4)</span>${I('expand_less')}</div>
+      ${ITEMS.slice(4, 8).map((it) => itemRow(o, it, true)).join('')}`,
+    abar: goShopping(o),
+    tabs: 0,
+  });
+
+  S.listKb = (o) => phone(o, {
+    header: appHeader(o, 'Casa', ['group', 'picture_as_pdf']),
+    body: `${addRow(o, true, 'lech')}
+      <div class="row"><span class="thumb">${I('water_full')}</span><span class="main"><span class="t-lg">Leche entera Hacendado 1 l</span><span class="t-sm muted">Catálogo · 0,95 € orientativo, visto hace 6 días</span></span></div>
+      <div class="row"><span class="thumb">${I('water_full')}</span><span class="main"><span class="t-lg">Leche semidesnatada 6 × 1 l</span><span class="t-sm muted">Catálogo · 5,10 € orientativo, visto hace 6 días</span></span></div>
+      <div class="row"><span class="thumb">${I('edit')}</span><span class="main"><span class="t-lg">Añadir «lech» tal cual</span></span></div>
+      <div class="px t-sm muted" style="padding-top:8px">Precios de Mercadona, orientativos</div>`,
+    kb: true,
+  });
+
+  S.pinCard = (o) => phone(o, {
+    header: appHeader(o, 'Casa', ['group', 'picture_as_pdf']),
+    body: listBody(o, 3, { pinCard: `<div class="px" style="padding-top:12px"><div class="card edge">
+        <span class="t-lg fw7">Ponte un PIN</span>
+        <span class="t-base">Eres la única persona admin de esta lista. Sin PIN, cualquiera con el código podría entrar como tú.</span>
+        ${btn('Poner mi PIN', 'secondary', 'pin', 'sm')}
+      </div></div>` }),
+    abar: goShopping(o),
+    tabs: 0,
+  });
+
+  S.switcher = (o) => phone(o, {
+    header: appHeader(o, 'Casa', ['group', 'picture_as_pdf']),
+    body: listBody(o, 5),
+    abar: goShopping(o),
+    tabs: 0,
+    overlay: `<div class="scrim"><div class="dialog">
+        <span class="t-xl fw7">Tus listas</span>
+        <div class="opts">
+          <div class="opt">${chk(true, true)}<span class="main"><span class="t-lg">Casa</span><span class="t-sm muted">Como Ana</span></span></div>
+          <div class="opt">${chk(false, true)}<span class="main"><span class="t-lg">Piso de la playa</span><span class="t-sm muted">Como Ana</span></span></div>
+        </div>
+        <div class="acts">${btn('Crear otra lista', 'secondary', 'add')}${btn('Unirme con un código', 'secondary', 'key')}${btn('Cerrar', 'text')}</div>
+      </div></div>`,
+  });
+
+  S.shopping = (o) => phone(o, {
+    header: subHeader('Comprando · Casa', null, 'close'),
+    body: `<div class="pad" style="padding-bottom:8px">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="t-base fw6">8 de 25 en el carro</span><span class="t-base muted tab">32 %</span></div>
+        <div class="progress"><i style="width:32%"></i></div>
+        <div class="chips t-base"><span class="chip on">${I('check', 's20')}Por comprar</span><span class="chip">En el carro</span><span class="chip">Todos</span></div>
+      </div>
+      <div class="sect t-lg"><span class="grow">Fruta y verdura</span><span class="t-sm muted fw5">2</span></div>
+      ${itemRow(o, ITEMS[2], false, true)}${itemRow(o, ['Plátanos de Canarias', '×6', 'Fruta y verdura', 'nutrition'], false, true)}
+      <div class="sect t-lg"><span class="grow">Lácteos</span><span class="t-sm muted fw5">2</span></div>
+      ${itemRow(o, ITEMS[0], false, true)}${itemRow(o, ITEMS[4], false, true)}`,
+    abar: abar(btn('Finalizar compra', 'primary', 'check')),
+  });
+
+  S.members = (o) => phone(o, {
+    header: subHeader('Miembros'),
+    body: `<div class="pad">
+        <div class="card">
+          <span class="t-base fw6">Código para unirse a Casa</span>
+          <span class="code t-4xl">K7M-Q4R</span>
+          <span class="t-sm muted">Caduca el 10 de noviembre</span>
+          <div class="btnrow">${btn('Compartir', 'primary', 'share', 'sm')}${btn('Copiar', 'secondary', 'content_copy', 'sm')}</div>
+          ${btn('Generar un código nuevo', 'text', 'refresh')}
+        </div>
+      </div>
+      <div class="row"><span class="avatar t-base">A</span><span class="main"><span class="t-lg">Ana (tú)</span><span class="t-sm muted">Admin · tienes PIN</span></span>${btn('Tu PIN', 'secondary', null, 'sm t-base')}</div>
+      <div class="row"><span class="avatar t-base">B</span><span class="main"><span class="t-lg">Bea</span><span class="t-sm muted">Viendo la lista ahora</span></span><span class="iconbtn">${I('more_vert')}</span></div>
+      <div class="row"><span class="avatar t-base">C</span><span class="main"><span class="t-lg">Carla</span><span class="t-sm muted">Admin</span></span><span class="iconbtn">${I('more_vert')}</span></div>
+      <div class="row"><span class="avatar t-base">D</span><span class="main"><span class="t-lg">Dani</span><span class="t-sm muted">Miembro</span></span><span class="iconbtn">${I('more_vert')}</span></div>
+      <div class="row"><span class="avatar t-base">E</span><span class="main"><span class="t-lg">Eva</span><span class="t-sm muted">Invitada, sin la app</span></span><span class="iconbtn">${I('more_vert')}</span></div>
+      <div class="px" style="padding-top:8px">${btn('Añadir invitado', 'text', 'person_add')}</div>`,
+  });
+
+  S.memberOpts = (o) => phone(o, {
+    header: subHeader('Miembros'),
+    body: `<div class="row"><span class="avatar t-base">B</span><span class="main"><span class="t-lg">Bea</span></span></div>`,
+    overlay: `<div class="scrim"><div class="dialog">
+        <span class="t-xl fw7">Bea</span>
+        <div class="acts">${btn('Hacer admin a Bea', 'secondary', 'shield_person')}${btn('Restablecer el PIN de Bea', 'secondary', 'lock_reset')}</div>
+        <div style="height:16px"></div>
+        <div class="acts">${btn('Quitar a Bea de la lista', 'danger', 'person_remove')}${btn('Cerrar', 'text')}</div>
+      </div></div>`,
+  });
+
+  S.resetPin = (o) => phone(o, {
+    header: subHeader('Miembros'),
+    body: '',
+    overlay: `<div class="scrim"><div class="dialog">
+        <span class="t-xl fw7">PIN temporal de Bea</span>
+        <div class="pinbig t-4xl"><span>4</span><span>8</span><span>1</span><span>7</span></div>
+        <span class="t-base">Díselo a Bea. Con él entra como Bea y el móvil le pide uno nuevo.</span>
+        <div class="acts">${btn('Copiar el PIN', 'secondary', 'content_copy')}${btn('Hecho', 'primary')}</div>
+      </div></div>`,
+  });
+
+  S.pin = (o) => phone(o, {
+    header: subHeader('Tu PIN'),
+    bodyClass: 'pad',
+    body: `<span class="t-base">Con tu PIN vuelves a entrar como Ana si cambias de móvil o borras la app.</span>
+      ${field('PIN actual', '••••', { help: o.err ? '' : '' , err: o.err ? 'El PIN actual no coincide. (wrong_pin)' : '' })}
+      ${field('PIN nuevo', o.err ? '••••' : '••', { focus: !o.err, help: 'Cuatro cifras.' })}
+      ${field('Repite el PIN nuevo', o.err ? '••••' : '', { ph: '' })}
+      <div class="row" style="padding:0;border:0">${chk(false)}<span class="t-base">Mostrar las cifras</span></div>`,
+    abar: abar(o.wait ? btn('Esperando al servidor…', 'primary', 'hourglass_top', 'loading') : btn('Cambiar PIN', 'primary')),
+    kb: !o.err && !o.wait,
+    kbNum: true,
+  });
+
+  S.expenses = (o) => phone(o, {
+    header: appHeader(o, 'Casa', ['group']),
+    body: `<div class="pad" style="gap:16px">
+        <div class="card"><span class="t-base muted">Tu saldo</span><span class="t-3xl fw7 tab">Te deben 23,40 €</span></div>
+        <span class="t-xl fw7">Quién debe a quién</span>
+      </div>
+      <div class="row"><span class="avatar t-base">B</span><span class="main"><span class="t-lg">Bea</span><span class="t-base tab">te debe 12,00 €</span></span>${btn('Saldar', 'secondary', null, 'sm t-base')}</div>
+      <div class="row"><span class="avatar t-base">C</span><span class="main"><span class="t-lg">Carla</span><span class="t-base tab">te debe 15,90 €</span></span>${btn('Saldar', 'secondary', null, 'sm t-base')}</div>
+      <div class="row"><span class="avatar t-base">D</span><span class="main"><span class="t-lg">Dani</span><span class="t-base tab">le debes 4,50 €</span></span>${btn('Saldar', 'secondary', null, 'sm t-base')}</div>
+      <div class="pad" style="gap:4px">
+        <div class="total"><span class="t-sm muted">Gasto total de la lista</span><span class="t-xl fw7 tab">244,88 €</span></div>
+        ${btn('Ver todos los gastos', 'text', 'history')}
+      </div>`,
+    abar: abar(btn('Nuevo gasto', 'primary', 'add')),
+    tabs: 1,
+  });
+
+  const people = [['Tú (Ana)', true], ['Bea', true], ['Carla', true], ['Dani', false], ['Eva, invitada', true]];
+  S.newExpense = (o) => phone(o, {
+    header: subHeader('Nuevo gasto'),
+    bodyClass: 'pad',
+    body: `${field('Importe', o.kb ? '54,2' : '54,20 €', { big: true, focus: o.kb })}
+      ${o.kb ? '' : `${field('Concepto', 'Mercadona')}
+      <div class="field"><span class="lab t-base">Pagó</span><span class="box t-base"><span class="grow">Tú (Ana)</span>${I('expand_more')}</span></div>
+      <span class="lab t-base fw6">Se reparte entre</span>
+      <div>${people.map(([n, on]) => `<div class="row" style="padding:4px 0">${chk(on)}<span class="main"><span class="t-lg">${n}</span></span><span class="t-base tab muted">${on ? '13,55 €' : '—'}</span></div>`).join('')}</div>`}`,
+    abar: abar(btn('Guardar gasto', 'primary')),
+    kb: o.kb,
+    kbNum: true,
+  });
+
+  S.history = (o) => phone(o, {
+    header: subHeader('Todos los gastos'),
+    body: `<div class="sect t-base"><span class="grow">Noviembre</span></div>
+      ${[['receipt_long', 'Mercadona', 'Pagó Bea · 1 nov', '54,20 €'], ['sync_alt', 'Dani pagó a Ana', 'Liquidación · 1 nov', '12,00 €'], ['receipt_long', 'Gasolina', 'Pagó Carla · 31 oct', '60,00 €']].map(([ic, a, b, c]) => `<div class="row"><span class="thumb">${I(ic)}</span><span class="main"><span class="t-lg">${a}</span><span class="t-sm muted">${b}</span></span><span class="t-lg fw6 tab">${c}</span></div>`).join('')}
+      <div class="sect t-base"><span class="grow">Octubre</span></div>
+      <div class="row"><span class="thumb">${I('receipt_long')}</span><span class="main"><span class="t-lg">Cena de cumpleaños</span><span class="t-sm muted">Pagó Ana · 25 oct</span></span><span class="t-lg fw6 tab">118,68 €</span></div>`,
+  });
+
+  S.expense = (o) => phone(o, {
+    header: subHeader('Gasto'),
+    bodyClass: 'pad',
+    body: `<span class="t-4xl fw7 tab">54,20 €</span>
+      <span class="t-xl fw6">Mercadona</span>
+      <span class="t-base muted">Pagó Bea · 1 de noviembre de 2026</span>
+      <span class="t-base fw6" style="padding-top:8px">Repartido entre 4</span>
+      <div>${['Tú (Ana)', 'Bea', 'Carla', 'Eva, invitada'].map((n) => `<div class="row" style="padding:4px 0"><span class="main"><span class="t-lg">${n}</span></span><span class="t-lg tab">13,55 €</span></div>`).join('')}</div>`,
+    abar: abar(btn('Borrar gasto', 'danger', 'delete')),
+  });
+
+  S.welcome = (o) => phone(o, {
+    body: `<div class="welcome">
+        <span class="t-4xl fw7">Lista de la compra</span>
+        <span class="t-lg muted">Una lista que comparte toda la casa. Sin cuentas ni contraseñas.</span>
+      </div>`,
+    abar: abar(btn('Crear una lista', 'primary'), btn('Tengo un código', 'secondary')),
+    footer: buildTag,
+  });
+
+  S.create = (o) => phone(o, {
+    header: subHeader('Crear una lista'),
+    bodyClass: 'pad',
+    body: `${field('Nombre de la lista', 'Casa')}
+      ${field('Tu nombre', 'Ana', { help: 'Así te verán los demás en la lista.' })}
+      ${field('Tu PIN', '••••', { help: 'Cuatro cifras. Con él vuelves a entrar como tú desde otro móvil.' })}`,
+    abar: abar(o.wait ? btn('Esperando al servidor…', 'primary', 'hourglass_top', 'loading') : btn('Crear lista', 'primary')),
+  });
+
+  S.join = (o) => phone(o, {
+    header: subHeader('Unirme con un código'),
+    bodyClass: 'pad',
+    body: `${field('Código de la lista', 'K7M-Q4R', { help: 'Te lo da alguien que ya está en la lista.' })}
+      ${field('Tu nombre', 'Bea')}
+      ${field('Tu PIN', '', { ph: '4 cifras', help: 'Si ya estabas en esta lista, el mismo PIN de entonces.' })}`,
+    abar: abar(btn('Unirme', 'primary')),
+  });
+
+  const SECTIONS = [
+    {
+      title: 'Navegación y cabecera',
+      inc: 'T-16.3',
+      intro: 'Dos destinos en la barra nativa de Android, Lista y Gastos. La cabecera dice siempre en qué lista estás, y el título es el selector de ADR-0025.',
+      screens: [
+        { name: 'Lista', route: '/list', inc: 'T-16.3 y T-16.4', s: 'list', notes: [
+          'La cabecera lleva el selector y dos iconos de 48 dp: Miembros (con el código) y el PDF. Nada de texto al lado del título.',
+          'El campo de añadir es la acción principal y va fijo arriba, para que el teclado no lo tape.',
+          '«Ir a comprar» va en la barra de abajo, como secundaria. Se esconde mientras escribes.',
+          'Los comprados se pliegan en «Comprados (n)». El precio dice «orientativo» y su antigüedad.'] },
+        { name: 'Selector de listas', route: 'Dialog sobre /list', inc: 'T-16.3', s: 'switcher', notes: [
+          'Igual que hoy (ADR-0025): radio con mis listas, «Crear otra lista» y «Unirme con un código».',
+          '«Como Ana» se queda aquí, que es donde lo busca Maestro, y el nombre entero de la lista se lee sin cortar.'] },
+        { name: 'Miembros e invitación', route: '/members', inc: 'T-16.3 y T-16.5', s: 'members', notes: [
+          'El código va arriba del todo, a un toque desde cualquier pestaña (hallazgo 4). Compartir es la principal; Copiar y Generar, secundarias.',
+          'Cada persona tiene un solo botón, «Opciones de Bea», en vez de «Hacer admin» a 3 dp de «Eliminar».',
+          'Tu fila lleva «Tu PIN», que abre la pantalla del incremento 6 del T-15.',
+          'Presencia como texto («Viendo la lista ahora»), no como un punto de color.'] },
+        { name: 'Opciones de un miembro', route: 'Dialog sobre /members', inc: 'T-16.5', s: 'memberOpts', notes: [
+          'Cada etiqueta dice a quién afecta, para TalkBack y para la vista.',
+          'Quitar de la lista va separado del resto por 16 dp y en color de borrar.'] },
+      ],
+    },
+    {
+      title: 'Lista y modo supermercado',
+      inc: 'T-16.4',
+      intro: 'La pantalla que más se usa. Lo que no se puede romper: añadir, marcar y comprar con una mano.',
+      screens: [
+        { name: 'Modo supermercado', route: '/shopping-mode', inc: 'T-16.4', s: 'shopping', notes: [
+          'Se abre encima de las pestañas, sin barra, con la pantalla encendida. Cerrar (✕) vuelve a la Lista.',
+          'Filas de 64 dp. Los filtros son chips de 48 dp a 8 dp, que bajan a otra línea con la letra grande.',
+          '«Finalizar compra» y su diálogo no cambian de texto (P-01).',
+          'El avance va en texto y en barra: «8 de 25 en el carro».'] },
+        { name: 'Comprados desplegado', route: '/list', inc: 'T-16.4', s: 'listBought', notes: [
+          'Comprado es la marca del checkbox, el tachado y el gris: nunca solo el color. TalkBack dice «comprado».',
+          'Tocar «Comprados (4)» lo pliega otra vez. Desmarcar devuelve el artículo a «Por comprar».'] },
+        { name: 'Lista vacía', route: '/list', inc: 'T-16.4', s: 'listEmpty', notes: [
+          'Una frase que dice qué hacer y una sola acción debajo: invitar.',
+          'El campo de añadir sigue arriba, que es lo primero que hay que hacer.'] },
+      ],
+    },
+    {
+      title: 'Gastos y miembros',
+      inc: 'T-16.5',
+      intro: 'Gastos abre por los saldos. Las cifras van con números tabulares y nunca pegadas a su etiqueta.',
+      screens: [
+        { name: 'Gastos', route: '/expenses', inc: 'T-16.5', s: 'expenses', notes: [
+          'Arriba, tu saldo dicho en palabras. Debajo, quién debe a quién, con «Saldar» en cada fila.',
+          '«Saldar» se ve corto y se anuncia «Saldar con Bea, 12,00 €».',
+          'El total va con su etiqueta encima, que al 200 % salía pegado («lista244,88 €»).',
+          'La inicial crece con la letra: el círculo es un mínimo, no un tamaño fijo.'] },
+        { name: 'Nuevo gasto', route: '/expenses/new', inc: 'T-16.5', s: 'newExpense', notes: [
+          'Sin teclado al entrar. El importe primero y grande.',
+          'Quién pagó es un selector de una línea, así cada nombre sale una sola vez en la pantalla.',
+          'Filas del reparto de 56 dp, con la cuota al lado. La de la invitada lo dice.',
+          'Sin red, al guardar: «Se guardará al recuperar la conexión».'] },
+        { name: 'Todos los gastos', route: '/expenses/history', inc: 'T-16.5', s: 'history', notes: [
+          'Agrupados por mes. Una liquidación lleva su icono y dice «Liquidación», no solo otro color.',
+          'Tocar una fila abre el gasto.'] },
+        { name: 'Gasto', route: '/expenses/[id]', inc: 'T-16.5', s: 'expense', notes: [
+          'La cifra protagonista en text-4xl. Borrar abajo, en color de borrar, con «Deshacer» en el aviso.',
+          'Atrás de 48 dp, que era lo único que fallaba.'] },
+      ],
+    },
+    {
+      title: 'Entrada',
+      inc: 'T-16.6',
+      intro: 'Sin pestañas: aún no hay lista. La acción va abajo y la ayuda nunca se corta.',
+      screens: [
+        { name: 'Bienvenida', route: '/', inc: 'T-16.6', s: 'welcome', notes: [
+          'Dos botones de 48 dp a todo el ancho, uno principal.',
+          'El pie con la versión, como en la lista.'] },
+        { name: 'Crear una lista', route: '/create', inc: 'T-16.6', s: 'create', notes: [
+          'La ayuda del PIN en text-sm debajo del campo, en varias líneas si hace falta.',
+          'Crear no es optimista: el botón se queda en carga hasta que llega el join_code.'] },
+        { name: 'Creando, esperando al servidor', route: '/create', inc: 'T-16.6', s: 'create', o: { wait: true }, notes: [
+          'Lo que se ve durante los ~12 s sin red hasta el aviso de servidor inalcanzable: el botón en carga y el texto dice qué espera.',
+          'Si falla, el error va bajo el formulario con su código, y el botón vuelve.'] },
+        { name: 'Unirme con un código', route: '/join', inc: 'T-16.6', s: 'join', notes: [
+          'Lo mismo que Crear. La ayuda del PIN explica el caso de volver a una lista.',
+          'Los seis estados de join_community salen como error del campo que toca.'] },
+      ],
+    },
+    {
+      title: 'El PIN',
+      inc: 'T-15, incremento 6',
+      intro: 'Lo hace el incremento 6 del T-15 antes del T-16.3, con ScreenHeader y ActionBar, que crea él. Se llega desde «Tu PIN» en Miembros.',
+      screens: [
+        { name: 'Tu PIN', route: '/members/pin (nueva)', inc: 'T-15.6', s: 'pin', notes: [
+          'Única pantalla con teclado al entrar: solo sirve para escribir el PIN. Teclado numérico.',
+          'Tres campos. Un solo «Mostrar las cifras» para los tres, en vez de un ojo en cada uno.',
+          '«Cambiar PIN» sube con el teclado. No es optimista.',
+          'Atrás no pregunta: si no se ha pulsado «Cambiar PIN», no ha cambiado nada.'] },
+        { name: 'PIN equivocado', route: '/members/pin', inc: 'T-15.6', s: 'pin', o: { err: true }, notes: [
+          'El error va en el campo que falla, con el código entre paréntesis (ADR-0016).',
+          'too_many_attempts y el timeout salen en el mismo sitio, cada uno con su texto.'] },
+        { name: 'Esperando al servidor', route: '/members/pin', inc: 'T-15.6', s: 'pin', o: { wait: true }, notes: [
+          'A los 3 s el botón dice qué espera. Hasta que el servidor responde no hay «PIN cambiado».',
+          'Sin red no se intenta: «Sin conexión. El PIN no ha cambiado.»'] },
+        { name: 'Ponte un PIN', route: '/list', inc: 'T-15.6', s: 'pinCard', notes: [
+          'Tarjeta debajo del campo de añadir, según my_member_pin_state, para que el campo siga arriba.',
+          'Para el único admin no se cierra. Para el resto lleva «Ahora no».'] },
+        { name: 'PIN temporal', route: 'Dialog sobre /members', inc: 'T-15.6', s: 'resetPin', notes: [
+          'Las cuatro cifras separadas y en grande, para dictarlas.',
+          'Copiar y Hecho. El texto dice qué pasa después.'] },
+      ],
+    },
+    {
+      title: 'Casos límite',
+      inc: 'todos',
+      intro: 'Los que pide el prompt, por escrito y dibujados. Estos móviles no siguen el control de letra: cada uno va a la escala que dice.',
+      screens: [
+        { name: 'Lista con la letra al 200 %', route: '/list', inc: 'T-16.3', s: 'list200', o: { force: 2 }, notes: [
+          'Dibujado lineal, el peor caso. Android 14 escala menos los tamaños grandes, así que en el POCO saldrá algo más pequeño.',
+          'Los iconos no crecen. Con la franja encendida solo queda sitio para artículo y medio bajo el campo de añadir.',
+          '<span class="warn">Si en el POCO no caben dos artículos, «Ir a comprar» deja la barra de abajo y pasa a ser la última fila de la lista. Se decide midiendo en el T-16.3.</span>',
+          'Con dos pestañas cada una mide unos 196 dp y «Gastos» cabe entero. Queda por medir en el POCO el alto fijo de la barra nativa; si recorta la etiqueta, plan B de ADR-0028 (pestañas JS).',
+          'La franja de «sin conexión» empuja el contenido y no tapa el campo de añadir.'] },
+        { name: 'Nombre de 40 caracteres al 200 %', route: '/list', inc: 'T-16.3', s: 'list', o: { force: 2, longName: true, rows: 2 }, notes: [
+          '«Compra semanal de la casa de los abuelos»: dos líneas y elipsis. TalkBack lee el nombre entero y el selector lo enseña sin cortar.',
+          'Los dos iconos se quedan a la derecha y arriba, sin bajar de 48 dp.'] },
+        { name: 'Lista de 200 artículos', route: '/list', inc: 'T-16.4', s: 'list200items', notes: [
+          'Lista virtualizada. Los pendientes primero; los 180 comprados plegados.',
+          'El campo de añadir y la cabecera no se desplazan con la lista.'] },
+        { name: 'Teclado abierto al añadir', route: '/list', inc: 'T-16.4', s: 'listKb', o: { force: 1 }, notes: [
+          'El campo sigue arriba y debajo salen las sugerencias del catálogo con su precio orientativo.',
+          'La barra de pestañas queda bajo el teclado y «Ir a comprar» se esconde.'] },
+        { name: 'Teclado abierto en un formulario', route: '/expenses/new', inc: 'T-16.5', s: 'newExpense', o: { kb: true, force: 1 }, notes: [
+          'Guardar sube con el teclado. El teclado solo se abre al tocar el campo.',
+          'Lo mismo en crear y en unirse.'] },
+        { name: 'Sin red', route: '/list', inc: 'T-16.3', s: 'list', o: { strip: 'offline', rows: 4, snack: snack('Leche entera: se enviará al recuperar la conexión.', null, 190) }, notes: [
+          'La franja va bajo la cabecera, empuja el contenido y es región viva.',
+          'El aviso de abajo nunca dice «guardado» ni «al día» (regla 6) y se pinta encima de la lista, no de la barra de abajo.'] },
+        { name: 'Los 12 s sin respuesta', route: '/list', inc: 'T-16.3', s: 'list', o: { strip: 'checking', rows: 4 }, notes: [
+          'Lo que se ve hasta que sale el aviso de servidor inalcanzable: la caché enseguida, sin spinner, y los botones activos.',
+          'La franja sale a los 2 s, como hoy RealtimeStatus. El timeout no se toca.'] },
+        { name: 'Servidor inalcanzable', route: '/list', inc: 'T-16.3', s: 'list', o: { strip: 'unreachable', rows: 4 }, notes: [
+          'Pasados los ~12 s, el mismo hueco cambia de texto y enseña el código.',
+          'Nada se mueve ni se tapa: la franja tiene el mismo sitio en los tres casos.'] },
+        { name: 'Orden de TalkBack', route: '/list', inc: 'T-16.3', s: 'list', o: { tb: true, strip: 'offline', rows: 3, force: 1 }, notes: [
+          '1 «Casa, lista actual. Cambiar de lista». 2 «Miembros y código de invitación». 3 «Compartir la lista en PDF».',
+          '4 la franja, si la hay. 5 el campo. 6 «Añadir». 7 cada artículo: «Leche entera, 2, pendiente».',
+          '8 «Comprados, 4, plegado». 9 «Ir a comprar». 10 la barra nativa: «Lista, pestaña 1 de 2, seleccionada».',
+          'Cabecera y barra son grupos: TalkBack termina uno antes de entrar en el siguiente.'] },
+      ],
+    },
+  ];
+
+  const sectionsEl = document.getElementById('sections');
+  sectionsEl.style.display = 'flex';
+  sectionsEl.style.flexDirection = 'column';
+  sectionsEl.style.gap = '56px';
+
+  sectionsEl.innerHTML = SECTIONS.map((sec) => `<section>
+      <h2>${sec.title} <span class="inc">${sec.inc}</span></h2>
+      <p>${sec.intro}</p>
+      <div class="screens">${sec.screens.map((sc) => {
+        const base = sc.o || {};
+        const frame = (dark) => `<figure class="frame ${dark ? 'd' : 'l'}" style="margin:0">${S[sc.s]({ ...base, dark })}<figcaption>${dark ? 'oscuro' : 'claro'}${base.force === 2 ? ' · 200 %' : base.force === 1 ? ' · 100 %' : ''}</figcaption></figure>`;
+        return `<article class="screen">
+          <header><h3>${sc.name}</h3><span class="route">${sc.route}</span><span class="inc">${sc.inc}</span></header>
+          <div class="frames">${frame(false)}${frame(true)}</div>
+          <ul class="notes">${sc.notes.map((n) => `<li>${n}</li>`).join('')}</ul>
+        </article>`;
+      }).join('')}</div>
+    </section>`).join('') + `<section>
+      <h2>Oscuro con primary de fondo <span class="inc">fallo 23 · T-16.3</span></h2>
+      <p>El texto sobre <code>primary</code> sale de <code>onPrimary</code>, nunca de un blanco fijo. En oscuro, <code>primary</code> es #60A5FA.</p>
+      <div class="swatches">
+        <div><div class="swatch bad">Blanco fijo</div><span class="swatch-cap">#FFFFFF sobre #60A5FA · 2,5:1, no llega al 4,5:1</span></div>
+        <div><div class="swatch good">onPrimary</div><span class="swatch-cap">#0B0F19 sobre #60A5FA · 7,5:1</span></div>
+      </div>
+    </section>`;
+
+  const appEl = document.getElementById('app');
+  const root = document.documentElement;
+
+  function fit() {
+    const w = appEl.clientWidth;
+    const z = w < 640 ? Math.min(0.92, (w - 2) / 394) : 0.62;
+    root.style.setProperty('--z', z.toFixed(3));
+  }
+
+  function applyTheme(v) {
+    appEl.classList.toggle('only-l', v === 'l');
+    appEl.classList.toggle('only-d', v === 'd');
+  }
+  function applyFont(v) {
+    appEl.classList.toggle('big', v === '2');
+  }
+
+  function save(k, v) { try { localStorage.setItem(k, v); } catch (e) { return; } }
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+  document.querySelectorAll('input[name="theme"]').forEach((el) => el.addEventListener('change', () => { applyTheme(el.value); save('bocetos-theme', el.value); }));
+  document.querySelectorAll('input[name="font"]').forEach((el) => el.addEventListener('change', () => { applyFont(el.value); save('bocetos-font', el.value); }));
+
+  const t = load('bocetos-theme');
+  if (t) { const el = document.querySelector(`input[name="theme"][value="${t}"]`); if (el) { el.checked = true; applyTheme(t); } }
+  const f = load('bocetos-font');
+  if (f) { const el = document.querySelector(`input[name="font"][value="${f}"]`); if (el) { el.checked = true; applyFont(f); } }
+
+  fit();
+  window.addEventListener('resize', fit);
+})();
+</script>

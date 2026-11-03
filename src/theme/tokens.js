@@ -34,4 +34,13 @@ const radius = {
 
 const minTouchTarget = 44
 
-module.exports = { colors, radius, minTouchTarget }
+const iconSize = 24
+
+const rowMinHeight = {
+  default: 56,
+  shopping: 64,
+}
+
+const tabLabelSize = 14
+
+module.exports = { colors, radius, minTouchTarget, iconSize, rowMinHeight, tabLabelSize }

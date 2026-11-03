@@ -1296,13 +1296,13 @@ Lo que quedaba, recorrido a continuación en el mismo móvil:
 Hallazgos nuevos, ninguno del arreglo:
 
 - Los tres «Hacer admin» de Miembros se anuncian igual, sin el nombre del miembro, al contrario que
-  «Eliminar Bea». Con TalkBack no se sabe a quién se hace admin. Al T-16.6.
+  «Eliminar Bea». Con TalkBack no se sabe a quién se hace admin. Al T-16.5.
 - Los botones de la cabecera y los de cada miembro miden 121 px de alto en el POCO (440 dpi), unos
   44 dp, y entre «Hacer admin» y «Eliminar» hay 9 px, unos 3 dp. P-02 pide 48 dp y 8 dp de separación;
   si hay `hitSlop`, el árbol no lo enseña. Al T-16, que sube el área táctil.
 - Miembros sin red tras un arranque en frío se queda en «Cargando el código…» y sin lista. La query
   `['community-members', id]` no lleva `meta.persist`, así que no hay nada en disco, y el estado de
-  carga reutiliza la clave `list.joinCodeLoading`. Al T-16.6, que rehace Miembros.
+  carga reutiliza la clave `list.joinCodeLoading`. Al T-16.5, que rehace Miembros.
 - La etiqueta «Admin» de Miembros apenas se lee en modo oscuro. Al T-16.3.
 - El árbol de accesibilidad de Gastos anuncia «Cargando los gastos…» mientras pinta el estado vacío.
-  Al T-16.6.
+  Al T-16.5.

@@ -41,7 +41,8 @@ esa lista» van al incremento 5 (`fase-15.md`, apartado 14).
 
 **Lo que queda de Realtime para el incremento 7**: `useRecipes` y `useMealPlanWeek` abren su canal
 dentro de la lectura, como hacía `useCommunityMembers`, y Recetas → Menú puede repetir el fallo de
-Gastos; reabrir un topic mientras el anterior está en `leaving` deja el canal muerto sin aviso; y
+Gastos (desde el T-16.3 nadie monta esas pantallas, ADR-0028, pero el código sigue ahí); reabrir
+un topic mientras el anterior está en `leaving` deja el canal muerto sin aviso; y
 `isMutating()` cuenta la cola offline en pausa y reprograma el refresco cada 300 ms. Los tres los
 cierra un registro de canales con recuento de referencias en `src/shared/lib/`.
 
@@ -60,20 +61,25 @@ Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `p
    (21 entradas, 93 líneas) y la foto de las 15 pantallas en
    [`diseno/estado-de-partida.md`](../diseno/estado-de-partida.md). Diario en
    [`fase-16.md`](../phases/fase-16.md).
-3. T-16.2, el diseño sin código: [`T-16-2-diseno.md`](prompts/T-16-2-diseno.md).
+3. T-16.2, el diseño sin código: [`T-16-2-diseno.md`](prompts/T-16-2-diseno.md). Hecho el
+   2026-11-03: `DESIGN.md` reescrito, [ADR-0028](../adr/ADR-0028-navegacion-por-pestanas.md)
+   propuesto (dos pestañas, Lista y Gastos, por update a la 1.3.1 sin build) y los bocetos en
+   [`diseno/bocetos.html`](../diseno/bocetos.html). Alejandro sacó Recetas y Menú semanal de la
+   app: se esconden en el T-16.3, sin borrar código ni datos, y el T-16 pasa a siete incrementos.
+   Queda abierta [P-05](PREGUNTAS.md#p-05--marca-de-pendiente-de-enviar-en-cada-fila).
 4. Incremento 6 del T-15, la pantalla del PIN con el diseño nuevo y la migración B:
    [`T-15.md`](prompts/T-15.md). Hasta la B, una fila sin PIN la puede reclamar cualquiera con el
    código de la lista (ADR-0026). Hay 12 listas cuyo único admin no tiene PIN y 20 miembros activos
    sin PIN.
-5. T-16.3 a T-16.8, con sus prompts en `prompts/T-16-*.md`.
+5. T-16.3 a T-16.7, con sus prompts en `prompts/T-16-*.md`.
 6. Incrementos 5, 7, 8, 9, 10 y 11 del T-15, en el orden de la tabla de la auditoría, sin lo que
    absorbieron el arreglo de Gastos y el T-16 (ficha del T-16, «Absorbe»).
 - El guion de la fase 15 en un Android real (`fase-15.md`, apartado 4). El selector de listas ya se
   vio en el POCO (se abre y atrás lo cierra); falta cambiar de lista y el resto del guion.
 
-**Siguiente: T-16.2, el diseño sin código**, con su prompt en
-[`prompts/T-16-2-diseno.md`](prompts/T-16-2-diseno.md). Parte de
-[`diseno/estado-de-partida.md`](../diseno/estado-de-partida.md).
+**Siguiente: incremento 6 del T-15, la pantalla del PIN con el diseño nuevo y la migración B**,
+con su prompt en [`prompts/T-15.md`](prompts/T-15.md). Crea `ScreenHeader` y `ActionBar` en
+`src/shared/ui`, que luego usa el T-16.3. Parte de [`DESIGN.md`](../../DESIGN.md) y de los bocetos.
 
 ## Lo que se arrastra de fases anteriores
 
@@ -133,7 +139,7 @@ detrás de los dos incrementos que cambian código.
 | ------- | ----------------------------------------- | -------------------------- | ------------------------------------------ |
 | T-0…T-14 | MVP y fases post-MVP                     | Cerradas                   | [`docs/phases/`](../phases/)               |
 | T-15    | Varias listas y plan de arreglos          | Abierto, incrementos 3 a 11 | [`fase-15.md`](../phases/fase-15.md)      |
-| T-16    | Rediseño de las pantallas                 | Abierto, incremento 1 hecho | [`fase-16.md`](../phases/fase-16.md)      |
+| T-16    | Rediseño de las pantallas                 | Abierto, incrementos 1 y 2 hechos | [`fase-16.md`](../phases/fase-16.md) |
 
 ## Fichas
 
@@ -163,28 +169,31 @@ Nada se publica contra la runtime 1.2.0.
 **Qué resuelve.** Que la app se pueda usar en un Android real con la letra del sistema grande: el
 2026-11-02, en el POCO con la letra al 115 %, la cabecera de la lista dejó el título en 19 px, el
 código de invitación quedó a dos deslizamientos y nada de eso lo vio ningún test. Navegación nueva,
-cabecera nueva y las 15 pantallas de `src/app/` rehechas según un `DESIGN.md` reescrito.
+cabecera nueva y las pantallas que se ven rehechas según un `DESIGN.md` reescrito. Recetas y Menú
+semanal salen de la app en el T-16.3 (ADR-0028): de 15 pantallas quedan 10, y 11 con Tu PIN.
 **Entra:** la 1.3.1 en el POCO con el arreglo de Gastos por aire, el `DESIGN.md` de hoy, los tokens
 de `src/theme/tokens.js` y la prueba por `adb` y Maestro.
 **Sale:** un script que mide una pantalla desde su árbol de `uiautomator` y un test que caza los
 estilos fuera de los tokens (incremento 1); `DESIGN.md` nuevo, ADR-0028 de navegación y bocetos
-(2); navegación y cabecera (3); lista y modo supermercado (4); recetas y menú (5); gastos y
-miembros (6); bienvenida, crear y unirse (7); cierre con TalkBack, letra al máximo, modo oscuro y
-los tres flujos de Maestro al día (8).
+(2); navegación, cabecera y Recetas y Menú escondidos (3); lista y modo supermercado (4); gastos y
+miembros (5); bienvenida, crear y unirse (6); cierre con TalkBack, letra al máximo, modo oscuro y
+los tres flujos de Maestro al día (7).
 **Absorbe del T-15:** del incremento 7 de la auditoría, los puntos 1 a 3 y los respaldos del canal
 de miembros del 7 (los hace el arreglo de Gastos), los puntos 4 y 5 (T-16.3) y el 6 (T-16.4); del
-incremento 8, el bloque 3 de accesibilidad y diseño (T-16.4 a T-16.6) y, en miembros, los mensajes
-concatenados del bloque 2 (T-16.6). El fallo 23, blanco sobre el primario en oscuro, va al T-16.3
-por `src/shared/ui`; el aviso de unos 12 s sin red (hallazgo 5 de `fase-15.md`) se diseña en el
-T-16.2 y se pinta en el T-16.7, sin tocar el timeout. Los bloques 1 y 2 del incremento 8 y el resto
-del 7 se quedan en el T-15.
-**Manda:** `DESIGN.md`, ADR-0028 cuando exista, [ADR-0004](../adr/ADR-0004-libreria-de-ui.md) y
-[ADR-0025](../adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md).
+incremento 8, el bloque 3 de accesibilidad y diseño (T-16.4 y T-16.5) y, en miembros, los mensajes
+concatenados del bloque 2 (T-16.5). El fallo 23, blanco sobre el primario en oscuro, va al T-16.3
+por `src/shared/ui`; el aviso de unos 12 s sin red (hallazgo 5 de `fase-15.md`) está diseñado en la
+`StatusStrip` y se pinta en el T-16.3, sin tocar el timeout. Los bloques 1 y 2 del incremento 8 y
+el resto del 7 se quedan en el T-15.
+**Manda:** `DESIGN.md`, [ADR-0028](../adr/ADR-0028-navegacion-por-pestanas.md),
+[ADR-0004](../adr/ADR-0004-libreria-de-ui.md) y [ADR-0025](../adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md).
 **Terminado cuando:** las cinco condiciones de «Cómo se cierra un paquete»; la lista de excepciones
-del test de diseño vacía; el script de inspección sin marcas en las 15 pantallas con la letra al máximo,
-o cada una explicada; `pin-unirse`, `camino-feliz` y `cola-offline` pasan en el POCO.
-**Cuidado con:** si la navegación pide código nativo, la versión pasa a 1.4.0 con build nuevo y nada
-del T-16 llega a la 1.3.1 hasta entonces; lo decide Alejandro en el incremento 2. `NativeTabs` es API
+del test de diseño sin nada de las pantallas que se ven (quedan las 7 entradas de recetas y menú);
+el script de inspección sin marcas en las 11 pantallas que se ven con la letra al máximo, o cada
+una explicada; `pin-unirse`, `camino-feliz` y `cola-offline` pasan en el POCO.
+**Cuidado con:** ADR-0028 da por hecho que la barra nativa llega a la 1.3.1 por update, porque
+todo su código nativo ya está en el APK; el T-16.3 lo mide en el POCO antes de nada y, si falla,
+cambia a la barra en JS en vez de pedir la 1.4.0. `NativeTabs` es API
 inestable en el SDK 57 y cambia de ruta en el 58. P-02 está respondida: 48 dp con 8 dp de
 separación, y el token `minTouchTarget` sube de 44 a 48 en el T-16.3.
 

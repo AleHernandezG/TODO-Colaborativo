@@ -4,14 +4,19 @@ Rehace las dos pantallas de más uso según el `DESIGN.md` del incremento 2: la 
 artículos y la agrupación) y el modo supermercado. Son las que una persona que no sabe usar apps
 tiene que poder manejar sin ayuda.
 
-Escrito el 2026-11-02, antes del diseño. Si el incremento 2 cambió el reparto, manda lo que diga el
-ROADMAP y este prompt se corrige.
+Escrito el 2026-11-02 y corregido el 2026-11-03 con el diseño del T-16.2. Si algo de aquí no
+coincide con `DESIGN.md` o con los bocetos, mandan ellos.
 
 Lo que se encuentra:
 
-- La navegación y la cabecera del incremento 3 ya montadas.
-- En la foto de partida: el código de invitación a dos deslizamientos (hallazgo 4), y en el modo
-  supermercado `fontSize: 13` y `borderRadius: 18` en línea.
+- Las pestañas, AppHeader, Icon, IconButton y StatusStrip del incremento 3, y ScreenHeader y
+  ActionBar del incremento 6 del T-15. El código de invitación ya está arriba de Miembros (hallazgo
+  4 resuelto en el 3).
+- Recetas y Menú ya no tienen pantalla (ADR-0028), así que la lista solo se llena a mano o desde el
+  catálogo.
+- En la foto de partida: en el modo supermercado `fontSize: 13` y `borderRadius: 18` en línea.
+- Lo que midió el incremento 3 sobre «Ir a comprar» con la letra al 200 % (decisión 5 de su
+  prompt, en `fase-16.md`).
 - Absorbe de la auditoría: el punto 6 del incremento 7 (el botón atrás del modo supermercado, que
   hoy va por defecto) y, del bloque 3 del incremento 8, lo de estas pantallas: área táctil y
   etiquetas en ShoppingModeScreen, el selector de agrupación de ItemsScreen y el chip de categoría
@@ -37,7 +42,7 @@ alternativa que descartas. Si contesto «adelante», van como las propones. A pa
 paras en los casos de «Donde sí te paras».
 
 Antes de nada, lee en este orden:
-  1. DESIGN.md y docs/diseno/bocetos.html, las pantallas de lista y modo supermercado
+  1. DESIGN.md y docs/diseno/bocetos.html, el apartado «Lista y supermercado» y «Casos límite»
   2. docs/diseno/estado-de-partida.md, esas dos pantallas
   3. docs/auditoria-2026-10-11.md, fallos 20, 22 y 23 del apartado 6, solo lo de items y
      shopping-mode, y el punto 6 del «Incremento 7»
@@ -49,7 +54,7 @@ pantallas (ShoppingModeScreen incluida). Para un símbolo, el LSP.
 
 Dónde escribes:
   - src/features/items/presentation/
-  - src/shared/ui/: los componentes compartidos que DESIGN.md pida y aún no existan
+  - src/shared/ui/: ListRow, EmptyState y ErrorState, como los describe DESIGN.md
   - src/shared/lib/i18n/es.json y en.json, a la vez
   - la lista de excepciones del test de diseño: fuera las de estas pantallas
   - .maestro/: los flujos que citen textos o testID que cambies
@@ -59,15 +64,35 @@ Qué no tocas:
   - domain/ y data/ de items: si el diseño necesita un dato nuevo (por ejemplo, contar por
     pasillo), es un caso de uso nuevo con su test, y lo dices en el plan
   - las mutaciones: siguen optimistas y encolables como están (ADR-0009, ADR-0010)
-  - las pantallas de recetas, menú, gastos y miembros
+  - las pantallas de gastos y miembros, y lo que quede de recetas y menú en src/features
 
 Decisiones que tienes que tomar:
-  1. Dónde va el código de invitación ahora, según el diseño, y cómo se llega a él con la lista
-     llena
-  2. Qué hace atrás en el modo supermercado: recomiendo que con artículos marcados pregunte si se
+  1. Qué hace atrás en el modo supermercado: recomiendo que con artículos marcados pregunte si se
      termina la compra, y sin ninguno vuelva sin preguntar. Escrito en el código, no por defecto
-  3. Cómo se marca un artículo comprado: icono y texto, nunca solo color ni tachado
-  4. Qué pasa con «deshacer» tras borrar en la fila nueva
+  2. Qué pasa con «deshacer» tras borrar en la fila nueva: el Snackbar de siempre, o el gesto que
+     propongas dentro de DESIGN.md
+  3. Dónde va «Ir a comprar» si el incremento 3 midió que con la letra al 200 % no caben dos
+     artículos: la última fila de la lista, como dice DESIGN.md
+  4. Lo que falta por dibujar antes de escribir, y esperas OK: EditItemDialog (nombre, Cantidad,
+     Unidad, foto y Borrar, al 100 % y al 200 %), y de la matriz de estados de DESIGN.md las
+     casillas «Inc. T-16.4»: modo supermercado vacío, y cargando sin caché y error de carga en
+     las dos pantallas. Se añaden a docs/diseno/bocetos.html
+  5. La marca de «pendiente de enviar» en la fila: lo que haya respondido Alejandro en P-05. Si
+     sigue abierta, la fila va sin marca y lo dice solo la franja
+  6. Editar y Borrar como acciones de TalkBack sobre la fila (accessibilityActions): comprueba la
+     API en React Native 0.86 con context7 antes de escribirla
+Ya decidido en el diseño, no se vuelve a abrir:
+  - el campo de añadir fijo arriba, bajo la cabecera, con las sugerencias del catálogo debajo y
+    su precio orientativo con su antigüedad
+  - comprado es tachado, texto muted y checkbox relleno con su marca; los comprados se pliegan al
+    final en «Comprados (n)»
+  - filas de rowMinHeight.default (56) en la lista y rowMinHeight.shopping (64) en el modo
+    supermercado, con un solo control a la derecha
+  - lista vacía: EmptyState con «Invitar a alguien» debajo y el campo de añadir arriba
+  - el modo supermercado cierra con la cruz de ScreenHeader, «Salir del modo supermercado»
+  - tocar la fila fuera del checkbox abre EditItemDialog; la fila no lleva botones de cantidad
+  - TalkBack lee cada artículo en una parada, «Leche entera, cantidad 2, pendiente», y activarla
+    lo marca
 
 Casos límite y errores (ADR-0016):
   - sin red: marcar y añadir siguen funcionando y entran en la cola; el aviso dice que se enviará

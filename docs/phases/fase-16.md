@@ -1,10 +1,12 @@
 # Fase 16: Rediseño de las pantallas
 
 - **Fecha:** 2026-11-02 (abierta con el incremento 1)
-- **Estado:** Incremento 1 hecho: las dos herramientas y la foto de partida. Del 2 al 8, pendientes.
+- **Estado:** Incrementos 1 y 2 hechos: las herramientas, la foto de partida y el diseño sin código.
+  Del 3 al 7, pendientes. El paquete tenía ocho incrementos y queda en siete al salir Recetas y Menú.
 - **Commit:** pendiente, lo hace Alejandro.
 - **Decisión de fondo:** [P-04](../plan/PREGUNTAS.md#p-04--alcance-y-orden-del-rediseño) y la
-  ficha del T-16 en el [ROADMAP](../plan/ROADMAP.md). ADR-0028 llega con el incremento 2.
+  ficha del T-16 en el [ROADMAP](../plan/ROADMAP.md). La navegación, en
+  [ADR-0028](../adr/ADR-0028-navegacion-por-pestanas.md), propuesto el 2026-11-03.
 
 ---
 
@@ -62,6 +64,31 @@ número de la lista, para que nadie se olvide de apretar la tuerca.
 con las capturas, los XML, los logcat y la salida del script en `~/tools/capturas/2026-11/`, fuera
 del repo.
 
+### Incremento 2: el diseño, sin código
+
+El 2026-11-03. Lo único que toca `src/` es `src/theme/tokens.js`.
+
+- **[`DESIGN.md`](../../DESIGN.md) reescrito.** Además de color, letra y forma, ahora dice cómo se
+  navega y en cuántos toques se llega a cada cosa, qué cabecera lleva cada pantalla, qué componente
+  de `src/shared/ui` crea cada incremento, qué hace el teclado, qué dice la franja de conexión en
+  cada caso, la matriz de estados por pantalla, la tabla de iconos, el orden de TalkBack en la
+  Lista y lo que manda con la letra al 200 %.
+- **[ADR-0028](../adr/ADR-0028-navegacion-por-pestanas.md)**, propuesto: dos pestañas en la barra
+  nativa, Lista y Gastos, con `NativeTabs` y los iconos de `expo-symbols`. Todo lo nativo ya está
+  en el APK 1.3.1, así que va por update, sin la 1.4.0.
+- **Los bocetos** en [`docs/diseno/bocetos.html`](../diseno/bocetos.html), publicados también como
+  Artifact privado. Cada pantalla en claro, en oscuro y al 200 %, con una nota por decisión y el
+  incremento que la pinta.
+- **`tokens.js`** con tres tokens nuevos: `iconSize` (24), `rowMinHeight` (56 y 64 en el modo
+  supermercado) y `tabLabelSize` (14). `minTouchTarget` sigue en 44 y lo sube el T-16.3. Ninguno
+  se exporta todavía desde `@/theme`: lo hace el T-16.3 cuando los use.
+- **Los prompts** de lo que sigue: el incremento 6 del T-15 con la pantalla del PIN dibujada, y del
+  T-16.3 al T-16.7, renumerados.
+- [P-05](../plan/PREGUNTAS.md#p-05--marca-de-pendiente-de-enviar-en-cada-fila), nueva y abierta.
+
+Verificado en el PC; no hay prueba en el POCO porque no cambia nada que corra en el móvil. Los
+números, en el apartado 3.
+
 ## 3. Verificación
 
 **En el POCO F5**, el 2026-11-03, con la 1.3.1 y el update `01a19e5d` (pie `v1.3.1 · 01a19e5d`):
@@ -97,6 +124,14 @@ del repo.
   nueva(s)»; el mismo en `MovementsScreen.tsx`, que tiene una, falla con «2 líneas y la lista admite
   1»; y subir esa entrada a 2 sin tocar el código falla con «quedan 1 líneas. Baja la lista de 2 a
   1».
+
+**Incremento 2, en el PC**, el 2026-11-03:
+
+- `npm run lint`: 0 errores y los mismos 9 avisos. `npm run typecheck`: limpio.
+  `npm run test:coverage`: 74 suites y 530 tests, 91,45 % de líneas, igual que al cerrar el
+  incremento 1. `tokens.test.ts` sigue en verde con los tres tokens nuevos.
+- Los bocetos abiertos en el navegador a 412 dp de ancho, en claro, en oscuro y con la letra al
+  200 %, y su script pasado por `node --check` tras los arreglos del revisor.
 
 ## 4. Cómo se usa el script
 
@@ -199,6 +234,71 @@ cuatro gastos y una liquidación de Ana a Eva. El invitado no entró: `add_guest
 (`42501`) y Eva no lo es. El primer intento, el que falló ahí, dejó un usuario anónimo sin miembro;
 lo limpia `npm run users -- --delete-orphans`, que lanza Alejandro.
 
+### Recetas y Menú semanal salen de la app (incremento 2)
+
+Al ver los bocetos, Alejandro dijo que el apartado de recetas sobraba y que quería la app simple por
+ahora. Se le preguntó por el Menú, que sin recetas no tiene contenido (ADR-0022), y salió también.
+Se esconden, no se borran: el T-16.3 quita las rutas `src/app/recipes/` y `src/app/meal-planner/` y
+lo que enlace a ellas; las features, sus tests, sus tablas, sus RPC y las recetas guardadas se
+quedan. Se descartó borrarlo todo porque deshacerlo costaría una migración y rehacer dos features,
+y la decisión es «por ahora». RF-14 y RF-15 quedan fuera de la app hasta nueva orden.
+
+Con eso el paquete pierde un incremento: el antiguo T-16.5, recetas y menú, desaparece y los
+siguientes bajan un número (gastos y miembros es el 5, la entrada el 6 y el cierre el 7).
+
+### Dos pestañas abajo, no arriba ni sin pestañas (incremento 2)
+
+Con dos destinos, Material recomienda pestañas arriba. Se le propusieron a Alejandro tres formas y
+eligió la barra de abajo: está donde la busca quien no sabe usar apps y es la misma si vuelve un
+tercer destino. Lo descartado y por qué está en ADR-0028.
+
+Lo que se comprobó en `node_modules` antes de escribirlo: `expo-router` 57.0.25 trae
+`unstable-native-tabs` sobre el `Tabs.Host` de `react-native-screens` 4.26.2, que ya está compilado
+en el APK; `expo-symbols` 57.0.3 no declara código nativo para Android y dibuja los iconos con la
+fuente de `@expo-google-fonts/material-symbols`. La medida en el POCO queda para el primer paso del
+T-16.3, que si falla cambia a la barra en JS.
+
+### Las fuentes, consultadas el 2026-11-03 (incremento 2)
+
+Las de la navegación, en el apartado «Fuentes» de ADR-0028. Para el resto de `DESIGN.md`:
+
+- Material 3, [Navigation bar](https://m3.material.io/components/navigation-bar/guidelines): alto
+  de 80 dp e indicador del destino activo.
+- Android, [Accessibility](https://developer.android.com/guide/topics/ui/accessibility/apps):
+  48 dp de área táctil y 8 dp de separación, la cifra de P-02.
+- Material 3, [Top app bar](https://m3.material.io/components/top-app-bar/guidelines), para la
+  cabecera con el título a dos líneas.
+- Apps del mismo tipo, para ver dónde ponen el campo de añadir, el código de invitación y el
+  reparto: [Bring!](https://www.getbring.com/en/home), [OurGroceries](https://www.ourgroceries.com/overview),
+  [AnyList](https://www.anylist.com/features), Listonic en Google Play,
+  [Splitwise](https://www.splitwise.com/) y [Tricount](https://www.tricount.com/). Solo se miró su
+  disposición; no se copia nada de su aspecto.
+
+Las acciones personalizadas de TalkBack (`accessibilityActions`) no se consultaron en esta sesión:
+el T-16.4 comprueba su API en React Native 0.86 con context7 antes de usarlas.
+
+### Lo que encontró `revisor-interfaz` en el diseño (incremento 2)
+
+19 hallazgos sobre `DESIGN.md` y los bocetos. Todos se arreglaron en el mismo cambio salvo uno, que
+pide una decisión:
+
+- **Arreglados en los bocetos:** el texto de la lista vacía, la tarjeta «Ponte un PIN» debajo del
+  campo de añadir, la marca `check` en el chip seleccionado, el desplegado de «Comprados», el icono
+  de los gastos, el radio de los botones de icono, el texto de espera de Crear, «visto hace 6 días»,
+  la línea de precios orientativos bajo las sugerencias, un miembro sin admin en Miembros y la cifra
+  de contraste del fallo 23, que es 2,5:1 (2,54 con la fórmula de WCAG).
+- **Arreglados en `DESIGN.md`:** la matriz de estados por pantalla, la franja en las dos pestañas,
+  el código de invitación sin red, qué cuenta como un toque, que tocar la fila abre
+  `EditItemDialog`, la regla de una acción principal (la única con relleno `primary`), trece iconos
+  que faltaban en la tabla, cómo se ve lo seleccionado sin depender del color, las acciones de
+  TalkBack, el scroll y el código de invitación al 200 %, los radios, el borde de una tarjeta que
+  pide algo, el verbo de la carga, la atribución de Open Food Facts y la presencia sin red.
+- **A una pregunta:** si cada artículo encolado lleva su marca en la fila, en P-05. Hasta que se
+  responda, lo dice solo la franja.
+- **A los prompts:** los estados que faltan por dibujar (cargando sin caché, error de carga, los
+  diálogos al 200 %) los dibuja cada incremento antes de escribirlos, y espera OK. El T-16.4 dibuja
+  además `EditItemDialog`.
+
 ## 6. Deuda asumida
 
 - El script no ve el `hitSlop` (apartado 4).
@@ -210,3 +310,9 @@ lo limpia `npm run users -- --delete-orphans`, que lanza Alejandro.
   deslizador de HyperOS, que puede ser otro.
 - Dos usuarios anónimos huérfanos, el de la siembra y el que dejó `pm clear`, hasta que se lance
   `npm run users -- --delete-orphans`.
+- Del incremento 2: los estados de la matriz de `DESIGN.md` marcados «Inc.» no están dibujados. Cada
+  incremento los dibuja antes de escribir su pantalla.
+- Del incremento 2: la etiqueta de la barra nativa al 200 % y que el update llegue a la 1.3.1 están
+  razonados en el código, no medidos en el POCO. Es el primer paso del T-16.3.
+- Del incremento 2: las 7 entradas de recetas y menú se quedan para siempre en
+  `design-rules-exceptions.json` mientras esas pantallas no vuelvan.

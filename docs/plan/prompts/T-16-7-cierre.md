@@ -1,15 +1,22 @@
-# Prompt de arranque · T-16 · Incremento 8 · Cierre del rediseño
+# Prompt de arranque · T-16 · Incremento 7 · Cierre del rediseño
 
 Cierra el T-16: una pasada por todas las pantallas con TalkBack, la letra al máximo y el modo
-oscuro, la lista de excepciones del test de diseño vacía, los flujos de Maestro al día y la skill
-`cerrar-paquete`.
+oscuro, la lista de excepciones del test de diseño sin nada de las pantallas que se ven, los flujos
+de Maestro al día y la skill `cerrar-paquete`.
 
-Escrito el 2026-11-02, antes del diseño. Lo que diga el ROADMAP al llegar aquí manda sobre él.
+Escrito el 2026-11-02 como incremento 8 y renumerado el 2026-11-03, cuando ADR-0028 sacó Recetas y
+Menú de la app. Lo que diga el ROADMAP al llegar aquí manda sobre él.
 
 Lo que se encuentra:
 
-- Los incrementos 3 a 7 con sus pantallas rehechas, cada uno con su medida antes y después en
+- Los incrementos 3 a 6 con sus pantallas rehechas, cada uno con su medida antes y después en
   `fase-16.md`.
+- Las pantallas que se ven son 11 rutas de `src/app`: Bienvenida, Crear, Unirse, Lista, modo
+  supermercado, Miembros, Tu PIN (la crea el T-15.6), Gastos, Nuevo gasto, Todos los gastos y Gasto.
+  Además, el selector de listas y los diálogos.
+- En `design-rules-exceptions.json` quedan 7 entradas (20 líneas) de `features/recipes` y
+  `features/meal-planner`, que no tienen pantalla (ADR-0028). Se quedan con ese motivo: la lista no
+  acaba vacía.
 - `camino-feliz.yaml` y `cola-offline.yaml` desfasados desde la fase 15 (no rellenan el PIN y el
   primero pulsa «Salir de esta lista», que ya no existe). Con la navegación nueva, más.
 - La foto de partida en `docs/diseno/estado-de-partida.md`, para comparar.
@@ -19,9 +26,9 @@ Recuentos de partida: los del bloque «Estado» del ROADMAP. Se pega tal cual en
 ---
 
 ```
-Vas a cerrar el paquete T-16 de docs/plan/ROADMAP.md: comprobar las 15 pantallas de src/app contra DESIGN.md en
-el POCO, dejar vacía la lista de excepciones del test de diseño, poner al día los flujos de
-Maestro y cerrar con la skill cerrar-paquete. Si algo no pasa, se arregla aquí si es pequeño o se
+Vas a cerrar el paquete T-16 de docs/plan/ROADMAP.md: comprobar las pantallas que se ven contra
+DESIGN.md en el POCO, dejar la lista de excepciones del test de diseño solo con las de recetas y
+menú, poner al día los flujos de Maestro y cerrar con la skill cerrar-paquete. Si algo no pasa, se arregla aquí si es pequeño o se
 apunta en el ROADMAP con su motivo.
 
 No hagas commit, push, eas update, eas build ni supabase db push: los hooks los bloquean y los
@@ -44,7 +51,7 @@ No explores src/ salvo para arreglar lo que salga de la pasada. Para un símbolo
 
 Dónde escribes:
   - src/ solo para lo pequeño que salga de la pasada (una etiqueta, un token, un área táctil)
-  - la lista de excepciones del test de diseño: vacía, y el código que la sostenía, fuera
+  - la lista de excepciones del test de diseño: solo las 7 de recetas y menú, con su motivo
   - .maestro/camino-feliz.yaml y cola-offline.yaml, al día con el PIN y la navegación nueva
   - docs/diseno/estado-final.md (nuevo): la misma tabla que estado-de-partida, con lo de ahora
   - docs/phases/fase-16.md, docs/plan/ROADMAP.md, DESIGN.md («Lo que hoy no cumple»)
@@ -77,9 +84,9 @@ Donde sí te paras:
 
 Orden de trabajo:
   1. El plan, y esperas mi OK
-  2. La pasada en el POCO con probar-en-android: las 15 pantallas con el script, en claro y oscuro,
+  2. La pasada en el POCO con probar-en-android: las pantallas que se ven con el script, en claro y oscuro,
      letra al 100 % y al máximo, y TalkBack por la lista, el modo supermercado, gastos y unirse
-  3. Los arreglos pequeños y la lista de excepciones vacía. architecture-guard y revisor-interfaz
+  3. Los arreglos pequeños y la lista de excepciones sin nada de las pantallas que se ven. architecture-guard y revisor-interfaz
      sobre lo tocado, uno detrás de otro
   4. Los flujos de Maestro, y npm run test:e2e por tramos en el POCO
   5. docs-drift-auditor sobre DESIGN.md, CLAUDE.md, las skills y los ADR que tocó el paquete
@@ -88,15 +95,16 @@ Orden de trabajo:
 Documentación que cambia:
   - docs/diseno/estado-final.md y fase-16.md: el cierre, con el recuento de controles por debajo de
     cada umbral antes y después
-  - DESIGN.md: «Lo que hoy no cumple» vacío o con lo que quede y su motivo
+  - DESIGN.md: «Lo que hoy no cumple» con las de recetas y menú y lo que quede, cada una con su
+    motivo
   - ADR-0028: el estado lo cambio yo si se acepta
   - ROADMAP: el T-16 cerrado y «Siguiente» con lo que toque del T-15
   - docs/tecnica/METODO-DE-TRABAJO.md si el script o el test de diseño cambiaron de forma
 
 Terminado cuando:
   - las cinco condiciones de «Cómo se cierra un paquete» del ROADMAP
-  - la lista de excepciones del test de diseño vacía
-  - el script de inspección sin marcas en las 15 pantallas con la letra al máximo, o cada marca
+  - la lista de excepciones del test de diseño con las 7 entradas de recetas y menú y ninguna más
+  - el script de inspección sin marcas en las pantallas que se ven con la letra al máximo, o cada marca
     explicada en estado-final.md
   - los tres flujos de Maestro pasan en el POCO, por tramos
   - la versión del pie del POCO apuntada en fase-16.md
@@ -107,6 +115,7 @@ Al terminar: git status, qué entra en el commit, qué no y por qué, el mensaje
 
 ## Lo que este prompt da por sentado
 
-- Que los incrementos 3 a 7 están cerrados, cada uno con su prueba en el POCO.
+- Que los incrementos 3 a 6 están cerrados, cada uno con su prueba en el POCO.
+- Que Recetas y Menú siguen fuera. Si volvieron, sus excepciones se arreglan antes de cerrar.
 - Que los incrementos 7 y 8 del T-15 no se hicieron antes. Si se hicieron, lo que absorbió el T-16
   ya está en su sitio y el cierre lo comprueba igual.

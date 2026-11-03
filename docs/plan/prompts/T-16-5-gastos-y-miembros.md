@@ -1,17 +1,20 @@
-# Prompt de arranque · T-16 · Incremento 6 · Gastos y miembros
+# Prompt de arranque · T-16 · Incremento 5 · Gastos y miembros
 
 Rehace las pantallas de gastos (resumen, nuevo gasto, movimientos y detalle) y la de miembros con
 sus diálogos, según el `DESIGN.md` del incremento 2. Gastos dejó de cerrar la app con el arreglo del
 canal de miembros (`prompts/T-15-gastos.md`): esa regla, un hook de lectura no abre canales, no se
 pierde al rehacer la pantalla.
 
-Escrito el 2026-11-02, antes del diseño. Si el incremento 2 cambió el reparto, manda lo que diga el
-ROADMAP y este prompt se corrige.
+Escrito el 2026-11-02 como incremento 6 y renumerado el 2026-11-03, cuando ADR-0028 sacó Recetas y
+Menú de la app y su incremento desapareció. Si algo de aquí no coincide con `DESIGN.md` o con los
+bocetos, mandan ellos.
 
 Lo que se encuentra:
 
-- La pantalla del PIN del incremento 6 del T-15, que ya sigue el diseño nuevo y puede vivir junto a
-  miembros. No se rehace: se comprueba que encaja.
+- Gastos ya es una pestaña (incremento 3), con AppHeader y la StatusStrip. Miembros ya tiene el
+  código arriba, y su fila propia ya lleva «Tu PIN», que abre /members/pin del incremento 6 del
+  T-15. Ni la pestaña ni el PIN se rehacen: se comprueba que encajan.
+- ListRow, EmptyState y ErrorState del incremento 4, y ScreenHeader y ActionBar del 6 del T-15.
 - Absorbe del bloque 3 del incremento 8 de la auditoría lo de MembersScreen (confunde un error con
   «vacío»), y del bloque 2 los mensajes concatenados de MembersScreen, AddGuestDialog y
   ConfirmRemoveMemberDialog, que pasan a interpolados aquí aunque la pantalla no cambie sus
@@ -24,7 +27,7 @@ Recuentos de partida: los del bloque «Estado» del ROADMAP. Se pega tal cual en
 ---
 
 ```
-Vas a hacer el incremento 6 del paquete T-16 de docs/plan/ROADMAP.md: rehacer las pantallas de
+Vas a hacer el incremento 5 del paquete T-16 de docs/plan/ROADMAP.md: rehacer las pantallas de
 gastos y la de miembros según DESIGN.md. domain/ calcula balances y liquidaciones; presentation/
 cambia cómo se enseñan. Ni el cálculo ni las mutaciones cambian aquí.
 
@@ -37,7 +40,8 @@ alternativa que descartas. Si contesto «adelante», van como las propones. A pa
 paras en los casos de «Donde sí te paras».
 
 Antes de nada, lee en este orden:
-  1. DESIGN.md y docs/diseno/bocetos.html, gastos y miembros
+  1. DESIGN.md y docs/diseno/bocetos.html, los apartados «Gastos y miembros», «Miembros e
+     invitación» y «Opciones de un miembro»
   2. docs/diseno/estado-de-partida.md, esas pantallas
   3. docs/adr/ADR-0005 (dinero en céntimos) y ADR-0017 (administrador)
   4. docs/phases/fase-15.md, el apartado del arreglo de Gastos: dónde se monta useMembersRealtime
@@ -51,7 +55,8 @@ src/features/community/presentation (miembros y PIN). Para un símbolo, el LSP.
 Dónde escribes:
   - src/features/expenses/presentation/ y la parte de miembros de
     src/features/community/presentation/
-  - src/shared/ui/ si DESIGN.md pide un componente que aún no existe
+  - src/shared/ui/ solo si DESIGN.md pide un componente que aún no existe, y entonces lo añades a
+    su tabla
   - src/shared/lib/i18n/es.json y en.json, a la vez, con los mensajes de miembros interpolados
   - la lista de excepciones del test de diseño: fuera las de estas pantallas
   - docs/phases/fase-16.md, docs/plan/ROADMAP.md
@@ -64,10 +69,24 @@ Qué no tocas:
     su test de «una sola suscripción por pantalla»
 
 Decisiones que tienes que tomar:
-  1. Qué ve primero quien abre Gastos: el balance de cada uno, quién debe a quién, o el último
-     gasto. Con la referencia de Splitwise o Tricount del incremento 2
-  2. Cómo se escribe un importe con el teclado numérico y la coma decimal en español
-  3. Cómo se distingue un invitado (sin la app) de un miembro, sin depender del color
+  1. Cómo se escribe un importe con el teclado numérico y la coma decimal en español
+  2. Cómo se distingue un invitado (sin la app) de un miembro, sin depender del color: recomiendo
+     la segunda línea de la fila en texto («Invitada, sin la app»), como en el boceto del reparto
+  3. Lo que falta por dibujar antes de escribir, y esperas OK: Todos los gastos y Gasto en todos
+     sus estados, las casillas «Inc. T-16.5» de la matriz de DESIGN.md (cargando sin caché, error
+     de carga y sin red en Gastos y Nuevo gasto, cargando y error en Miembros) y el Dialog de
+     «Opciones de Bea» al 200 %. Se añaden a docs/diseno/bocetos.html
+Ya decidido en el diseño, no se vuelve a abrir:
+  - Gastos abre por los saldos: arriba tu saldo dicho en palabras y debajo quién debe a quién, con
+    «Saldar» en cada fila, que se anuncia «Saldar con Bea, 12,00 €»
+  - cifras con tabularNums y la etiqueta siempre encima, nunca pegada en la misma línea
+  - Nuevo gasto sin teclado al entrar, el importe primero en text-3xl, quién pagó en un selector de
+    una línea y Guardar en la ActionBar
+  - Todos los gastos agrupado por mes; una liquidación lleva icono y la palabra «Liquidación»
+  - Gasto con la cifra en text-4xl y Borrar abajo en danger, con «Deshacer» en el aviso
+  - en Miembros, cada persona tiene un solo control, «Opciones de Bea», que abre un Dialog; quitar
+    va separado y en danger
+  - la presencia en texto, no como un punto de color
 
 Casos límite y errores (ADR-0016):
   - sin red: un gasto nuevo entra en la cola con su id del cliente y el aviso dice que se enviará
@@ -103,7 +122,7 @@ Orden de trabajo:
   7. qa-runner y, el último, revisor-documentacion
 
 Documentación que cambia:
-  - fase-16.md: el incremento 6, con la medida antes y después
+  - fase-16.md: el incremento 5, con la medida antes y después
   - ROADMAP: el bloque «Estado» y lo absorbido del incremento 8 del T-15
 
 Terminado cuando:
