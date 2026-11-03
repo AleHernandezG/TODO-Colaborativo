@@ -12,7 +12,7 @@ El siguiente número libre es **P-06**.
 | [P-02](#p-02--área-táctil-mínima-44-pt-o-48-dp) | Área táctil mínima | Nada | Respondida: A, 48 dp |
 | [P-03](#p-03--aceptar-el-adr-0027) | Aceptar el ADR-0027 | Nada | Respondida: aceptado |
 | [P-04](#p-04--alcance-y-orden-del-rediseño) | Alcance y orden del rediseño | Nada | Respondida: A con A1 |
-| [P-05](#p-05--marca-de-pendiente-de-enviar-en-cada-fila) | Marca de «pendiente de enviar» en cada fila | El T-16.4, solo la fila | Abierta |
+| [P-05](#p-05--marca-de-pendiente-de-enviar-en-cada-fila) | Marca de «pendiente de enviar» en cada fila | Nada | Respondida: A |
 
 ---
 
@@ -143,8 +143,9 @@ nuevo, y después el resto del T-16. La ficha y los prompts están en el
 
 ## P-05 · Marca de «pendiente de enviar» en cada fila
 
-Bloquea solo el aspecto de la fila del T-16.4; el resto del incremento puede avanzar. Abierta el
-2026-11-03 por el hallazgo 3 de `revisor-interfaz` sobre los bocetos del T-16.2.
+Bloqueaba solo el aspecto de la fila del T-16.4. Abierta el 2026-11-03 por el hallazgo 3 de
+`revisor-interfaz` sobre los bocetos del T-16.2 y respondida el mismo día, al final de este
+apartado.
 
 Sin red, la `StatusStrip` dice «Sin conexión. Lo que cambies se enviará al recuperarla.» y un
 `Snackbar` avisa de cada mutación encolada. Pero al cerrar el aviso nada dice qué artículo en
@@ -170,3 +171,9 @@ Opciones:
 **Recomendación: A.** Es la que contesta la pregunta que se hace la persona («¿esto ha salido?») en
 el sitio donde mira, y solo aparece cuando hay algo encolado. C se puede sumar después sin rehacer
 nada.
+
+**Respuesta (2026-11-03): A, la marca en la fila.** Lo pinta el T-16.4: el icono `hourglass_top` y
+«Se enviará al recuperar la conexión» en la segunda línea de cada artículo con un cambio en la cola,
+y TalkBack lo lee con la fila. C queda para más adelante, sin fecha. Está en
+[`DESIGN.md`](../../DESIGN.md), apartado «Conexión», y en el prompt
+[`T-16-4-lista-y-supermercado.md`](prompts/T-16-4-lista-y-supermercado.md).

@@ -77,8 +77,10 @@ Decisiones que tienes que tomar:
      Unidad, foto y Borrar, al 100 % y al 200 %), y de la matriz de estados de DESIGN.md las
      casillas «Inc. T-16.4»: modo supermercado vacío, y cargando sin caché y error de carga en
      las dos pantallas. Se añaden a docs/diseno/bocetos.html
-  5. La marca de «pendiente de enviar» en la fila: lo que haya respondido Alejandro en P-05. Si
-     sigue abierta, la fila va sin marca y lo dice solo la franja
+  5. Cómo sabe la fila que su artículo tiene un cambio en la cola (P-05, respondida A): recomiendo
+     un hook en presentation/hooks con useMutationState, filtrado por las mutationKey de items y
+     por el id que llevan las variables, con su test. Descartado guardar un «pendiente» en la
+     caché de la query, que habría que limpiar a mano y se queda colgado si la mutación falla
   6. Editar y Borrar como acciones de TalkBack sobre la fila (accessibilityActions): comprueba la
      API en React Native 0.86 con context7 antes de escribirla
 Ya decidido en el diseño, no se vuelve a abrir:
@@ -93,10 +95,15 @@ Ya decidido en el diseño, no se vuelve a abrir:
   - tocar la fila fuera del checkbox abre EditItemDialog; la fila no lleva botones de cantidad
   - TalkBack lee cada artículo en una parada, «Leche entera, cantidad 2, pendiente», y activarla
     lo marca
+  - un artículo con un cambio en la cola lleva hourglass_top y «Se enviará al recuperar la
+    conexión» en la segunda línea, y TalkBack lo lee con la fila (P-05, DESIGN.md «Conexión»).
+    El dibujo de la decisión 4 incluye esa fila, también con una segunda línea que ya tenía precio
 
 Casos límite y errores (ADR-0016):
   - sin red: marcar y añadir siguen funcionando y entran en la cola; el aviso dice que se enviará
-    al recuperar la conexión, no que se guardó
+    al recuperar la conexión, no que se guardó, y la fila lleva su marca hasta que el servidor
+    acepta el cambio. Si el servidor lo rechaza, la marca se va con el rollback y sale el error
+  - el texto nuevo de la marca pasa por forbidden-claims.test.ts en es.json y en.json
   - sin servidor o error al cargar: la pantalla lo dice con su código entre paréntesis y un
     reintentar, y no enseña «lista vacía»
   - 200 artículos (scripts/seed-200-items.mjs, contra una lista de prueba), nombre de 40

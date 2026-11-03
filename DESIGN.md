@@ -246,9 +246,12 @@ Sin red, el código de invitación se enseña el que está en caché con «Puede
 porque otro miembro lo puede haber rotado (ADR-0011). La presencia («Viendo la lista ahora») se
 esconde: sin red no se sabe quién mira.
 
-Si un artículo encolado lleva una marca propia en su fila, «pendiente de enviar», está por decidir
-en [P-05](docs/plan/PREGUNTAS.md#p-05--marca-de-pendiente-de-enviar-en-cada-fila). Mientras tanto
-lo dice solo la franja.
+Un artículo con un cambio en la cola (alta, marcado o edición) lleva su marca en la fila: el icono
+`hourglass_top` y «Se enviará al recuperar la conexión» en la segunda línea, en `text-sm muted`.
+Si la fila ya tenía segunda línea, la marca va delante y lo demás baja si no cabe. Desaparece
+cuando el servidor acepta el cambio. TalkBack la lee como parte de la fila: «Leche entera,
+cantidad 2, pendiente, se enviará al recuperar la conexión». Decidido en
+[P-05](docs/plan/PREGUNTAS.md#p-05--marca-de-pendiente-de-enviar-en-cada-fila), opción A.
 
 ## Estados
 
@@ -282,7 +285,8 @@ dibuja el incremento de esa pantalla antes de escribirlo, y espera OK:
 | Bienvenida, Crear, Unirse | Boceto      | No aplica   | No aplica          | Inc. T-16.6    | Inc. T-16.6 | Boceto      |
 
 Los diálogos al 200 % (`EditItemDialog`, Opciones de un miembro, el PIN temporal) también los dibuja
-cada incremento.
+cada incremento. El boceto de la Lista sin red es anterior a P-05 y no lleva la marca de
+pendiente en la fila: la dibuja el T-16.4.
 
 ## Iconos
 
@@ -290,38 +294,38 @@ Material Symbols, por `expo-symbols` con el nombre de Android (`md`), siempre a 
 color del texto que los rodea o del papel que tengan (`danger` en borrar). En Android salen de una
 fuente que ya está en el árbol, sin código nativo (ADR-0028). Los que usa la app:
 
-| Uso                    | Nombre           |
-| ---------------------- | ---------------- |
-| Pestaña Lista          | `checklist`      |
-| Pestaña Gastos         | `payments`       |
-| Miembros               | `group`          |
-| PDF                    | `picture_as_pdf` |
-| Volver                 | `arrow_back`     |
-| Salir del supermercado | `close`          |
-| Selector de listas     | `expand_more`    |
-| Añadir                 | `add`            |
-| Opciones de una fila   | `more_vert`      |
-| Ir a comprar           | `shopping_cart`  |
-| Sin conexión           | `cloud_off`      |
-| Comprobando            | `sync`           |
-| Servidor inalcanzable  | `error`          |
-| Copiar                 | `content_copy`   |
-| Compartir              | `share`          |
-| Borrar                 | `delete`         |
-| Editar                 | `edit`           |
-| Invitar a alguien      | `person_add`     |
-| Unirme con un código   | `key`            |
-| Tu PIN                 | `pin`            |
-| Rotar el código        | `refresh`        |
-| Todos los gastos       | `history`        |
-| Administrador          | `shield_person`  |
-| Restablecer un PIN     | `lock_reset`     |
-| Quitar a un miembro    | `person_remove`  |
-| Esperando al servidor  | `hourglass_top`  |
-| Seleccionado, comprado | `check`          |
-| Plegar comprados       | `expand_less`    |
-| Un gasto               | `receipt_long`   |
-| Una liquidación        | `sync_alt`       |
+| Uso                                        | Nombre           |
+| ------------------------------------------ | ---------------- |
+| Pestaña Lista                              | `checklist`      |
+| Pestaña Gastos                             | `payments`       |
+| Miembros                                   | `group`          |
+| PDF                                        | `picture_as_pdf` |
+| Volver                                     | `arrow_back`     |
+| Salir del supermercado                     | `close`          |
+| Selector de listas                         | `expand_more`    |
+| Añadir                                     | `add`            |
+| Opciones de una fila                       | `more_vert`      |
+| Ir a comprar                               | `shopping_cart`  |
+| Sin conexión                               | `cloud_off`      |
+| Comprobando                                | `sync`           |
+| Servidor inalcanzable                      | `error`          |
+| Copiar                                     | `content_copy`   |
+| Compartir                                  | `share`          |
+| Borrar                                     | `delete`         |
+| Editar                                     | `edit`           |
+| Invitar a alguien                          | `person_add`     |
+| Unirme con un código                       | `key`            |
+| Tu PIN                                     | `pin`            |
+| Rotar el código                            | `refresh`        |
+| Todos los gastos                           | `history`        |
+| Administrador                              | `shield_person`  |
+| Restablecer un PIN                         | `lock_reset`     |
+| Quitar a un miembro                        | `person_remove`  |
+| Esperando al servidor, pendiente de enviar | `hourglass_top`  |
+| Seleccionado, comprado                     | `check`          |
+| Plegar comprados                           | `expand_less`    |
+| Un gasto                                   | `receipt_long`   |
+| Una liquidación                            | `sync_alt`       |
 
 Un icono nuevo entra en esta tabla. Los glifos que hay en las miniaturas de los bocetos ocupan el
 sitio de una foto y no son iconos de la app. Un icono solo nunca es la única pista de un estado,

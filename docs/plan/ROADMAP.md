@@ -66,7 +66,8 @@ Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `p
    propuesto (dos pestañas, Lista y Gastos, por update a la 1.3.1 sin build) y los bocetos en
    [`diseno/bocetos.html`](../diseno/bocetos.html). Alejandro sacó Recetas y Menú semanal de la
    app: se esconden en el T-16.3, sin borrar código ni datos, y el T-16 pasa a siete incrementos.
-   Queda abierta [P-05](PREGUNTAS.md#p-05--marca-de-pendiente-de-enviar-en-cada-fila).
+   [P-05](PREGUNTAS.md#p-05--marca-de-pendiente-de-enviar-en-cada-fila) respondida: cada artículo
+   con un cambio en la cola lleva su marca en la fila, y la pinta el T-16.4.
 4. Incremento 6 del T-15, la pantalla del PIN con el diseño nuevo y la migración B:
    [`T-15.md`](prompts/T-15.md). Hasta la B, una fila sin PIN la puede reclamar cualquiera con el
    código de la lista (ADR-0026). Hay 12 listas cuyo único admin no tiene PIN y 20 miembros activos

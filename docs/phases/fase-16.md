@@ -84,7 +84,8 @@ El 2026-11-03. Lo único que toca `src/` es `src/theme/tokens.js`.
   se exporta todavía desde `@/theme`: lo hace el T-16.3 cuando los use.
 - **Los prompts** de lo que sigue: el incremento 6 del T-15 con la pantalla del PIN dibujada, y del
   T-16.3 al T-16.7, renumerados.
-- [P-05](../plan/PREGUNTAS.md#p-05--marca-de-pendiente-de-enviar-en-cada-fila), nueva y abierta.
+- [P-05](../plan/PREGUNTAS.md#p-05--marca-de-pendiente-de-enviar-en-cada-fila), respondida el mismo
+  día que se abrió: opción A, la marca en la fila.
 
 Verificado en el PC; no hay prueba en el POCO porque no cambia nada que corra en el móvil. Los
 números, en el apartado 3.
@@ -293,8 +294,9 @@ pide una decisión:
   que faltaban en la tabla, cómo se ve lo seleccionado sin depender del color, las acciones de
   TalkBack, el scroll y el código de invitación al 200 %, los radios, el borde de una tarjeta que
   pide algo, el verbo de la carga, la atribución de Open Food Facts y la presencia sin red.
-- **A una pregunta:** si cada artículo encolado lleva su marca en la fila, en P-05. Hasta que se
-  responda, lo dice solo la franja.
+- **A una pregunta:** si cada artículo encolado lleva su marca en la fila, en P-05. Alejandro
+  eligió la A tras el commit del incremento: la marca va en la segunda línea de la fila, la pinta
+  el T-16.4 y está en `DESIGN.md`, apartado «Conexión».
 - **A los prompts:** los estados que faltan por dibujar (cargando sin caché, error de carga, los
   diálogos al 200 %) los dibuja cada incremento antes de escribirlos, y espera OK. El T-16.4 dibuja
   además `EditItemDialog`.
