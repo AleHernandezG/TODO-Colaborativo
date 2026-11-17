@@ -56,6 +56,7 @@ jest.mock('@/features/community', () => ({
     return <Text>{active.community.name}</Text>
   },
   JoinCodeCard: () => null,
+  PinReminderCard: () => null,
   ViewersLine: () => null,
   useActiveMembershipSync: () => undefined,
   useMyCommunities: () => ({ data: undefined }),

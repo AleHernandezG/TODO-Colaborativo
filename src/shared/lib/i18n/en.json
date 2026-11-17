@@ -43,11 +43,11 @@
       "invalidName": "Give it a name of at least two letters.",
       "invalidUsername": "Your name needs at least two letters.",
       "invalidPin": "The PIN must be exactly 4 digits.",
-      "wrongPin": "Incorrect PIN for this user.",
+      "wrongPin": "That name already has a PIN and this isn't it. If it's you and you forgot it, ask an admin of the list to reset it. If not, choose another name.",
       "invalidJoinCode": "That code doesn't exist. Check it and try again.",
       "expiredJoinCode": "That code has expired. Ask whoever sent it for a new one.",
       "usernameTaken": "That name is already taken in this list. Try another one.",
-      "tooManyAttempts": "Too many tries in a row. Wait a while and try again."
+      "tooManyAttempts": "Too many tries. Wait an hour and try again."
     }
   },
   "list": {
@@ -343,6 +343,8 @@
   "members": {
     "title": "List members",
     "back": "Back",
+    "loading": "Loading members…",
+    "loadError": "Couldn't load the members.",
     "manageButton": "Manage members",
     "manageHint": "View and manage who is part of this list",
     "badgeYou": "You",
@@ -367,7 +369,57 @@
       "forbidden": "Only administrators can perform this action.",
       "addGuestFailed": "Could not add guest participant.",
       "removeFailed": "Could not remove member.",
-      "roleFailed": "Could not update member role."
+      "roleFailed": "Could not update member role.",
+      "resetFailed": "Couldn't reset the PIN.",
+      "copyFailed": "Couldn't copy it. Write the PIN down before closing.",
+      "resetUncertain": "We don't know if it was reset. Tap «Reset» again to get a new PIN; don't cancel."
+    },
+    "yourPin": "Your PIN",
+    "yourPinHint": "Set or change the PIN you use to get back in as yourself",
+    "resetPin": "Reset PIN",
+    "resetPinOf": "Reset {{name}}'s PIN",
+    "resetConfirmTitle": "Reset {{name}}'s PIN?",
+    "resetConfirmBody": "{{name}} will leave the list on their phone. To come back, they enter the list code, their name and the temporary PIN you'll get when this is done.",
+    "resetConfirm": "Reset",
+    "tempPinTitle": "{{name}}'s temporary PIN",
+    "tempPinBody": "Tell {{name}}. With it they get in as {{name}}; afterwards they should set a new one in Your PIN.",
+    "tempPinCopy": "Copy the PIN",
+    "tempPinCopied": "PIN copied",
+    "tempPinDone": "Done",
+    "pinReminder": {
+      "setTitle": "Set a PIN",
+      "setBody": "With it you get back in as {{name}} if you change phones.",
+      "onlyAdminBody": "You're the only admin of this list. Without a PIN, anyone with the code could get in as you.",
+      "changeTitle": "Change your PIN",
+      "changeBody": "Someone else may have seen it; pick one only you know.",
+      "setAction": "Set my PIN",
+      "changeAction": "Change my PIN",
+      "later": "Not now"
+    },
+    "pin": {
+      "title": "Your PIN",
+      "intro": "With your PIN you get back in as {{name}} if you change phones or delete the app.",
+      "currentLabel": "Current PIN",
+      "newLabel": "New PIN",
+      "newHelp": "Four digits.",
+      "repeatLabel": "Repeat the new PIN",
+      "showDigits": "Show the digits",
+      "submitChange": "Change PIN",
+      "submitSet": "Set my PIN",
+      "waiting": "Waiting for the server…",
+      "loading": "Loading your PIN…",
+      "changed": "PIN changed",
+      "loadError": "Couldn't check whether you already have a PIN.",
+      "errors": {
+        "invalid": "It has to be four digits.",
+        "mismatch": "Doesn't match the new PIN.",
+        "wrongCurrent": "The current PIN doesn't match.",
+        "alreadyHasPin": "You already have a PIN. Type the current one to change it.",
+        "tooManyAttempts": "Too many tries. Wait a quarter of an hour and try again.",
+        "offline": "No connection. The PIN hasn't changed.",
+        "timeout": "We don't know if the change arrived. If retrying says the PIN doesn't match or that you already have one, the new one already works.",
+        "failed": "Couldn't change the PIN."
+      }
     }
   },
   "notifications": {

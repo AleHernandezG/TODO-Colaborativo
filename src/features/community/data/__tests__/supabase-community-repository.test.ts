@@ -532,3 +532,173 @@ describe('subscribeMembers', () => {
     expect(removeChannel).toHaveBeenCalledWith(built)
   })
 })
+
+describe('join sin community_id', () => {
+  it('distingue un ok sin lista de un estado desconocido', async () => {
+    rpc.mockResolvedValue({ data: [{ status: 'ok', community_id: null }], error: null })
+
+    await expect(
+      supabaseCommunityRepository.join({ joinCode: 'PAN-42XK', username: 'Ana', pin: '1234' }),
+    ).rejects.toThrow('ok sin community_id')
+  })
+})
+
+describe('PIN sin conexión', () => {
+  beforeEach(() => {
+    netInfoFetch.mockResolvedValue({ isConnected: false })
+  })
+
+  it('no pregunta el estado del PIN', async () => {
+    await expect(supabaseCommunityRepository.getMyPinState('c1')).rejects.toBeInstanceOf(
+      OfflineError,
+    )
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('no intenta fijar el PIN', async () => {
+    await expect(
+      supabaseCommunityRepository.setMyPin({ communityId: 'c1', newPin: '1234' }),
+    ).rejects.toBeInstanceOf(OfflineError)
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('no intenta restablecer un PIN', async () => {
+    await expect(supabaseCommunityRepository.resetMemberPin('c1', 'm2')).rejects.toBeInstanceOf(
+      OfflineError,
+    )
+    expect(rpc).not.toHaveBeenCalled()
+  })
+})
+
+describe('getMyPinState', () => {
+  it.each(['none', 'exposed', 'set'])('devuelve %s tal cual', async (state) => {
+    rpc.mockResolvedValue({ data: state, error: null })
+
+    await expect(supabaseCommunityRepository.getMyPinState('c1')).resolves.toBe(state)
+    expect(rpc).toHaveBeenCalledWith('my_member_pin_state', { p_community_id: 'c1' })
+  })
+
+  it('no se traga un estado que no conoce', async () => {
+    rpc.mockResolvedValue({ data: 'locked', error: null })
+
+    await expect(supabaseCommunityRepository.getMyPinState('c1')).rejects.toThrow('locked')
+  })
+
+  it('envuelve el error del servidor con su operación', async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: 'boom', code: '500' } })
+
+    await expect(supabaseCommunityRepository.getMyPinState('c1')).rejects.toMatchObject({
+      operation: 'my_member_pin_state',
+      code: '500',
+    })
+  })
+})
+
+describe('setMyPin', () => {
+  it('manda el PIN actual solo cuando lo hay', async () => {
+    rpc.mockResolvedValue({ data: [{ status: 'ok' }], error: null })
+
+    await supabaseCommunityRepository.setMyPin({ communityId: 'c1', newPin: '1234' })
+    await supabaseCommunityRepository.setMyPin({
+      communityId: 'c1',
+      newPin: '1234',
+      currentPin: '9876',
+    })
+
+    expect(rpc).toHaveBeenNthCalledWith(1, 'set_member_pin', {
+      p_community_id: 'c1',
+      p_new_pin: '1234',
+    })
+    expect(rpc).toHaveBeenNthCalledWith(2, 'set_member_pin', {
+      p_community_id: 'c1',
+      p_new_pin: '1234',
+      p_current_pin: '9876',
+    })
+  })
+
+  it.each(['ok', 'invalid_pin', 'wrong_pin', 'too_many_attempts'])(
+    'devuelve el estado %s',
+    async (status) => {
+      rpc.mockResolvedValue({ data: [{ status }], error: null })
+
+      await expect(
+        supabaseCommunityRepository.setMyPin({ communityId: 'c1', newPin: '1234' }),
+      ).resolves.toEqual({ status })
+    },
+  )
+
+  it('no se traga un estado que no conoce', async () => {
+    rpc.mockResolvedValue({ data: [{ status: 'pin_expired' }], error: null })
+
+    await expect(
+      supabaseCommunityRepository.setMyPin({ communityId: 'c1', newPin: '1234' }),
+    ).rejects.toThrow('pin_expired')
+  })
+
+  it('falla si la RPC no devuelve ningún estado', async () => {
+    rpc.mockResolvedValue({ data: [], error: null })
+
+    await expect(
+      supabaseCommunityRepository.setMyPin({ communityId: 'c1', newPin: '1234' }),
+    ).rejects.toThrow('ningún estado')
+  })
+
+  it('deja ver el código cuando no eres miembro', async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: 'not_a_member', code: 'P0001' } })
+
+    await expect(
+      supabaseCommunityRepository.setMyPin({ communityId: 'c1', newPin: '1234' }),
+    ).rejects.toMatchObject({ operation: 'set_member_pin', code: 'P0001' })
+  })
+})
+
+describe('resetMemberPin', () => {
+  it('devuelve el PIN temporal', async () => {
+    rpc.mockResolvedValue({ data: [{ temp_pin: '0427' }], error: null })
+
+    await expect(supabaseCommunityRepository.resetMemberPin('c1', 'm2')).resolves.toEqual({
+      tempPin: '0427',
+    })
+    expect(rpc).toHaveBeenCalledWith('reset_member_pin', {
+      p_community_id: 'c1',
+      p_member_id: 'm2',
+    })
+  })
+
+  it('no enseña un PIN temporal mal formado', async () => {
+    rpc.mockResolvedValue({ data: [{ temp_pin: '427' }], error: null })
+
+    await expect(supabaseCommunityRepository.resetMemberPin('c1', 'm2')).rejects.toThrow(
+      'cuatro cifras',
+    )
+  })
+
+  it('no enseña un PIN temporal que no es texto', async () => {
+    rpc.mockResolvedValue({ data: [{ temp_pin: 427 }], error: null })
+
+    await expect(supabaseCommunityRepository.resetMemberPin('c1', 'm2')).rejects.toThrow(
+      'cuatro cifras',
+    )
+  })
+
+  it('falla si la RPC no devuelve nada', async () => {
+    rpc.mockResolvedValue({ data: [], error: null })
+
+    await expect(supabaseCommunityRepository.resetMemberPin('c1', 'm2')).rejects.toThrow(
+      'ningún PIN temporal',
+    )
+  })
+
+  it.each([
+    ['forbidden_not_admin', '42501'],
+    ['member_not_found', 'P0002'],
+    ['cannot_reset_self', 'P0003'],
+  ])('deja ver el código de %s', async (message, code) => {
+    rpc.mockResolvedValue({ data: null, error: { message, code } })
+
+    await expect(supabaseCommunityRepository.resetMemberPin('c1', 'm2')).rejects.toMatchObject({
+      operation: 'reset_member_pin',
+      code,
+    })
+  })
+})

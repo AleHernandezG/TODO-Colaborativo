@@ -13,18 +13,21 @@ const messageKeys: Record<FailureKind, string> = {
 
 const keepsOwnMessage: FailureKind[] = ['rejected', 'unknown']
 
+export type MessagesByFailure = Partial<Record<FailureKind, string>>
+
 export function useFailureMessage() {
   const { t } = useTranslation()
 
   return useCallback(
-    (cause: unknown, actionMessage?: string) => {
+    (cause: unknown, actionMessage?: string, byFailure: MessagesByFailure = {}) => {
       const failure = describeFailure(cause)
       logFailure(failure)
 
       const message =
-        actionMessage && keepsOwnMessage.includes(failure.kind)
+        byFailure[failure.kind] ??
+        (actionMessage && keepsOwnMessage.includes(failure.kind)
           ? actionMessage
-          : t(messageKeys[failure.kind])
+          : t(messageKeys[failure.kind]))
 
       return failure.code ? t('errors.withCode', { message, code: failure.code }) : message
     },

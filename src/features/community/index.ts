@@ -4,6 +4,7 @@ export { CommunitySwitcher } from './presentation/components/CommunitySwitcher'
 export { JoinCodeCard } from './presentation/components/JoinCodeCard'
 export { MembersRealtime } from './presentation/components/MembersRealtime'
 export { MyListsShortcut } from './presentation/components/MyListsShortcut'
+export { PinReminderCard } from './presentation/components/PinReminderCard'
 export { ViewersLine } from './presentation/components/ViewersLine'
 export { useActiveMembershipSync } from './presentation/hooks/use-active-membership-sync'
 export { useCommunityMembers } from './presentation/hooks/use-community-members'
@@ -13,6 +14,7 @@ export { useViewers } from './presentation/hooks/use-viewers'
 export { CreateCommunityScreen } from './presentation/screens/CreateCommunityScreen'
 export { JoinCommunityScreen } from './presentation/screens/JoinCommunityScreen'
 export { MembersScreen } from './presentation/screens/MembersScreen'
+export { PinScreen } from './presentation/screens/PinScreen'
 export {
   useActiveCommunityHydrated,
   useActiveCommunityStore,

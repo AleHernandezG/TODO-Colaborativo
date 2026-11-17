@@ -22,7 +22,7 @@ npm run test:hooks
 npx expo export --platform android
 ```
 
-Si el paquete tocó la base o Realtime, también `npm run test:rls` (102/102, o 101/102 sin
+Si el paquete tocó la base o Realtime, también `npm run test:rls` (113/113, o 112/113 sin
 `SUPABASE_SECRET_KEY`) y `npm run test:realtime` (18/18). Necesitan `.env`: si no está en esta
 máquina, dilo, no lo des por pasado.
 

@@ -55,9 +55,11 @@ aquí los ADR siguen en `adr/` y el diario de cada paquete es `phases/fase-N.md`
 | [0023](./adr/ADR-0023-foto-en-alta-de-articulos-y-portada-de-recetas.md) | Foto en el alta de artículos y portada de recetas | Aceptado                          |
 | [0024](./adr/ADR-0024-modo-supermercado-y-categorias-de-articulos.md)    | Modo supermercado y categorías de artículos       | Aceptado                          |
 | [0025](./adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md) | Varias listas por usuario y lista activa             | Aceptado (RLS 70/70)              |
-| [0026](./adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md) | El PIN sale de `members`; identidad sin PIN no reclamable | Aceptado; migración A aplicada (vista el 2026-10-31, comprobada el 2026-11-02), B pendiente |
+| [0026](./adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md) | El PIN sale de `members`; identidad sin PIN no reclamable | Aceptado; migración A aplicada (vista el 2026-10-31, comprobada el 2026-11-02), B aplicada el 2026-11-17 ([ADR-0029](./adr/ADR-0029-pin-temporal-expuesto-y-migracion-b-acotada.md)) |
 | [0027](./adr/ADR-0027-metodo-de-trabajo-con-paquetes-y-hooks.md) | Método de trabajo con paquetes, hooks y revisores        | Aceptado                          |
-| [0028](./adr/ADR-0028-navegacion-por-pestanas.md) | Navegación por pestañas con Lista y Gastos, sin Recetas ni Menú | Propuesto                  |
+| [0028](./adr/ADR-0028-navegacion-por-pestanas.md) | Navegación por pestañas con Lista y Gastos, sin Recetas ni Menú | Aceptado                   |
+| [0029](./adr/ADR-0029-pin-temporal-expuesto-y-migracion-b-acotada.md) | El PIN temporal sale expuesto y la migración B no deja filas libres | Aceptado; migración aplicada el 2026-11-17 |
+| [0030](./adr/ADR-0030-alta-de-articulos-sin-sugerencias-del-catalogo.md) | El alta de artículos no sugiere productos del catálogo | Aceptado |
 
 Formato [Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
 Contexto, Decisión, Alternativas consideradas, Consecuencias. Numeración correlativa y sin

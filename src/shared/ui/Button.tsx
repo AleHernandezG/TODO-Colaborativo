@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, Text } from 'react-native'
+import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 
 import { minTouchTarget, usePalette } from '@/theme'
 
@@ -9,13 +9,16 @@ type ButtonProps = {
   size?: 'md' | 'sm'
   disabled?: boolean
   loading?: boolean
+  loadingLabel?: string
   fullWidth?: boolean
+  accessibilityLabel?: string
   accessibilityHint?: string
 }
 
 const container = {
   primary: 'bg-primary dark:bg-primary-dark',
-  secondary: 'bg-surface dark:bg-surface-dark border border-line dark:border-line-dark',
+  secondary:
+    'bg-surface dark:bg-surface-dark border border-line-strong dark:border-line-strong-dark',
   danger: 'bg-surface dark:bg-surface-dark border border-danger dark:border-danger-dark',
 }
 
@@ -42,7 +45,9 @@ export function Button({
   size = 'md',
   disabled = false,
   loading = false,
+  loadingLabel,
   fullWidth = true,
+  accessibilityLabel,
   accessibilityHint,
 }: ButtonProps) {
   const palette = usePalette()
@@ -53,7 +58,7 @@ export function Button({
       onPress={onPress}
       disabled={blocked}
       accessibilityRole="button"
-      accessibilityLabel={text}
+      accessibilityLabel={loading && loadingLabel ? loadingLabel : (accessibilityLabel ?? text)}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: blocked, busy: loading }}
       style={{ minHeight: minTouchTarget }}
@@ -62,15 +67,22 @@ export function Button({
       } ${container[variant]} ${blocked ? 'opacity-50' : 'active:opacity-80'}`}
     >
       {loading ? (
-        <ActivityIndicator
-          color={
-            variant === 'primary'
-              ? palette.onPrimary
-              : variant === 'danger'
-                ? palette.danger
-                : palette.text
-          }
-        />
+        <View className="flex-row items-center gap-2">
+          <ActivityIndicator
+            color={
+              variant === 'primary'
+                ? palette.onPrimary
+                : variant === 'danger'
+                  ? palette.danger
+                  : palette.text
+            }
+          />
+          {loadingLabel ? (
+            <Text className={`${labelSize[size]} font-semibold ${label[variant]}`}>
+              {loadingLabel}
+            </Text>
+          ) : null}
+        </View>
       ) : (
         <Text className={`${labelSize[size]} font-semibold ${label[variant]}`}>{text}</Text>
       )}

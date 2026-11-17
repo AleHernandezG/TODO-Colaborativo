@@ -54,7 +54,7 @@ describe('contraste de controles (AA no textual, 3:1)', () => {
 })
 
 describe('área táctil', () => {
-  it('respeta el mínimo de 44 pt', () => {
-    expect(minTouchTarget).toBeGreaterThanOrEqual(44)
+  it('respeta los 48 dp de Android', () => {
+    expect(minTouchTarget).toBeGreaterThanOrEqual(48)
   })
 })

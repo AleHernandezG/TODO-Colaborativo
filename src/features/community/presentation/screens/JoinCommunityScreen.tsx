@@ -5,7 +5,7 @@ import { ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
-import { useSnackbar } from '@/shared/hooks/use-snackbar'
+import { ServerError } from '@/shared/lib/errors'
 import { Button } from '@/shared/ui/Button'
 import { Input } from '@/shared/ui/Input'
 
@@ -18,7 +18,6 @@ import { useJoinCommunity } from '../hooks/use-join-community'
 export function JoinCommunityScreen() {
   const { t } = useTranslation()
   const router = useRouter()
-  const showSnackbar = useSnackbar()
   const showError = useErrorSnackbar()
   const goToList = useGoToList()
   const { mutate, isPending } = useJoinCommunity()
@@ -31,6 +30,9 @@ export function JoinCommunityScreen() {
   const [pinError, setPinError] = useState<string | null>(null)
 
   const submit = () => {
+    if (isPending) {
+      return
+    }
     setJoinCodeError(null)
     setUsernameError(null)
     setPinError(null)
@@ -39,35 +41,41 @@ export function JoinCommunityScreen() {
       { joinCode, username, pin },
       {
         onSuccess: (result) => {
-          if (result.status === 'ok') {
-            goToList()
-            return
+          switch (result.status) {
+            case 'ok':
+              goToList()
+              return
+            case 'invalid_username':
+              setUsernameError(t('community.errors.invalidUsername'))
+              return
+            case 'invalid_pin':
+              setPinError(t('community.errors.invalidPin'))
+              return
+            case 'wrong_pin':
+              setPinError(t('community.errors.wrongPin'))
+              return
+            case 'username_taken':
+              setUsernameError(t('community.errors.usernameTaken'))
+              return
+            case 'too_many_attempts':
+              setPinError(t('community.errors.tooManyAttempts'))
+              return
+            case 'expired_join_code':
+              setJoinCodeError(t('community.errors.expiredJoinCode'))
+              return
+            case 'invalid_join_code':
+              setJoinCodeError(t('community.errors.invalidJoinCode'))
+              return
+            default: {
+              const unhandled: never = result
+              showError(
+                new ServerError(
+                  'join_community',
+                  `estado sin pintar en la pantalla: ${JSON.stringify(unhandled)}`,
+                ),
+              )
+            }
           }
-          if (result.status === 'invalid_username') {
-            setUsernameError(t('community.errors.invalidUsername'))
-            return
-          }
-          if (result.status === 'invalid_pin') {
-            setPinError(t('community.errors.invalidPin'))
-            return
-          }
-          if (result.status === 'wrong_pin') {
-            setPinError(t('community.errors.wrongPin'))
-            return
-          }
-          if (result.status === 'username_taken') {
-            setUsernameError(t('community.errors.usernameTaken'))
-            return
-          }
-          if (result.status === 'too_many_attempts') {
-            showSnackbar(t('community.errors.tooManyAttempts'))
-            return
-          }
-          if (result.status === 'expired_join_code') {
-            setJoinCodeError(t('community.errors.expiredJoinCode'))
-            return
-          }
-          setJoinCodeError(t('community.errors.invalidJoinCode'))
         },
         onError: (cause) => showError(cause),
       },
@@ -108,6 +116,7 @@ export function JoinCommunityScreen() {
             />
 
             <Input
+              testID="join-community-username"
               label={t('community.usernameLabel')}
               placeholder={t('community.usernamePlaceholder')}
               value={username}

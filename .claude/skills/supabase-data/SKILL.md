@@ -324,8 +324,17 @@ cuatro cifras se rompe en segundos.
 - `join_community`, `remove_member`, `set_member_admin` y `reset_member_pin` empiezan por
   `perform 1 from communities where id = ... for no key update`. Es lo que impide saltarse el
   límite con peticiones en paralelo y que dos admins se degraden a la vez.
-- Queda una **migración B** sin escribir: hasta entonces una fila sin PIN que tiene dueño sigue
-  siendo reclamable por cualquiera con el código. No des el problema por cerrado.
+- **`exposed` quiere decir «este PIN lo conoce alguien más que su dueño»** (ADR-0029): el hash vino
+  de `members.pin_hash` o lo generó un admin con `reset_member_pin`, que lo marca justo después de
+  `store_member_pin`. `store_member_pin` lo devuelve siempre a `false`, así que quien guarde un PIN
+  que conoce otra persona tiene que marcarlo él después, bajo el mismo bloqueo de la comunidad.
+- **Una fila sin PIN solo la reclama su dueño** desde la migración B
+  (`20261103120000_unclaimable_rows_and_exposed_pins.sql`, ADR-0029). Otra sesión recibe
+  `invalid_pin` si manda PIN y `username_taken` si no, y el fallo se anota contra la sesión, sin
+  `member_id`. Esa comprobación va **antes** del bloque que suelta la fila propia de quien llama: si
+  queda detrás, probar un nombre ajeno le cuesta a quien llama su fila y al dueño sus push tokens.
+  Hasta que la B esté aplicada en el real, la fila sigue siendo reclamable: míralo con
+  `supabase migration list` antes de darlo por cerrado.
 
 ### Funciones internas: `revoke` también a `authenticated`
 
@@ -340,9 +349,19 @@ alcanzan a `member_secrets`. Cuando las llama una RPC `security definer` corren 
 
 `lock table ... in access exclusive mode` como sentencia suelta falla con `LOCK TABLE can only be
 used in transaction blocks`: `supabase db push` manda el fichero como un lote, que es una
-transacción implícita pero no un bloque. Envuelto en `do $ begin lock table ...; end $;` funciona
-y el bloqueo dura hasta el final del lote. Deducido leyendo, pendiente de confirmar en el ensayo de
-`20261012120000`; si allí se comporta distinto, corrige este párrafo.
+transacción implícita pero no un bloque. Envuelto en `do $$ begin lock table ...; end $$;`
+funciona y el bloqueo dura hasta el final del lote.
+
+Con dos dólares: un `$` suelto no abre ninguna cadena y Postgres lo rechaza. Confirmado en el real
+el 2026-11-17: la A corrió `do $$ begin lock table public.join_attempts, public.members in access
+exclusive mode; end $$` y funcionó con `db push`. **El fichero `20261012120000` que hay en git no es
+el que se aplicó**: tiene `do $` y bloquea solo `members`. Lo que corrió de verdad está en
+`supabase_migrations.schema_migrations`, columna `statements`, y se lee con
+`npx supabase db query --remote --read-only`.
+
+Bloquea solo lo que haga falta y con `perform set_config('lock_timeout', '5s', true)` delante, como
+`20261103120000`. Bloquear dos tablas en una orden abre un ciclo con las RPC que las escriben en el
+otro orden, y sin `lock_timeout` la app entera espera detrás de la migración.
 
 ### Una RPC `security definer` comprueba tres cosas a mano
 
@@ -413,13 +432,15 @@ grant  execute on function join_community(text, text) to authenticated;
 Con sesión anónima de Supabase el rol efectivo es `authenticated`, no `anon` — `anon` es quien
 llega sin ningún token. Así que la app no pierde nada y el acceso sin sesión queda cerrado.
 
-`generate_join_code()` es una función interna: la llaman `create_community` y `remove_member` por
-dentro. Si algún día la necesitas desde fuera, es señal de que falta una RPC, no un grant. **Pero en
-el real `authenticated` la puede ejecutar** (comprobado el 2026-11-02 con `has_function_privilege`):
-su `revoke` de `20260718120100` solo nombra a `public` y `anon`, y le pasa lo de «Funciones
-internas» de arriba. No escribe nada y solo devuelve un código libre, así que no filtra datos. El
-`revoke ... from authenticated` va en la migración B (incremento 6), con su comprobación en
-`test:rls`.
+`generate_join_code()` es una función interna: la llaman `create_community`, `rotate_join_code` y
+`remove_member` por dentro. Si algún día la necesitas desde fuera, es señal de que falta una RPC, no un grant. Hasta
+la migración B **`authenticated` la podía ejecutar** (comprobado el 2026-11-02 con
+`has_function_privilege`): su `revoke` de `20260718120100` solo nombraba a `public` y `anon`, y le
+pasaba lo de «Funciones internas» de arriba. `join_code_lifetime()` tenía el mismo hueco. Los dos
+`revoke ... from authenticated` están en `20261103120000`, aplicada el 2026-11-17, con su
+comprobación en `test:rls`; en el real ya salen a `false`. El `default` de
+`communities.join_code_expires_at` sigue funcionando porque solo se evalúa dentro de RPC
+`security definer`, que corren como su dueño.
 
 Cualquier función nueva repite las dos líneas. Sin ellas, el `revoke` que protege a las demás
 da una falsa sensación de que el patrón está aplicado.

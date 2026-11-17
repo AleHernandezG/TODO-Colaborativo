@@ -7,7 +7,10 @@ import type {
   CommunityMember,
   CommunityRepository,
   JoinOutcome,
+  PinState,
+  SetPinOutcome,
 } from '../domain/community-repository'
+import { isValidPin } from '../domain/pin'
 
 const failedJoinStatuses = [
   'invalid_join_code',
@@ -22,6 +25,18 @@ type FailedJoinStatus = (typeof failedJoinStatuses)[number]
 
 function isFailedJoinStatus(status: string): status is FailedJoinStatus {
   return failedJoinStatuses.includes(status as FailedJoinStatus)
+}
+
+const pinStates = ['none', 'exposed', 'set'] as const
+
+function isPinState(value: string): value is PinState {
+  return pinStates.includes(value as PinState)
+}
+
+const setPinStatuses = ['ok', 'invalid_pin', 'wrong_pin', 'too_many_attempts'] as const
+
+function isSetPinStatus(status: string): status is SetPinOutcome['status'] {
+  return setPinStatuses.includes(status as SetPinOutcome['status'])
 }
 
 async function readCommunity(id: string): Promise<Community> {
@@ -88,8 +103,12 @@ export const supabaseCommunityRepository: CommunityRepository = {
       return { status: result.status }
     }
 
-    if (result.status !== 'ok' || !result.community_id) {
+    if (result.status !== 'ok') {
       throw new ServerError('join_community', `estado desconocido: ${result.status}`)
+    }
+
+    if (!result.community_id) {
+      throw new ServerError('join_community', 'la RPC devolvió ok sin community_id')
     }
 
     return {
@@ -303,5 +322,72 @@ export const supabaseCommunityRepository: CommunityRepository = {
     return () => {
       void supabase.removeChannel(channel)
     }
+  },
+
+  async getMyPinState(communityId): Promise<PinState> {
+    await assertOnline()
+
+    const { data, error } = await supabase.rpc('my_member_pin_state', {
+      p_community_id: communityId,
+    })
+
+    if (error) {
+      throw serverError('my_member_pin_state', error)
+    }
+
+    if (typeof data !== 'string' || !isPinState(data)) {
+      throw new ServerError('my_member_pin_state', `estado de PIN desconocido: ${String(data)}`)
+    }
+
+    return data
+  },
+
+  async setMyPin({ communityId, newPin, currentPin }): Promise<SetPinOutcome> {
+    await assertOnline()
+
+    const { data, error } = await supabase.rpc('set_member_pin', {
+      p_community_id: communityId,
+      p_new_pin: newPin,
+      ...(currentPin === undefined ? {} : { p_current_pin: currentPin }),
+    })
+
+    if (error) {
+      throw serverError('set_member_pin', error)
+    }
+
+    const result = data?.[0]
+    if (!result) {
+      throw new ServerError('set_member_pin', 'la RPC no devolvió ningún estado')
+    }
+
+    if (!isSetPinStatus(result.status)) {
+      throw new ServerError('set_member_pin', `estado desconocido: ${result.status}`)
+    }
+
+    return { status: result.status }
+  },
+
+  async resetMemberPin(communityId, memberId): Promise<{ tempPin: string }> {
+    await assertOnline()
+
+    const { data, error } = await supabase.rpc('reset_member_pin', {
+      p_community_id: communityId,
+      p_member_id: memberId,
+    })
+
+    if (error) {
+      throw serverError('reset_member_pin', error)
+    }
+
+    const result = data?.[0]
+    if (!result) {
+      throw new ServerError('reset_member_pin', 'la RPC no devolvió ningún PIN temporal')
+    }
+
+    if (typeof result.temp_pin !== 'string' || !isValidPin(result.temp_pin)) {
+      throw new ServerError('reset_member_pin', 'el PIN temporal no tiene cuatro cifras')
+    }
+
+    return { tempPin: result.temp_pin }
   },
 }

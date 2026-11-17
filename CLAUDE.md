@@ -21,7 +21,7 @@ Qué leer antes de tocar nada que no entiendas:
 | `docs/tecnica/ESTRUCTURA.md` | Dónde va cada cosa y dónde poner un fichero nuevo |
 | `docs/tecnica/STACK.md` | Versiones y licencias, con fecha de comprobación |
 | `docs/tecnica/METODO-DE-TRABAJO.md` | Cómo está montado Claude Code: skills, agentes, hooks y plugins, con su porqué |
-| `docs/adr/` | Las decisiones, con lo que se descartó: 27 aceptadas |
+| `docs/adr/` | Las decisiones, con lo que se descartó: 30 aceptadas |
 | `docs/phases/fase-N.md` | El diario de cada fase: qué se hizo, cómo probarlo, deuda asumida |
 | `DESIGN.md` | Cómo se ve la app. Léelo antes de pintar o tocar una pantalla |
 
@@ -274,7 +274,8 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 **El hash del PIN vive en `member_secrets`, una tabla sin políticas que solo leen las RPC.** Nunca
 se devuelve desde una función ni se pone en una tabla legible: `members` lo tuvo en una columna
 visible para toda la lista hasta el 2026-10-12. `set_member_pin` lo fija y `reset_member_pin` (solo
-admin) devuelve uno temporal. ADR-0026 tiene una segunda migración pendiente: léelo antes de tocar
+admin) devuelve uno temporal, que queda marcado como expuesto. La migración B está aplicada desde
+el 2026-11-17 y se aparta de ADR-0026 en lo que cuenta ADR-0029: lee los dos antes de tocar
 `join_community`, que solo puede devolver sus seis estados porque los APK instalados no conocen
 otros.
 
@@ -456,7 +457,7 @@ npx expo start
 npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
 
 # Aislamiento entre listas, catálogo, gastos idempotentes, varias listas, PIN fuera de members y
-# RPC de recetas, gastos y menús. 102/102 contra el real (101/102 sin SUPABASE_SECRET_KEY)
+# RPC de recetas, gastos y menús. 113/113 contra el real (112/113 sin SUPABASE_SECRET_KEY)
 npm run test:rls
 
 # Realtime: artículos, gastos, miembros, filtro por lista, aislamiento y presencia. 18/18

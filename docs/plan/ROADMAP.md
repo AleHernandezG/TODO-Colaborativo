@@ -16,8 +16,10 @@ auditoría del 2026-10-11).** Incrementos 1 y 2 hechos: `main` es SDK 57 y versi
 (`febae87`). **Incrementos 3 y 4 cerrados el 2026-11-02, con su paso en el Android**: las dos
 migraciones están aplicadas con `db push` y comprobadas en el real, `db.types.ts` regenerado,
 `test:rls` 102/102 y `test:realtime` 18/18 contra el real, Jest con 68 suites y 490 tests (72 y
-510 tras el arreglo de Gastos, 74 y 530 tras el T-16.1), `test:hooks` 103/103, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio. Diario en
-[`fase-15.md`](../phases/fase-15.md), apartados 12 y 13.
+510 tras el arreglo de Gastos, 74 y 530 tras el T-16.1, 81 y 597 tras el incremento 6),
+`test:hooks` 103/103, lint con 0 errores y 9 avisos que ya estaban, typecheck limpio. Diario en
+[`fase-15.md`](../phases/fase-15.md), apartados 12 y 13. Con la B, `test:rls` da 113/113
+(apartado 15).
 
 **El POCO F5 tiene la 1.3.1 desde el 2026-11-02** (build `08f58498`, pie `v1.3.1 · base`), y la
 sesión lo prueba sola por `adb` y Maestro (`docs/guias/e2e-con-maestro.md`). El guion del PIN pasó
@@ -69,18 +71,26 @@ Orden de las próximas sesiones (P-04, respuesta A con A1), una por prompt de `p
    [P-05](PREGUNTAS.md#p-05--marca-de-pendiente-de-enviar-en-cada-fila) respondida: cada artículo
    con un cambio en la cola lleva su marca en la fila, y la pinta el T-16.4.
 4. Incremento 6 del T-15, la pantalla del PIN con el diseño nuevo y la migración B:
-   [`T-15.md`](prompts/T-15.md). Hasta la B, una fila sin PIN la puede reclamar cualquiera con el
-   código de la lista (ADR-0026). Hay 12 listas cuyo único admin no tiene PIN y 20 miembros activos
-   sin PIN.
+   [`T-15.md`](prompts/T-15.md). El código se hizo el 2026-11-03: la pantalla del PIN y los mensajes
+   de unirse están en el POCO con el update `01a1a227`. La B
+   (`20261103120000_unclaimable_rows_and_exposed_pins.sql`), revisada dos veces por
+   `migration-reviewer`, esperó a que Alejandro la aplicara: entró en el ensayo y en el real el
+   2026-11-17, con `test:rls` 111/111 y `test:realtime` 18/18 en los dos, y 113/113 tras la
+   revisión de tests del mismo día. Se aparta de ADR-0026 en tres puntos, recogidos en
+   [ADR-0029](../adr/ADR-0029-pin-temporal-expuesto-y-migracion-b-acotada.md), aceptado el 2026-11-17. Diario en
+   [`fase-15.md`](../phases/fase-15.md), apartado 15.
 5. T-16.3 a T-16.7, con sus prompts en `prompts/T-16-*.md`.
 6. Incrementos 5, 7, 8, 9, 10 y 11 del T-15, en el orden de la tabla de la auditoría, sin lo que
    absorbieron el arreglo de Gastos y el T-16 (ficha del T-16, «Absorbe»).
 - El guion de la fase 15 en un Android real (`fase-15.md`, apartado 4). El selector de listas ya se
   vio en el POCO (se abre y atrás lo cierra); falta cambiar de lista y el resto del guion.
 
-**Siguiente: incremento 6 del T-15, la pantalla del PIN con el diseño nuevo y la migración B**,
-con su prompt en [`prompts/T-15.md`](prompts/T-15.md). Crea `ScreenHeader` y `ActionBar` en
-`src/shared/ui`, que luego usa el T-16.3. Parte de [`DESIGN.md`](../../DESIGN.md) y de los bocetos.
+**Siguiente: T-16.3, la navegación por pestañas y fuera las sugerencias del catálogo
+(ADR-0030)**, con su prompt en [`prompts/T-16-3-navegacion.md`](prompts/T-16-3-navegacion.md).
+ADR-0028, ADR-0029 y ADR-0030 aceptados el 2026-11-17. El incremento 6 queda cerrado: el tramo c5
+y el cambio de PIN desde la tarjeta pasaron en el POCO con la B aplicada (`fase-15.md`, «c5 con la
+B aplicada»), salvo cerrar la app y volver a abrirla, que no se comprobó. `ScreenHeader` y
+`ActionBar` ya están en `src/shared/ui` desde el incremento 6.
 
 ## Lo que se arrastra de fases anteriores
 
@@ -98,8 +108,15 @@ de aquí y se apunta en el diario de la fase que lo cerró.
 - **Los APK de EAS caducan.** El 1.3.0 y el 1.3.1 (`5f8bd1c3`) daban `NoSuchKey` el 2026-11-02.
   Cada APK se descarga al terminar su build y se guarda en `~/tools/apk/`; para repartirlo, un sitio
   estable (lo decide el incremento 5).
-- **`generate_join_code()` la puede ejecutar `authenticated`** (fase 15, apartado 12, c3c). No
-  filtra datos. Su `revoke` va en la migración B del incremento 6.
+- **Cuándo se puede cerrar el aviso del PIN lo decide el hook** (`use-pin-reminder.ts`, que mira
+  «cerrado» y que estén cargados el estado y los miembros), no `pinReminderFor`, y no tiene test. Si
+  se invierte, la única admin podría cerrar «Ponte un PIN». Va al incremento 7, que ya toca esos
+  hooks: pasar `dismissed` al dominio y probarlo allí (fase 15, apartado 15, revisión de tests).
+- **Que los fallos contra una fila sin PIN cuenten contra la sesión y no contra el miembro**
+  (ADR-0029, punto 3) no lo comprueba `test:rls`. Hacerlo pide forzar cinco fallos y otra sesión;
+  se aparcó por coste frente a riesgo.
+- **`use-remove-member.ts` invalida el código de invitación sin test.** Es una línea; entra con el
+  primer test que se escriba para ese hook.
 - **`camino-feliz.yaml` y `cola-offline.yaml` están desfasados desde la fase 15**: no rellenan el
   PIN y el primero pulsa «Salir de esta lista», que ya no existe (ADR-0025). Hasta arreglarlos,
   `npm run test:e2e` falla en ellos.
@@ -157,7 +174,7 @@ build de Play Store en prueba interna.
 **Manda:** [ADR-0025](../adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md),
 [ADR-0026](../adr/ADR-0026-pin-fuera-de-members-y-recuperacion-de-identidad.md) y el apartado 7 de la
 auditoría.
-**Terminado cuando:** `npm run test:rls` da 102/102 contra el proyecto real; `npm test` en verde con
+**Terminado cuando:** `npm run test:rls` da 113/113 contra el proyecto real; `npm test` en verde con
 la cobertura de `jest.config.js`; el guion del apartado 4 de `fase-15.md` recorrido en un Android
 real con la versión que diga el pie de la lista; los once incrementos con su estado en
 `fase-15.md`.
@@ -171,12 +188,13 @@ Nada se publica contra la runtime 1.2.0.
 2026-11-02, en el POCO con la letra al 115 %, la cabecera de la lista dejó el título en 19 px, el
 código de invitación quedó a dos deslizamientos y nada de eso lo vio ningún test. Navegación nueva,
 cabecera nueva y las pantallas que se ven rehechas según un `DESIGN.md` reescrito. Recetas y Menú
-semanal salen de la app en el T-16.3 (ADR-0028): de 15 pantallas quedan 10, y 11 con Tu PIN.
+semanal salen de la app en el T-16.3 (ADR-0028): de 15 pantallas quedan 10, y 11 con Tu PIN. En
+el mismo incremento el campo de añadir deja de sugerir productos del catálogo (ADR-0030).
 **Entra:** la 1.3.1 en el POCO con el arreglo de Gastos por aire, el `DESIGN.md` de hoy, los tokens
 de `src/theme/tokens.js` y la prueba por `adb` y Maestro.
 **Sale:** un script que mide una pantalla desde su árbol de `uiautomator` y un test que caza los
 estilos fuera de los tokens (incremento 1); `DESIGN.md` nuevo, ADR-0028 de navegación y bocetos
-(2); navegación, cabecera y Recetas y Menú escondidos (3); lista y modo supermercado (4); gastos y
+(2); navegación, cabecera, Recetas y Menú escondidos y fuera las sugerencias del catálogo (3); lista y modo supermercado (4); gastos y
 miembros (5); bienvenida, crear y unirse (6); cierre con TalkBack, letra al máximo, modo oscuro y
 los tres flujos de Maestro al día (7).
 **Absorbe del T-15:** del incremento 7 de la auditoría, los puntos 1 a 3 y los respaldos del canal
@@ -187,6 +205,7 @@ por `src/shared/ui`; el aviso de unos 12 s sin red (hallazgo 5 de `fase-15.md`) 
 `StatusStrip` y se pinta en el T-16.3, sin tocar el timeout. Los bloques 1 y 2 del incremento 8 y
 el resto del 7 se quedan en el T-15.
 **Manda:** `DESIGN.md`, [ADR-0028](../adr/ADR-0028-navegacion-por-pestanas.md),
+[ADR-0030](../adr/ADR-0030-alta-de-articulos-sin-sugerencias-del-catalogo.md),
 [ADR-0004](../adr/ADR-0004-libreria-de-ui.md) y [ADR-0025](../adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md).
 **Terminado cuando:** las cinco condiciones de «Cómo se cierra un paquete»; la lista de excepciones
 del test de diseño sin nada de las pantallas que se ven (quedan las 7 entradas de recetas y menú);
@@ -214,8 +233,7 @@ diario de la fase.
 
 ## Qué bloquea el proyecto ahora mismo
 
-Que la suplantación sigue abierta hasta la migración B: una fila sin PIN la puede reclamar
-cualquiera con el código de la lista, y los 120 PIN que fueron legibles siguen valiendo. La B no se
-puede aplicar sin más, porque hay 12 listas cuyo único admin no tiene PIN y se quedarían sin forma
-de recuperarlo. Antes hace falta la pantalla del PIN del incremento 6. El POCO ya tiene la 1.3.1 para
-probarla.
+Nada que deje datos abiertos. La migración B se aplicó el 2026-11-17 y una fila sin PIN ya solo la
+reclama su dueño. Queda lo que ADR-0029 acepta: un PIN expuesto en una fila sin sesión vale hasta
+que su dueño lo cambie. La cabecera de la lista con la letra al 115 % aplasta el selector de listas a
+19 px de ancho (sigue funcionando si se toca el borde izquierdo); lo arregla el T-16.3.

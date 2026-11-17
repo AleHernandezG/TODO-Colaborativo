@@ -1,0 +1,164 @@
+appId: com.alejandrohernandez.listacompra
+name: Cambiar el PIN, entrar con el viejo y el nuevo, y restablecer el de otra persona
+tags:
+  - pin
+---
+- launchApp:
+    clearState: true
+
+- tapOn: 'Crear una lista'
+- tapOn:
+    id: 'create-community-name'
+- inputText: 'E2E PIN cambiar'
+- tapOn:
+    id: 'create-community-username'
+- inputText: 'Ana'
+- tapOn:
+    id: 'create-community-pin'
+- inputText: '1111'
+- hideKeyboard
+- tapOn: 'Crear la lista'
+- extendedWaitUntil:
+    visible: 'Lista E2E PIN cambiar'
+    timeout: 20000
+- assertNotVisible:
+    id: 'pin-reminder'
+
+- scrollUntilVisible:
+    element:
+      text: '.*[A-Z2-9]{3}-[A-Z2-9]{4}.*'
+    timeout: 20000
+- copyTextFrom:
+    text: '.*[A-Z2-9]{3}-[A-Z2-9]{4}.*'
+- evalScript: ${output.joinCode = maestro.copiedText.replace(/[^A-Z0-9-]/g, '').slice(-8)}
+
+- scrollUntilVisible:
+    element: 'Gestionar miembros'
+- tapOn: 'Gestionar miembros'
+- tapOn: 'Tu PIN'
+- extendedWaitUntil:
+    visible:
+      id: 'pin-current'
+    timeout: 15000
+- tapOn:
+    id: 'pin-current'
+- inputText: '9999'
+- tapOn:
+    id: 'pin-new'
+- inputText: '2222'
+- tapOn:
+    id: 'pin-repeat'
+- inputText: '2222'
+- hideKeyboard
+- tapOn: 'Cambiar PIN'
+- extendedWaitUntil:
+    visible: 'El PIN actual no coincide.*'
+    timeout: 20000
+- tapOn:
+    id: 'pin-current'
+- eraseText
+- inputText: '1111'
+- hideKeyboard
+- tapOn: 'Cambiar PIN'
+- extendedWaitUntil:
+    visible: 'PIN cambiado'
+    timeout: 20000
+- assertVisible: 'Miembros de la lista'
+
+- launchApp:
+    clearState: true
+- tapOn: 'Tengo un código'
+- inputText: ${output.joinCode}
+- tapOn:
+    id: 'join-community-username'
+- inputText: 'Ana'
+- tapOn:
+    id: 'join-community-pin'
+- inputText: '1111'
+- hideKeyboard
+- tapOn: 'Entrar en la lista'
+- extendedWaitUntil:
+    visible: 'Ese nombre ya tiene PIN y no es este.*'
+    timeout: 20000
+- tapOn:
+    id: 'join-community-pin'
+- eraseText
+- inputText: '2222'
+- hideKeyboard
+- tapOn: 'Entrar en la lista'
+- extendedWaitUntil:
+    visible: 'Lista E2E PIN cambiar'
+    timeout: 20000
+
+- launchApp:
+    clearState: true
+- tapOn: 'Tengo un código'
+- inputText: ${output.joinCode}
+- tapOn:
+    id: 'join-community-username'
+- inputText: 'Bea'
+- tapOn:
+    id: 'join-community-pin'
+- inputText: '3333'
+- hideKeyboard
+- tapOn: 'Entrar en la lista'
+- extendedWaitUntil:
+    visible: 'Lista E2E PIN cambiar'
+    timeout: 20000
+
+- launchApp:
+    clearState: true
+- tapOn: 'Tengo un código'
+- inputText: ${output.joinCode}
+- tapOn:
+    id: 'join-community-username'
+- inputText: 'Ana'
+- tapOn:
+    id: 'join-community-pin'
+- inputText: '2222'
+- hideKeyboard
+- tapOn: 'Entrar en la lista'
+- extendedWaitUntil:
+    visible: 'Lista E2E PIN cambiar'
+    timeout: 20000
+- scrollUntilVisible:
+    element: 'Gestionar miembros'
+- tapOn: 'Gestionar miembros'
+- extendedWaitUntil:
+    visible: 'Restablecer el PIN de Bea'
+    timeout: 15000
+- tapOn: 'Restablecer el PIN de Bea'
+- tapOn: 'Restablecer'
+- extendedWaitUntil:
+    visible:
+      id: 'temp-pin'
+    timeout: 20000
+- copyTextFrom:
+    id: 'temp-pin'
+- evalScript: ${output.tempPin = maestro.copiedText.replace(/[^0-9]/g, '')}
+- back
+- assertVisible:
+    id: 'temp-pin'
+- tapOn: 'Hecho'
+- assertNotVisible: 'Restablecer el PIN de Bea'
+
+- launchApp:
+    clearState: true
+- tapOn: 'Tengo un código'
+- inputText: ${output.joinCode}
+- tapOn:
+    id: 'join-community-username'
+- inputText: 'Bea'
+- tapOn:
+    id: 'join-community-pin'
+- inputText: ${output.tempPin}
+- hideKeyboard
+- tapOn: 'Entrar en la lista'
+- extendedWaitUntil:
+    visible: 'Lista E2E PIN cambiar'
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: 'pin-reminder'
+    timeout: 20000
+- assertVisible: 'Cambia tu PIN.*'

@@ -19,13 +19,13 @@ tags:
 - hideKeyboard
 - tapOn: 'Crear la lista'
 - extendedWaitUntil:
-    visible: 'Estás dentro como Ana'
+    visible: 'Lista E2E PIN'
     timeout: 20000
 
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: '.*[A-Z2-9]{3}-[A-Z2-9]{4}.*'
-    timeout: 15000
+    timeout: 20000
 - copyTextFrom:
     text: '.*[A-Z2-9]{3}-[A-Z2-9]{4}.*'
 - evalScript: ${output.joinCode = maestro.copiedText.replace(/[^A-Z0-9-]/g, '').slice(-8)}
@@ -34,7 +34,8 @@ tags:
     clearState: true
 - tapOn: 'Tengo un código'
 - inputText: ${output.joinCode}
-- tapOn: 'Como te ven los demás'
+- tapOn:
+    id: 'join-community-username'
 - inputText: 'Bea'
 - tapOn:
     id: 'join-community-pin'
@@ -42,14 +43,15 @@ tags:
 - hideKeyboard
 - tapOn: 'Entrar en la lista'
 - extendedWaitUntil:
-    visible: 'Estás dentro como Bea'
+    visible: 'Lista E2E PIN'
     timeout: 20000
 
 - launchApp:
     clearState: true
 - tapOn: 'Tengo un código'
 - inputText: ${output.joinCode}
-- tapOn: 'Como te ven los demás'
+- tapOn:
+    id: 'join-community-username'
 - inputText: 'Ana'
 - tapOn:
     id: 'join-community-pin'
@@ -57,15 +59,23 @@ tags:
 - hideKeyboard
 - tapOn: 'Entrar en la lista'
 - extendedWaitUntil:
-    visible: 'Estás dentro como Ana'
+    visible: 'Lista E2E PIN'
     timeout: 20000
-- assertNotVisible: 'Estás dentro como Ana2'
+- scrollUntilVisible:
+    element: 'Gestionar miembros'
+- tapOn: 'Gestionar miembros'
+- extendedWaitUntil:
+    visible: 'Bea'
+    timeout: 15000
+- assertVisible: 'Ana'
+- assertNotVisible: 'Ana2'
 
 - launchApp:
     clearState: true
 - tapOn: 'Tengo un código'
 - inputText: ${output.joinCode}
-- tapOn: 'Como te ven los demás'
+- tapOn:
+    id: 'join-community-username'
 - inputText: 'Ana'
 - tapOn:
     id: 'join-community-pin'
@@ -73,9 +83,9 @@ tags:
 - hideKeyboard
 - tapOn: 'Entrar en la lista'
 - extendedWaitUntil:
-    visible: 'El PIN no es correcto para este usuario.'
+    visible: 'Ese nombre ya tiene PIN y no es este.*'
     timeout: 20000
-- assertNotVisible: 'Estás dentro como Ana'
+- assertNotVisible: 'Lista E2E PIN'
 
 - back
 - assertVisible: 'Tengo un código'

@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 
-import { useFailureMessage } from './use-failure-message'
+import { type MessagesByFailure, useFailureMessage } from './use-failure-message'
 import { useSnackbar } from './use-snackbar'
 
 export function useErrorSnackbar() {
@@ -8,8 +8,8 @@ export function useErrorSnackbar() {
   const showSnackbar = useSnackbar()
 
   return useCallback(
-    (cause: unknown, actionMessage?: string) => {
-      showSnackbar(failureMessage(cause, actionMessage))
+    (cause: unknown, actionMessage?: string, byFailure?: MessagesByFailure) => {
+      showSnackbar(failureMessage(cause, actionMessage, byFailure))
     },
     [failureMessage, showSnackbar],
   )

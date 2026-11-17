@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { supabaseCommunityRepository } from '../../data/supabase-community-repository'
 import { allCommunityMembersKey } from './use-community-members'
+import { joinCodeKey } from './use-join-code'
 
 export function useRemoveMember(communityId: string) {
   const queryClient = useQueryClient()
@@ -11,6 +12,7 @@ export function useRemoveMember(communityId: string) {
       supabaseCommunityRepository.removeMember(communityId, memberId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: allCommunityMembersKey(communityId) })
+      void queryClient.invalidateQueries({ queryKey: joinCodeKey(communityId) })
       void queryClient.invalidateQueries({
         queryKey: ['expenses', communityId],
       })

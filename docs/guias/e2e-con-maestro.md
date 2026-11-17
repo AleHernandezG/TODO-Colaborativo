@@ -14,12 +14,15 @@ recorre igual cada vez y que nadie vuelve a probar entero después de la tercera
 |---|---|
 | `camino-feliz.yaml` | Crear lista → añadir artículo con cantidad 2 → marcar comprado y volver a pendiente → borrar y deshacer → borrar de verdad → refrescar para confirmar que el servidor está de acuerdo → salir de la lista |
 | `cola-offline.yaml` | Crear lista → modo avión → añadir artículo → cerrar y reabrir la app sin red → recuperar red → confirmar contra el servidor que el artículo encolado llegó |
-| `pin-unirse.yaml` | Crear lista como Ana con PIN → copiar el código → borrar datos y unirse como Bea → borrar datos y volver a entrar como Ana con su PIN → borrar datos y probar un PIN equivocado → botón atrás. Etiqueta `pin` |
+| `pin-unirse.yaml` | Crear lista como Ana con PIN → copiar el código → borrar datos y unirse como Bea → borrar datos y volver a entrar como Ana con su PIN y comprobar en Miembros que no hay una Ana2 → borrar datos y probar un PIN equivocado → botón atrás. Etiqueta `pin` |
+| `pin-cambiar.yaml` | Crear lista como Ana → cambiar el PIN en «Tu PIN» (primero con el actual mal) → entrar con el viejo y con el nuevo → unirse como Bea → Ana restablece el PIN de Bea, atrás no cierra el diálogo y «Hecho» sí → Bea entra con el temporal y ve «Cambia tu PIN». Etiqueta `pin` |
 
 **`camino-feliz.yaml` y `cola-offline.yaml` están desfasados desde la fase 15**: no rellenan el PIN,
 que es obligatorio al crear, y el primero pulsa «Salir de esta lista», que ya no existe (ADR-0025).
-Están apuntados como deuda en el ROADMAP. `pin-unirse.yaml` se escribió el 2026-11-02 y todavía no
-se ha ejecutado entero; «Cómo prueba la sesión sola» dice qué falta.
+Están apuntados como deuda en el ROADMAP. Los dos del PIN se han recorrido enteros en el POCO, partidos en tramos (`fase-15.md`, apartado 15);
+el último paso de `pin-cambiar.yaml` (cambiar el temporal desde la tarjeta) pide la migración B,
+aplicada el 2026-11-17. Con ella se recorrió a mano en el POCO, no con Maestro, porque `adb` no
+veía el móvil.
 
 `cola-offline.yaml` es la comprobación automatizada de lo que hace la Fase 4. Va etiquetado como
 `offline` y `config.yaml` lo excluye de la tanda por defecto, porque toca el modo avión del
@@ -212,7 +215,11 @@ adb shell getprop persist.security.adbinput     # 1 = Depuración USB (ajustes d
   ```
 
   Sin el `pm grant`, el diálogo del permiso de notificaciones tapa la app, porque quien lo
-  concedía era `launchApp`. El código de invitación pasa de un tramo a otro con `-e JOIN_CODE=...`.
+  concedía era `launchApp`. El código de invitación pasa de un tramo a otro con `-e JOIN_CODE=...`,
+  **con su guion** (`P23-JPMY`): sin él, Maestro pierde letras al escribirlo.
+- `pm clear` borra también el update descargado. La primera apertura arranca la base y descarga; hay
+  que forzar la parada y abrir otra vez para que el pie vuelva a enseñar el id del update. Sin eso,
+  el tramo prueba la versión equivocada.
 - El driver de Maestro se instala en cada ejecución y se desinstala al terminar. HyperOS
   rechaza esa instalación muchas veces aunque «Instalar vía USB» esté a 1: 13 de 18 intentos el
   2026-11-02, con `INSTALL_FAILED_USER_RESTRICTED` o `DeviceServerDiedException ... during
@@ -301,6 +308,6 @@ Temurin 21.0.13 en `~/tools`, y el APK 1.3.1 del build `08f58498` en
 `pin-unirse.yaml` se recorrió en el POCO partido en tramos, como se cuenta arriba. Resultado y
 hallazgos en `docs/phases/fase-15.md`, apartado 13.
 
-`pin-unirse.yaml` comprueba la entrada con «Estás dentro como Ana», y ese texto no se ve con la letra
-del sistema por encima del 100 % (hallazgo 2 del apartado 13). Hasta arreglar la cabecera, los tramos
-abren el selector de listas tocando «Lista E2E PIN» y buscan «Como Ana».
+«Estás dentro como Ana» lo tapa la cabecera, también al 100 % de letra (hallazgo 2 del apartado 13 y
+apartado 15). Desde el 2026-11-03 los flujos del PIN esperan el título de la lista («Lista E2E PIN»),
+hacen scroll hasta el código y la tarjeta, y comprueban el nombre en Miembros.

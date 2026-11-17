@@ -16,6 +16,9 @@ function fakeRepository(): jest.Mocked<CommunityRepository> {
     setMemberAdmin: jest.fn(),
     addGuestMember: jest.fn(),
     subscribeMembers: jest.fn(),
+    getMyPinState: jest.fn(),
+    setMyPin: jest.fn(),
+    resetMemberPin: jest.fn(),
   }
 }
 

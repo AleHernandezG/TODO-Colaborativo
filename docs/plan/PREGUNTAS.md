@@ -4,7 +4,7 @@ Las dudas que decide Alejandro. Cada una lleva los hechos, las opciones y una re
 respuesta va debajo con la fecha y el enlace a dónde acabó. Una pregunta respondida no se borra.
 Si la respuesta es «no me convence», se da otra vuelta en la misma pregunta.
 
-El siguiente número libre es **P-06**.
+El siguiente número libre es **P-08**.
 
 | Pregunta | Sobre qué | Bloquea | Estado |
 | --- | --- | --- | --- |
@@ -13,6 +13,8 @@ El siguiente número libre es **P-06**.
 | [P-03](#p-03--aceptar-el-adr-0027) | Aceptar el ADR-0027 | Nada | Respondida: aceptado |
 | [P-04](#p-04--alcance-y-orden-del-rediseño) | Alcance y orden del rediseño | Nada | Respondida: A con A1 |
 | [P-05](#p-05--marca-de-pendiente-de-enviar-en-cada-fila) | Marca de «pendiente de enviar» en cada fila | Nada | Respondida: A |
+| [P-06](#p-06--restablecer-otra-vez-un-pin-temporal-que-se-perdió) | Restablecer otra vez un PIN temporal perdido | Nada | Abierta |
+| [P-07](#p-07--gap-2-da-7-dp-en-android) | `gap-2` da 7 dp en Android | Nada; el T-16.3 decide | Respondida en parte: gap-3 en el T-15.6 |
 
 ---
 
@@ -177,3 +179,83 @@ nada.
 y TalkBack lo lee con la fila. C queda para más adelante, sin fecha. Está en
 [`DESIGN.md`](../../DESIGN.md), apartado «Conexión», y en el prompt
 [`T-16-4-lista-y-supermercado.md`](prompts/T-16-4-lista-y-supermercado.md).
+
+## P-06 · Restablecer otra vez un PIN temporal que se perdió
+
+No bloquea el incremento 6 del T-15. Abierta el 2026-11-03 por un hallazgo del cazador de fallos
+silenciosos sobre `ResetMemberPinDialog`.
+
+`reset_member_pin` deja la fila con `auth_user_id = null` e `is_admin = false`. El cliente marca
+como invitado (`isGuest`) toda fila sin sesión, y `canResetPin` no deja restablecer a un invitado:
+tiene sentido para los de RF-12, que nunca tuvieron app ni PIN. El efecto es que, una vez
+restablecido, el botón desaparece de esa fila y el admin ya no puede sacar otro PIN temporal desde
+la app. Si el temporal se pierde, la persona se queda fuera de su nombre. La salida que queda es
+que el admin la quite y vuelva a entrar con el mismo nombre, que queda libre porque la unicidad
+solo cuenta a los miembros activos. Pero entra como miembro nuevo y su historial de gastos se
+queda con la fila archivada.
+
+Lo que ya está cerrado en este incremento:
+
+- El PIN emitido vive en un store en memoria que rellena el hook. Así sobrevive a que la pantalla
+  se desmonte con la petición en vuelo.
+- Ante un timeout o un servidor que no responde, el aviso pide pulsar «Restablecer» otra vez sin
+  cancelar. El diálogo sigue con la fila de antes y la RPC acepta repetir.
+
+Lo que queda abierto es perderlo de verdad. Puede pasar porque se mata la app antes de apuntarlo o
+porque se cancela el diálogo tras un timeout en el que el servidor sí lo restableció. Cuántas veces
+pasa no se sabe: no hay ningún restablecimiento hecho todavía, porque la pantalla nace en este
+incremento.
+
+En el POCO se perdió uno el 2026-11-03 por una tercera vía: cambiar el tamaño de letra del sistema
+con el diálogo abierto. Android recrea la app, que vuelve a la lista con el store en memoria vacío.
+Pasa igual al cambiar el tema o al girar el móvil si la orientación no está fijada. Bea se quedó
+como invitada y sin botón, y solo se pudo seguir porque era una lista de prueba (`fase-15.md`,
+apartado 15).
+
+Opciones:
+
+- **A. Dejar restablecer cualquier fila sin sesión.** Cambia una línea de `canResetPin`. A cambio,
+  los invitados de RF-12 también llevan el botón, y darle un PIN a un invitado lo convierte en una
+  fila que reclama quien tenga ese PIN. Es un cambio de significado que hoy nadie ha pedido.
+- **B. Una RPC de solo lectura para el admin**, del tipo `community_member_pin_states(p_community_id)`,
+  que devuelva `member_id` y si la fila tiene PIN, nunca el hash. Así `canResetPin` deja restablecer
+  las filas sin sesión que sí tienen PIN, que son las restablecidas, y no los invitados. Cuesta una
+  función `security definer` nueva, su comprobación en `test:rls`, el adaptador, un caso de uso y
+  su test. Las RPC que ya existen no cambian.
+- **C. No hacer nada** y apuntar en la ayuda el camino de quitar y volver a entrar.
+
+**Recomendación: B, en un incremento posterior del T-15, no en la migración B de este.** Arregla lo
+que de verdad se pierde sin cambiar qué es un invitado. Tampoco hace crecer la migración que cierra
+el agujero de las filas reclamables, que es la urgente.
+
+---
+
+## P-07 · `gap-2` da 7 dp en Android
+
+No bloquea nada. Abierta el 2026-11-03 por una medida de `inspect:screen` en el POCO, durante el
+incremento 6 del T-15.
+
+`DESIGN.md` decía «entre dos pulsables hay 8 dp como mínimo, `gap-2`». En nativo NativeWind toma
+1 rem = 14, no 16, así que `gap-2` (0,5 rem) son 7 dp. En el POCO, a 440 dpi, eso son 20 px: el
+script midió 7,3 dp entre «Copiar el PIN» y «Hecho» en el diálogo del PIN temporal. La foto de
+partida ya lo enseñaba sin nombrarlo: 6,9 dp entre «Generar código nuevo» y «Gestionar miembros»
+(`docs/diseno/estado-de-partida.md`). Toda la escala sale un 12,5 % más pequeña de lo que dice su
+nombre: `p-4` son 14 dp, no 16.
+
+Lo que ya está decidido (respuesta del 2026-11-03): en el T-15.6, `Dialog` y la fila de botones de
+`PinReminderCard` pasan a `gap-3` (10,5 dp), y `DESIGN.md` pide `gap-3` entre pulsables. Lo que
+queda abierto es el resto de la app.
+
+Opciones:
+
+- **A. `gap-3` entre pulsables en cada pantalla**, según la toque su incremento del T-16. No cambia
+  nada que no se esté tocando ya. La escala sigue sin cuadrar con los nombres de Tailwind, y quien
+  lea `p-4` seguirá pensando en 16.
+- **B. Subir el rem de NativeWind a 16** en la configuración. La escala vuelve a ser la de la web y
+  `gap-2` da 8 dp. A cambio, todo el espaciado de todas las pantallas crece un 14 % de golpe, y
+  cada pantalla del T-16 que ya se haya medido hay que medirla otra vez. Hay que comprobar con
+  context7 cómo se fija en la versión instalada antes de proponerlo como cambio.
+
+**Recomendación: B, al empezar el T-16.3 y antes de pintar ninguna pantalla.** Así se mide todo una
+sola vez y la escala dice lo que mide. Si se hace después, cada pantalla ya cerrada se vuelve a
+abrir.

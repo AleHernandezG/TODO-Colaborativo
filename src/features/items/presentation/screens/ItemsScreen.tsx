@@ -10,6 +10,7 @@ import type { Membership } from '@/features/community'
 import {
   CommunitySwitcher,
   JoinCodeCard,
+  PinReminderCard,
   useActiveCommunityStore,
   useActiveMembershipSync,
   useMyCommunities,
@@ -246,6 +247,8 @@ function ItemsView({ membership }: { membership: Membership }) {
             )}
 
             <AddItemBar onAdd={(input) => addItem.mutate(input)} />
+
+            <PinReminderCard communityId={community.id} username={username} />
 
             {/* Selector de agrupación por pasillos o vista estándar */}
             {(items?.length ?? 0) > 0 && (

@@ -32,7 +32,7 @@ const radius = {
   full: 9999,
 }
 
-const minTouchTarget = 44
+const minTouchTarget = 48
 
 const iconSize = 24
 

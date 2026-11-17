@@ -1,23 +1,20 @@
 import { Redirect, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  Text,
-  View,
-} from 'react-native'
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useErrorSnackbar } from '@/shared/hooks/use-error-snackbar'
+import { useFailureMessage } from '@/shared/hooks/use-failure-message'
 import { useSnackbar } from '@/shared/hooks/use-snackbar'
 import { Button } from '@/shared/ui/Button'
 import { minTouchTarget } from '@/theme'
 
 import type { CommunityMember } from '../../domain/community-repository'
+import { canResetPin, canToggleAdmin } from '../../domain/member-actions'
 import { AddGuestDialog } from '../components/AddGuestDialog'
 import { ConfirmRemoveMemberDialog } from '../components/ConfirmRemoveMemberDialog'
+import { ResetMemberPinDialog } from '../components/ResetMemberPinDialog'
 import { useCommunityMembers } from '../hooks/use-community-members'
 import { useSetMemberAdmin } from '../hooks/use-set-member-admin'
 import { useActiveCommunityStore } from '../stores/active-community-store'
@@ -49,11 +46,24 @@ function MembersContent({
   const showSnackbar = useSnackbar()
   const showError = useErrorSnackbar()
 
-  const { data: members = [], isLoading, isFetching, refetch } = useCommunityMembers(communityId)
+  const failureMessage = useFailureMessage()
+  const {
+    data: members = [],
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useCommunityMembers(communityId)
+  const loadErrorMessage = useMemo(
+    () => (isError ? failureMessage(error, t('members.loadError')) : ''),
+    [isError, error, failureMessage, t],
+  )
   const setMemberAdmin = useSetMemberAdmin(communityId)
 
   const [addGuestVisible, setAddGuestVisible] = useState(false)
   const [memberToRemove, setMemberToRemove] = useState<CommunityMember | null>(null)
+  const [memberToReset, setMemberToReset] = useState<CommunityMember | null>(null)
 
   const currentMember = members.find((m) => m.isSelf)
   const currentUserIsAdmin = Boolean(currentMember?.isAdmin)
@@ -100,10 +110,7 @@ function MembersContent({
             >
               {t('members.title')}
             </Text>
-            <Text
-              numberOfLines={1}
-              className="text-xs text-muted dark:text-muted-dark"
-            >
+            <Text numberOfLines={1} className="text-xs text-muted dark:text-muted-dark">
               {communityName}
             </Text>
           </View>
@@ -129,87 +136,125 @@ function MembersContent({
           <RefreshControl refreshing={isFetching && !isLoading} onRefresh={() => void refetch()} />
         }
         ListEmptyComponent={
-          <View className="py-12 items-center">
-            <Text className="text-base text-muted dark:text-muted-dark">
-              {isLoading ? t('list.joinCodeLoading') : t('members.empty')}
-            </Text>
-          </View>
+          loadErrorMessage ? (
+            <View className="items-center gap-3 py-12">
+              <Text
+                accessibilityLiveRegion="polite"
+                className="text-center text-base text-danger dark:text-danger-dark"
+              >
+                {loadErrorMessage}
+              </Text>
+              <Button
+                label={t('common.retry')}
+                onPress={() => void refetch()}
+                variant="secondary"
+                fullWidth={false}
+              />
+            </View>
+          ) : (
+            <View className="items-center py-12">
+              <Text className="text-base text-muted dark:text-muted-dark">
+                {isLoading ? t('members.loading') : t('members.empty')}
+              </Text>
+            </View>
+          )
         }
         renderItem={({ item }) => {
           const initial = item.username.charAt(0).toUpperCase()
 
           return (
-            <View
-              className="flex-row items-center justify-between rounded-lg border border-line bg-surface p-3 dark:border-line-dark dark:bg-surface-dark"
-            >
-              {/* Info del miembro */}
-              <View className="flex-row items-center gap-3 flex-1 mr-2">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary-dark/20">
-                  <Text className="text-base font-bold text-primary dark:text-primary-dark">
-                    {initial}
-                  </Text>
-                </View>
+            <View className="gap-2 rounded-lg border border-line bg-surface p-3 dark:border-line-dark dark:bg-surface-dark">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3 flex-1 mr-2">
+                  <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary-dark/20">
+                    <Text className="text-base font-bold text-primary dark:text-primary-dark">
+                      {initial}
+                    </Text>
+                  </View>
 
-                <View className="flex-1 gap-1">
-                  <Text
-                    numberOfLines={1}
-                    className="text-base font-semibold text-content dark:text-content-dark"
-                  >
-                    {item.username}
-                  </Text>
+                  <View className="flex-1 gap-1">
+                    <Text className="text-base font-semibold text-content dark:text-content-dark">
+                      {item.username}
+                    </Text>
 
-                  {/* Badges / Chips */}
-                  <View className="flex-row flex-wrap gap-1">
-                    {item.isSelf ? (
-                      <View className="rounded-full bg-primary/15 px-2 py-0.5 dark:bg-primary-dark/25">
-                        <Text className="text-xs font-semibold text-primary dark:text-primary-dark">
-                          {t('members.badgeYou')}
-                        </Text>
-                      </View>
-                    ) : null}
+                    {/* Badges / Chips */}
+                    <View className="flex-row flex-wrap gap-1">
+                      {item.isSelf ? (
+                        <View className="rounded-full bg-primary/15 px-2 py-0.5 dark:bg-primary-dark/25">
+                          <Text className="text-xs font-semibold text-primary dark:text-primary-dark">
+                            {t('members.badgeYou')}
+                          </Text>
+                        </View>
+                      ) : null}
 
-                    {item.isAdmin ? (
-                      <View className="rounded-full bg-accent/15 px-2 py-0.5 dark:bg-accent-dark/25">
-                        <Text className="text-xs font-semibold text-accent dark:text-accent-dark">
-                          {t('members.badgeAdmin')}
-                        </Text>
-                      </View>
-                    ) : null}
+                      {item.isAdmin ? (
+                        <View className="rounded-full bg-accent/15 px-2 py-0.5 dark:bg-accent-dark/25">
+                          <Text className="text-xs font-semibold text-accent dark:text-accent-dark">
+                            {t('members.badgeAdmin')}
+                          </Text>
+                        </View>
+                      ) : null}
 
-                    {item.isGuest ? (
-                      <View className="rounded-full bg-amber-500/15 px-2 py-0.5 dark:bg-amber-400/25">
-                        <Text className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-                          {t('members.badgeGuest')}
-                        </Text>
-                      </View>
-                    ) : null}
+                      {item.isGuest ? (
+                        <View className="rounded-full bg-amber-500/15 px-2 py-0.5 dark:bg-amber-400/25">
+                          <Text className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                            {t('members.badgeGuest')}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
                   </View>
                 </View>
-              </View>
 
-              {/* Acciones de administración */}
-              {currentUserIsAdmin && !item.isSelf ? (
-                <View className="flex-row items-center gap-1">
+                {item.isSelf ? (
                   <Button
-                    label={item.isAdmin ? t('members.removeAdmin') : t('members.makeAdmin')}
-                    onPress={() => handleToggleAdmin(item)}
+                    label={t('members.yourPin')}
+                    onPress={() => router.push('/members/pin')}
                     variant="secondary"
                     size="sm"
                     fullWidth={false}
-                    disabled={setMemberAdmin.isPending}
+                    accessibilityHint={t('members.yourPinHint')}
                   />
+                ) : null}
 
-                  <Pressable
-                    onPress={() => setMemberToRemove(item)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t('members.removeMember')} ${item.username}`}
-                    style={{ minWidth: minTouchTarget, minHeight: minTouchTarget }}
-                    className="items-center justify-center rounded-md px-2 active:opacity-70"
-                  >
-                    <Text className="text-base font-semibold text-danger dark:text-danger-dark">
-                      ✕
-                    </Text>
-                  </Pressable>
+                {currentUserIsAdmin && !item.isSelf ? (
+                  <View className="flex-row items-center gap-2">
+                    {canToggleAdmin(currentMember, item) ? (
+                      <Button
+                        label={item.isAdmin ? t('members.removeAdmin') : t('members.makeAdmin')}
+                        onPress={() => handleToggleAdmin(item)}
+                        variant="secondary"
+                        size="sm"
+                        fullWidth={false}
+                        disabled={setMemberAdmin.isPending}
+                      />
+                    ) : null}
+
+                    <Pressable
+                      onPress={() => setMemberToRemove(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('members.removeMember')} ${item.username}`}
+                      style={{ minWidth: minTouchTarget, minHeight: minTouchTarget }}
+                      className="items-center justify-center rounded-md px-2 active:opacity-70"
+                    >
+                      <Text className="text-base font-semibold text-danger dark:text-danger-dark">
+                        ✕
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </View>
+
+              {canResetPin(currentMember, item) ? (
+                <View className="flex-row">
+                  <Button
+                    label={t('members.resetPin')}
+                    onPress={() => setMemberToReset(item)}
+                    variant="secondary"
+                    size="sm"
+                    fullWidth={false}
+                    accessibilityLabel={t('members.resetPinOf', { name: item.username })}
+                  />
                 </View>
               ) : null}
             </View>
@@ -228,6 +273,13 @@ function MembersContent({
         communityId={communityId}
         member={memberToRemove}
         onDismiss={() => setMemberToRemove(null)}
+      />
+
+      <ResetMemberPinDialog
+        communityId={communityId}
+        viewer={currentMember}
+        target={memberToReset}
+        onDismiss={() => setMemberToReset(null)}
       />
     </SafeAreaView>
   )

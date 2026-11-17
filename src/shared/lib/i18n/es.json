@@ -43,11 +43,11 @@
       "invalidName": "Ponle un nombre de al menos dos letras.",
       "invalidUsername": "Tu nombre necesita al menos dos letras.",
       "invalidPin": "El PIN debe tener exactamente 4 números.",
-      "wrongPin": "El PIN no es correcto para este usuario.",
+      "wrongPin": "Ese nombre ya tiene PIN y no es este. Si eres tú y lo has olvidado, pide a una persona admin de la lista que te lo restablezca. Si no, elige otro nombre.",
       "invalidJoinCode": "Ese código no existe. Revísalo y vuelve a intentarlo.",
       "expiredJoinCode": "Ese código ha caducado. Pide uno nuevo a quien te lo pasó.",
       "usernameTaken": "Ese nombre ya está cogido en esta lista. Prueba con otro.",
-      "tooManyAttempts": "Demasiados intentos seguidos. Espera un rato y vuelve a probar."
+      "tooManyAttempts": "Demasiados intentos. Espera una hora y vuelve a probar."
     }
   },
   "list": {
@@ -343,6 +343,8 @@
   "members": {
     "title": "Miembros de la lista",
     "back": "Volver",
+    "loading": "Cargando los miembros…",
+    "loadError": "No se pudieron cargar los miembros.",
     "manageButton": "Gestionar miembros",
     "manageHint": "Ver y gestionar quién forma parte de la lista",
     "badgeYou": "Tú",
@@ -367,7 +369,57 @@
       "forbidden": "Solo los administradores pueden realizar esta acción.",
       "addGuestFailed": "No se pudo añadir al participante invitado.",
       "removeFailed": "No se pudo eliminar al miembro.",
-      "roleFailed": "No se pudo actualizar el rol del miembro."
+      "roleFailed": "No se pudo actualizar el rol del miembro.",
+      "resetFailed": "No se pudo restablecer el PIN.",
+      "copyFailed": "No se pudo copiar. Apunta el PIN a mano antes de cerrar.",
+      "resetUncertain": "No sabemos si se restableció. Pulsa «Restablecer» otra vez para sacar un PIN nuevo; no canceles."
+    },
+    "yourPin": "Tu PIN",
+    "yourPinHint": "Pon o cambia el PIN con el que vuelves a entrar como tú",
+    "resetPin": "Restablecer PIN",
+    "resetPinOf": "Restablecer el PIN de {{name}}",
+    "resetConfirmTitle": "¿Restablecer el PIN de {{name}}?",
+    "resetConfirmBody": "{{name}} saldrá de la lista en su móvil. Para volver, entra con el código de la lista, su nombre y el PIN temporal que te damos al terminar.",
+    "resetConfirm": "Restablecer",
+    "tempPinTitle": "PIN temporal de {{name}}",
+    "tempPinBody": "Díselo a {{name}}. Con él entra como {{name}}; después conviene que se ponga uno nuevo en Tu PIN.",
+    "tempPinCopy": "Copiar el PIN",
+    "tempPinCopied": "PIN copiado",
+    "tempPinDone": "Hecho",
+    "pinReminder": {
+      "setTitle": "Ponte un PIN",
+      "setBody": "Con él vuelves a entrar como {{name}} si cambias de móvil.",
+      "onlyAdminBody": "Eres la única persona admin de esta lista. Sin PIN, cualquiera con el código podría entrar como tú.",
+      "changeTitle": "Cambia tu PIN",
+      "changeBody": "Otra persona ha podido verlo; ponte uno que solo sepas tú.",
+      "setAction": "Poner mi PIN",
+      "changeAction": "Cambiar mi PIN",
+      "later": "Ahora no"
+    },
+    "pin": {
+      "title": "Tu PIN",
+      "intro": "Con tu PIN vuelves a entrar como {{name}} si cambias de móvil o borras la app.",
+      "currentLabel": "PIN actual",
+      "newLabel": "PIN nuevo",
+      "newHelp": "Cuatro cifras.",
+      "repeatLabel": "Repite el PIN nuevo",
+      "showDigits": "Mostrar las cifras",
+      "submitChange": "Cambiar PIN",
+      "submitSet": "Poner mi PIN",
+      "waiting": "Esperando al servidor…",
+      "loading": "Cargando tu PIN…",
+      "changed": "PIN cambiado",
+      "loadError": "No se pudo saber si ya tienes PIN.",
+      "errors": {
+        "invalid": "Tienen que ser cuatro cifras.",
+        "mismatch": "No coincide con el PIN nuevo.",
+        "wrongCurrent": "El PIN actual no coincide.",
+        "alreadyHasPin": "Ya tienes un PIN. Escribe el actual para cambiarlo.",
+        "tooManyAttempts": "Demasiados intentos. Espera un cuarto de hora y vuelve a probar.",
+        "offline": "Sin conexión. El PIN no ha cambiado.",
+        "timeout": "No sabemos si el cambio llegó. Si al repetir te dice que el PIN no coincide o que ya tienes uno, ya vale el nuevo.",
+        "failed": "No se pudo cambiar el PIN."
+      }
     }
   },
   "notifications": {

@@ -1306,3 +1306,276 @@ Hallazgos nuevos, ninguno del arreglo:
 - La etiqueta «Admin» de Miembros apenas se lee en modo oscuro. Al T-16.3.
 - El árbol de accesibilidad de Gastos anuncia «Cargando los gastos…» mientras pinta el estado vacío.
   Al T-16.5.
+
+## 15. La pantalla del PIN y la migración B (2026-11-03)
+
+Prompt: [`prompts/T-15.md`](../plan/prompts/T-15.md), incremento 6. Las tres RPC del PIN que dejó la
+migración A (`set_member_pin`, `my_member_pin_state` y `reset_member_pin`) tenían servidor y no
+tenían pantalla. Ahora tienen adaptador, caso de uso con su test y pantalla, con el diseño nuevo de
+[`DESIGN.md`](../../DESIGN.md) y de los bocetos. La B de ADR-0026 está diseñada y revisada; la aplica
+Alejandro.
+
+### Qué se hizo
+
+- **Datos y dominio.** El puerto de `community` suma `setMyPin`, `myPinState` y `resetMemberPin`, y
+  el adaptador los traduce sin escribir frases. En `domain/`, cuatro casos de uso puros:
+  `pin-form.ts` valida los tres campos, `change-my-pin.ts` decide si hace falta el PIN actual,
+  `pin-reminder.ts` decide qué aviso toca para cada estado (`none`, `exposed`, `set`) y si se puede
+  cerrar, y `member-actions.ts` decide qué botones ve cada fila de Miembros. Fijar el PIN no es
+  optimista: decide el servidor, como el `join_code` de `create_community`.
+- **Pantallas.** `members.tsx` pasa a `members/index.tsx` y nace `members/pin.tsx`, con
+  `PinScreen`. `PinReminderCard` sale en la lista cuando no hay PIN o está expuesto. Para el único
+  admin sin PIN no lleva «Ahora no», porque si pierde la sesión nadie puede devolverle la lista;
+  para el resto, «Ahora no» se guarda en memoria y vuelve en la siguiente apertura. «Restablecer
+  PIN» es un botón secundario pequeño en la segunda línea de cada miembro, con confirmación y luego
+  el diálogo del temporal, que no se cierra con atrás.
+- **Piezas compartidas** que reutiliza el T-16.3: `ScreenHeader`, `ActionBar` y `useSlowPending`,
+  que cambia el texto del botón a «Esperando al servidor…» si la respuesta tarda.
+- `minTouchTarget` pasa de 44 a 48 (P-02), y con él `Button`, `Input` y su test de tokens.
+- Los mensajes de la pantalla de unirse distinguen «ese nombre ya tiene PIN y no es este» de los
+  demás estados, con el código entre paréntesis (ADR-0016).
+
+### Decisiones sobre la marcha
+
+- **El teclado.** `ActionBar` usa `KeyboardAvoidingView` con `behavior="padding"` también en
+  Android. La documentación oficial de React Native propone `undefined` en Android; en el POCO, con
+  `padding`, el botón queda encima del teclado al 100 % y al 200 % de letra. context7 no estaba
+  disponible en la sesión (solo ofrecía autenticarse) y se leyó la documentación oficial.
+  `react-native-keyboard-controller` resolvía lo mismo, pero es nativo y pedía build nuevo.
+- **El PIN temporal vive en `issued-pin-store`, en memoria.** Los callbacks de `mutate()` no corren
+  si el componente se desmonta, y el diálogo se desmontaba al refrescar Miembros. Cambiar la letra
+  del sistema, el tema o girar el móvil recrea la app y lo pierde: abierto en
+  [P-06](../plan/PREGUNTAS.md#p-06--restablecer-otra-vez-un-pin-temporal-que-se-perdió).
+- **`gap-3` entre pulsables.** En nativo NativeWind toma 1 rem = 14, así que `gap-2` da 7 dp y no
+  llega a los 8 de P-02. `Dialog` y la fila de `PinReminderCard` pasan a `gap-3`, `DESIGN.md` lo
+  pide entre pulsables y lo del resto de la app va a
+  [P-07](../plan/PREGUNTAS.md#p-07--gap-2-da-7-dp-en-android), para el T-16.3.
+- `silent-failure-hunter` se lanzó como agente `general-purpose` con sus instrucciones, porque el
+  tipo del plugin no estaba entre los disponibles.
+
+### Calidad
+
+Typecheck limpio. Lint con 0 errores y los 9 avisos de antes. Jest con 81 suites y 596 tests (74 y
+530 al empezar). `architecture-guard`, `revisor-interfaz` y `silent-failure-hunter` pasaron en
+serie sobre A, B y C.
+
+### La prueba en el POCO
+
+POCO F5 (`1e5b87b9`), `versionName` 1.3.1, pie `v1.3.1 · 01a1a227`: el update
+`01a1a227-0b4f-7b45-a5af-4f666516bbe1` del canal `preview` («T-15.6: PIN screen, reminder card and
+admin PIN reset»). Con `pm clear` autorizado por Alejandro, que confirmó que el móvil no tenía
+ninguna lista importante. Por tramos, como dice `e2e-con-maestro.md`, sobre la lista «PIN c».
+
+| Tramo | Qué se hace                                             | Resultado                                                                                             |
+| ----- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| c1a   | Crear «PIN c» como Ana con 1111                         | Entra; sin tarjeta del PIN; código y pie tras hacer scroll                                            |
+| c1b   | Miembros, «Tu PIN»: actual 9999, luego 1111, nuevo 2222 | «El PIN actual no coincide», luego «PIN cambiado» y vuelve a Miembros                                 |
+| c2    | Unirse como Ana con 1111 y luego con 2222               | El viejo da «Ese nombre ya tiene PIN y no es este», el nuevo entra                                    |
+| c3    | Bea entra con 3333                                      | Entra                                                                                                 |
+| c4a   | Ana restablece el PIN de Bea                            | Confirmación y diálogo con el temporal; atrás no lo cierra                                            |
+| c4b   | «Hecho»                                                 | Cierra el diálogo y no queda ninguno abierto                                                          |
+| c5    | Bea entra con el temporal                               | Entra, **sin** la tarjeta «Cambia tu PIN». Con la B ya sale (ver «c5 con la B aplicada»)              |
+| u1    | Ana con 0000, atrás, y de nuevo con 2222                | Mensaje del PIN equivocado, atrás vuelve a «Tengo un código», y en Miembros salen Ana y Bea, sin Ana2 |
+
+Medido con `inspect:screen` en `~/tools/capturas/2026-11/t15-6/`: la pantalla del PIN en claro y
+oscuro, al 100 % y al 200 %, sale con 0. El diálogo del temporal al 200 % tenía 7 pulsables, ninguno
+por debajo de 48 dp, y una separación de 7,3 dp entre «Copiar el PIN» y «Hecho»: la del `gap-2`, ya
+corregida en código y sin publicar. Los ajustes del móvil quedaron como estaban (letra 1.15, modo
+oscuro).
+
+No comprobado todavía:
+
+- La tarjeta que no se cierra del único admin sin PIN. Hace falta borrar a mano el `member_secrets`
+  de Ana en «PIN c», y eso no lo hace la sesión.
+- El `gap-3` del diálogo, que necesita otro update.
+- c5 tras aplicar la B: hecho el 2026-11-17, ver «c5 con la B aplicada».
+
+### Hallazgos
+
+- **El temporal no salía como expuesto.** `reset_member_pin` lo guarda con `store_member_pin`, que
+  pone `exposed = false`, así que `my_member_pin_state` devuelve `set` y Bea no ve que tiene que
+  cambiarlo. Lo arregla la B.
+- La cabecera aplasta el título también al 100 % de letra, y tapa «Estás dentro como…». Los flujos
+  de `.maestro/` esperan ahora el título de la lista («Lista E2E PIN»). Al T-16.3.
+- Maestro pierde letras al escribir el código de invitación sin guion: se pasa como `P23-JPMY`.
+- `pm clear` borra también el update descargado; la app vuelve a la base y hay que abrirla dos
+  veces para que coja el update otra vez.
+- Cambiar la letra con el diálogo del temporal abierto lo pierde (P-06).
+- `gap-2` son 7 dp en Android (P-07).
+
+### La migración B
+
+Diseño revisado por `migration-reviewer` antes de escribir el SQL, y corregido con lo que encontró.
+Lo que cambia, en una migración sin tablas, columnas, políticas ni firmas nuevas:
+
+- Al aplicarla se borran los PIN marcados `exposed` **de las filas con sesión**, cuyo dueño sigue
+  dentro y ve «Ponte un PIN». Los de filas sin sesión se quedan: borrarlos las dejaría libres para
+  cualquiera con el código. ADR-0026 B.1 decía borrarlos todos.
+- Los temporales de antes de la B que nadie ha usado (fila activa sin sesión, con secreto y sin
+  `exposed`) pasan a `exposed`, para que quien entre con ellos vea «Cambia tu PIN».
+- `join_community` deja de dar una fila sin PIN con dueño a otra sesión y no adopta a un invitado
+  sin PIN. Contesta `invalid_pin` si la llamada trae PIN y `username_taken` si no. ADR-0026 B.2
+  decía `username_taken` siempre, pero el 1.3.1 siempre manda PIN y con `invalid_pin` le dice al
+  dueño con móvil nuevo que pida a un admin que se lo restablezca, en vez de «Prueba con otro». El
+  bloqueo va antes de soltar la fila propia de quien llama, para que probar un nombre ajeno no le
+  cueste la suya. El fallo cuenta contra la sesión, no contra el miembro.
+- `reset_member_pin` guarda el temporal como `exposed`. Se amplía lo que significa la columna: el
+  PIN lo conoce alguien más.
+- `generate_join_code()` y `join_code_lifetime()` dejan de ser ejecutables por `authenticated`.
+
+Las tres desviaciones del ADR-0026 van en ADR-0029. La consulta «antes de la B» del ADR se queda
+corta tras el primer punto, porque un admin con el PIN expuesto pasa a no tener PIN; se lanza
+también la ampliada, y otra que cuenta las listas sin ningún admin con un PIN válido. Cifras antes y
+después, en el apartado siguiente cuando Alejandro la aplique.
+
+El `.sql` es `supabase/migrations/20261103120000_unclaimable_rows_and_exposed_pins.sql`, y
+`migration-reviewer` lo volvió a leer escrito: se puede aplicar, sin nada bloqueante. Lo que salió
+de esa segunda pasada:
+
+- **El bloqueo del principio es solo de `member_secrets`, con `lock_timeout` de 5 s.** El borrador
+  bloqueaba también `members`, y `set_member_pin`, `reset_member_pin` y `join_community` escriben
+  primero `member_secrets` y luego tocan `members`: dos órdenes distintos son un deadlock posible.
+  Sin el `lock_timeout`, una transacción larga dejaba a la app esperando detrás de la migración.
+- **`20261012120000` abre y cierra su `do` con un solo `$`** (líneas 14 y 17), que Postgres no
+  acepta, y aun así consta como aplicada. Lo que corrió se ve en
+  `supabase_migrations.schema_migrations`; la consulta va con las de «antes». La B usa `$$`, y el
+  ejemplo de la skill `supabase-data` estaba igual de mal: corregido.
+- **Para saber qué hash se filtró por `members` ya no basta `exposed`.** Lo dice el `updated_at`
+  igual al instante de la A, que se apunta antes de la B con `min(updated_at) where exposed`.
+- `scripts/rls-isolation-test.mjs` lleva nueve comprobaciones nuevas: claim con y sin PIN, que el
+  intruso no se queda sin su fila ni le roba los avisos al dueño, el dueño entrando sin PIN y
+  poniéndolo, el invitado sin PIN, el temporal que sale `exposed` y se limpia con `set_member_pin`,
+  los dos `revoke` y que `rotate_join_code` sigue funcionando. Pasan de 102 a 111 con la secret
+  key. Antes de aplicar la B fallan las nuevas, que es lo que tienen que hacer. El hook de Prettier
+  reformateó el fichero entero al escribir, porque en `HEAD` estaba sin formatear: 23 líneas viejas
+  cambian solo de forma.
+
+Alejandro aceptó ADR-0029 el 2026-11-17. La línea `Estado:` de ADR-0026, que el hook no deja tocar
+a la sesión, la cambió él.
+
+#### Cifras de antes de la B (2026-11-17)
+
+Sacadas por la sesión con `npx supabase db query --remote --read-only`, en una transacción de solo
+lectura contra el real. Las consultas están en el diseño de la B; aquí, lo que dieron:
+
+| Qué | Cifra |
+| --- | --- |
+| Listas | 90 |
+| Listas cuyo único admin no tiene PIN hoy (la consulta del ADR-0026) | 12 |
+| Las mismas tras la B, contando que se borran los PIN expuestos | 77 |
+| Listas sin ningún admin con un PIN que no esté expuesto | 77 |
+| PIN expuestos | 120, todos en filas con sesión (16 de ellas archivadas) |
+| PIN expuestos en filas activas sin sesión | 0 |
+| Temporales sin usar que pasan a `exposed` | 1 |
+| Miembros activos con sesión y sin PIN, hoy y tras la B | 18 y 122 |
+| Instante de la A (`updated_at` de los 120 expuestos, mínimo y máximo) | 2026-10-14 19:26:02.274252+00 |
+
+Las 65 listas que la B deja con el admin sin PIN: 64 tienen nombre de prueba (`rls`, `test`,
+`prueba`, `e2e`, `maestro`, `debug`…) y ninguna se ha usado en las dos últimas semanas. La que no
+lo tiene es «Salamanca», con un miembro y el último artículo del 2026-10-07. Entre las 12 que ya
+estaban así está «Casa Alejes», la única lista viva de verdad: 5 miembros, 37 artículos, último
+cambio el 2026-11-14. Si su admin pierde la sesión no hay nadie que le restablezca el PIN, con la B
+o sin ella; la B solo impide que otro se quede con su fila.
+
+**El fichero de la A que hay en git no es el que corrió.** En `schema_migrations` la primera orden
+de `20261012120000` es `do $$ begin lock table public.join_attempts, public.members in access
+exclusive mode; end $$`; el fichero tiene `do $` y bloquea solo `members`. Una migración aplicada
+no se edita, así que se queda anotado aquí y en la skill `supabase-data`.
+
+#### Ensayo de la B (2026-11-17)
+
+Alejandro la aplicó a `lista-compra-ensayo` (`dmbghwxsjjcxzbjblbzi`) con `db push --remote`, sin
+errores. Contra el ensayo, `rls-isolation-test.mjs` dio 111/111 y `realtime-check.mjs` 18/18. De
+vuelta al real, `migration list --remote` deja `20261103120000` como la única pendiente.
+
+El CLI que trae `npx` sin versión fijada es ya la 3.2.0, y en ella `db push`, `migration list` y
+`gen types` apuntan a una base local por defecto: el proyecto enlazado se pide con `--remote`, que
+sustituye a `--linked`. El primer `db push` falló por eso contra `127.0.0.1:54322`, sin aplicar nada.
+Las órdenes de `CLAUDE.md`, de la skill `aplicar-migracion` y de la guía de ensayo siguen con
+`--linked`; queda para el cierre decidir si se fija la versión del CLI o se cambian las órdenes.
+
+#### La B en el real (2026-11-17)
+
+Antes del push, Alejandro se puso PIN en «Casa Alejes» entrando como `Alejandro` desde el POCO con
+el código de la lista: era la única lista viva y su único admin no tenía PIN. Su fila salió `set` en
+la consulta de solo lectura. Al hacerlo se vio que la cabecera de la lista, con la letra al 115 %,
+deja el selector de listas en 19 px de ancho a la izquierda de «Modo Compra»: no se ve, pero
+responde si se toca ahí. Es el fallo de la cabecera del apartado 13, que arregla el T-16.3.
+
+Alejandro aplicó la B con `npx supabase db push --remote` contra `TODO-COlaborativo`. Comprobado
+después por la sesión:
+
+| Comprobación | Resultado |
+| --- | --- |
+| `migration list --remote` | `20261103120000` aplicada, ninguna pendiente |
+| `test:rls` contra el real | 111/111 |
+| `test:realtime` contra el real | 18/18 |
+| `gen types typescript --remote` | idéntico al `db.types.ts` del repo: la B no cambia firmas |
+| PIN expuestos | 1, el temporal sin usar que la B marca |
+| Temporales sin marcar | 0 |
+| Firmas de `join_community` y `reset_member_pin` | una de cada una |
+| `generate_join_code()` y `join_code_lifetime()` para `authenticated` y `anon` | sin `execute` |
+| `join_community`, `reset_member_pin` y `rotate_join_code` para `authenticated` | con `execute` |
+
+El PIN expuesto de `DiagTest` en «Casa Alejes», una fila con sesión, lo borró la B como estaba
+previsto: ahora sale sin PIN y su dueño ve «Ponte un PIN».
+
+#### c5 con la B aplicada (2026-11-17)
+
+En el POCO, con `v1.3.1 · 01a1a227`, letra al 115 % y modo oscuro. La lista de prueba «Prueba c5»
+la montó la sesión contra el real con dos sesiones anónimas y la publishable key: «Admin» la crea
+con PIN, Bea entra con el suyo y Admin se lo restablece. Bea entra desde el POCO con el código
+`4S5-RS8N` y el temporal.
+
+| Tramo | Qué se hace | Resultado |
+| --- | --- | --- |
+| c5 | Bea entra con el temporal | Entra y sale la tarjeta «Cambia tu PIN. Otra persona ha podido verlo; ponte uno que solo sepas tú», con «Cambiar mi PIN» y «Ahora no» |
+| c5b | Bea cambia el temporal 5302 por 8642 desde «Cambiar mi PIN» | Guarda y, al volver a la lista, la tarjeta ya no está. Lo recorrió Alejandro a mano |
+| c5c | Cerrar la app del todo y abrirla | No comprobado. Alejandro lo da por bueno |
+
+Lo que arregla la B se ve sin tocar el cliente, como preveía ADR-0029. La tarjeta queda por debajo
+del campo de añadir y de un hueco vacío de casi una pantalla, así que sin hacer scroll no se ve:
+mismo fallo de la cabecera y del orden de la pantalla de lista que recoge el T-16.3 y el T-16.4.
+
+El tramo c5b lo hizo Alejandro a mano porque adb dejó de ver el POCO: primero `offline` y después
+nada, con Windows viendo la interfaz ADB con WinUSB. Sin adb no hay capturas del c5b, ni
+`inspect:screen` de la pantalla del PIN, ni los flujos de Maestro `pin-unirse` y `pin-cambiar` en
+este incremento.
+
+El c5c se queda sin recorrer porque la app no tiene un botón para salir. Para cerrarla del todo hay
+que abrir las apps recientes y deslizarla fuera. Lo que se espera es que la tarjeta no vuelva,
+porque sale de `my_member_pin_state` en el servidor y `store_member_pin` guarda el PIN nuevo con
+`exposed = false`. `test:rls` lo comprueba en el servidor: Inés cambia el temporal dando el
+temporal como actual y su estado pasa de `exposed` a `set`.
+
+El POCO se queda con Bea dentro de «Prueba c5», que es solo de prueba, con el PIN 8642.
+
+#### Revisión de tests (2026-11-17)
+
+`pr-test-analyzer` pasó sobre el árbol del incremento. Lo que se arregló en el mismo cambio:
+
+- Qué estados piden el PIN actual lo decidía `PinScreen` con `!== 'none'`. Pasa a
+  `needsCurrentPin` en `domain/pin-form.ts`, con su test de los tres estados. Si alguien lo
+  cambiara a `=== 'set'`, quien entró con un temporal no podría cambiarlo nunca: el servidor pide
+  el temporal como actual.
+- `useJoinCommunity` no invalidaba `myPinStateKey`. Quien volvía a su fila sin PIN desde «Unirse» y
+  se ponía uno seguía viendo «Ponte un PIN» hasta 30 s. Ahora la invalida al entrar.
+- `test:rls` pasa de 111 a 113: que una lista creada sin PIN da `none`, y que un admin restablece
+  el PIN de una fila sin PIN con dueño y este vuelve con el temporal, que sale `exposed`. Es la
+  salida de las filas que la B deja sin poder reclamar, y la única que crea el secreto en vez de
+  sustituirlo. 113/113 contra el real.
+- Lo que la B hizo con los datos ya existentes no lo comprobaba nada fijo. Consulta de solo lectura
+  con la secret key, el mismo día del push, sobre miembros activos:
+
+
+| Proyecto | Secretos activos | Expuestos con sesión | Temporales sin marcar |
+| --- | --- | --- | --- |
+| real | 39 | 0 | 0 |
+| ensayo | 28 | 0 | 0 |
+
+La consulta queda en `docs/guias/ensayar-una-migracion.md`, apartado «Si la migración mueve datos».
+Con todo esto, Jest da 81 suites y 597 tests; lint y typecheck, igual que antes.
+
+Lo que se apuntó en el ROADMAP, «Lo que se arrastra»: la regla de cerrar el aviso vive en
+`use-pin-reminder.ts` sin test, los fallos contra una fila sin PIN que cuentan contra la sesión y
+la invalidación del código en `use-remove-member.ts`.

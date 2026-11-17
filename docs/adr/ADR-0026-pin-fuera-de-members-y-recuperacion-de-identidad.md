@@ -4,8 +4,10 @@
 - **Estado:** Aceptado por el usuario el 2026-10-12. La migración A
   (`supabase/migrations/20261012120000_member_secrets_and_identity_hardening.sql`) está **aplicada**
   en el real y en el ensayo con `db push`, sin fecha anotada; se vio el 2026-10-31 y se comprobó el
-  2026-11-02 (`docs/phases/fase-15.md`, apartado 12). La migración B no está escrita; lleva además
-  el `revoke` de `generate_join_code()` a `authenticated`.
+  2026-11-02 (`docs/phases/fase-15.md`, apartado 12). La migración B
+  (`20261103120000_unclaimable_rows_and_exposed_pins.sql`) está aplicada en el real y en el ensayo
+  desde el 2026-11-17; se aparta de este ADR en los puntos 1 y 2, ver
+  [ADR-0029](ADR-0029-pin-temporal-expuesto-y-migracion-b-acotada.md).
 - **Decisores:** Alejandro, con Claude
 - **Supersede a:** [ADR-0015](ADR-0015-pin-por-miembro-para-identidad-no-suplantable.md) en sus
   apartados 1, 4 y 5. Los apartados 2 y 3 (el PIN viaja en `create_community` y `join_community`)
@@ -44,7 +46,7 @@ Restricciones:
   genérico ante cualquier otro: `ok`, `invalid_join_code`, `expired_join_code`, `username_taken`,
   `invalid_pin`, `too_many_attempts`.
 - Ningún cliente lee `pin_hash`: `listMembers` pide `id, username, auth_user_id, is_admin,
-  removed_at` y `listMine` pide `username` y la comunidad.
+removed_at` y `listMine` pide `username` y la comunidad.
 - Cambiar la firma de una RPC expuesta obliga a borrar la anterior en la misma migración
   (`CLAUDE.md`, «Cambios de esquema»).
 - El adversario de ADR-0005 es **otro miembro de la misma lista**. Ese siempre tiene el código de
@@ -93,7 +95,7 @@ Orden dentro del fichero, que es un solo lote:
    transacción explícito y `supabase db push` manda el fichero como un lote sin `begin`.
 2. Crear `member_secrets` con su RLS y su `revoke`.
 3. Copiar: `insert into member_secrets (member_id, pin_hash, exposed) select id, pin_hash, true from
-   members where pin_hash is not null`, dentro de un `do $$` que compruebe que la columna existe,
+members where pin_hash is not null`, dentro de un `do $$` que compruebe que la columna existe,
    para que el fichero sea reejecutable.
 4. Cambios en `join_attempts` (A.3).
 5. Reescribir todas las funciones (A.2, A.4, A.5, A.6).
@@ -129,13 +131,13 @@ Orden de las comprobaciones:
 5. Si la fila es de otra sesión o no tiene sesión: límite por miembro (A.3).
 6. La tabla:
 
-| Estado de la fila                                   | Qué hace                                                  | Estado devuelto       |
-| --------------------------------------------------- | --------------------------------------------------------- | --------------------- |
-| Tiene PIN y el recibido coincide                    | Pasa la fila a quien llama                                | `ok`                  |
-| Tiene PIN y el recibido falta o no coincide         | Nada. Fallo anotado contra el miembro, salvo si es su dueño | `invalid_pin`       |
-| Sin PIN y `auth_user_id` nulo (invitado)            | Guarda el PIN si viene y asigna la fila a quien llama     | `ok`                  |
-| Sin PIN y `auth_user_id` = quien llama              | Guarda el PIN si viene                                    | `ok`                  |
-| Sin PIN y `auth_user_id` de otra sesión             | **Como hoy:** quien llama se queda la fila. Cambia en la B | `ok`                  |
+| Estado de la fila                           | Qué hace                                                    | Estado devuelto |
+| ------------------------------------------- | ----------------------------------------------------------- | --------------- |
+| Tiene PIN y el recibido coincide            | Pasa la fila a quien llama                                  | `ok`            |
+| Tiene PIN y el recibido falta o no coincide | Nada. Fallo anotado contra el miembro, salvo si es su dueño | `invalid_pin`   |
+| Sin PIN y `auth_user_id` nulo (invitado)    | Guarda el PIN si viene y asigna la fila a quien llama       | `ok`            |
+| Sin PIN y `auth_user_id` = quien llama      | Guarda el PIN si viene                                      | `ok`            |
+| Sin PIN y `auth_user_id` de otra sesión     | **Como hoy:** quien llama se queda la fila. Cambia en la B  | `ok`            |
 
 Cuando una fila **cambia de manos** (su `auth_user_id` pasa a ser otro):
 
@@ -154,7 +156,7 @@ Si no existe un miembro con ese nombre:
   coincidir (`invalid_pin` si no) y **no se sobrescribe**; si no lo tiene, se guarda el recibido.
 - Si no tiene fila, se inserta el miembro nuevo.
 - El `insert` y el `update` del nombre van en un subbloque `begin ... exception when
-  unique_violation` que devuelve `username_taken`. Cubre el doble toque y dos personas eligiendo el
+unique_violation` que devuelve `username_taken`. Cubre el doble toque y dos personas eligiendo el
   mismo nombre a la vez. Lo tenía la versión de `20260805120000` y se perdió con el PIN.
 
 #### A.3 Límite de intentos también por miembro atacado
@@ -192,7 +194,7 @@ por cada bloqueo que un admin levante.
 #### A.4 Tres RPC nuevas
 
 - **`set_member_pin(p_community_id uuid, p_new_pin text, p_current_pin text default null) returns
-  table (status text)`.** Actúa sobre la fila activa de quien llama. Si ya tiene PIN,
+table (status text)`.** Actúa sobre la fila activa de quien llama. Si ya tiene PIN,
   `p_current_pin` tiene que coincidir. Estados: `ok`, `invalid_pin` (el nuevo está mal formado),
   `wrong_pin` (el actual no coincide), `too_many_attempts`. Deja `exposed = false`. Lanza
   `not_a_member` (P0001) si quien llama no es miembro activo. Ojo al escribir el adaptador:

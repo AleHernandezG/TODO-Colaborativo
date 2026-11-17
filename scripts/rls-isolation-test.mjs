@@ -695,7 +695,10 @@ async function main() {
   }
 
   // --- RF-11 y RF-12: Roles, baja de miembros e invitados ---
-  const membersB = await select(tokenB, `members?select=id,username,is_admin,auth_user_id,removed_at&community_id=eq.${communityB}`)
+  const membersB = await select(
+    tokenB,
+    `members?select=id,username,is_admin,auth_user_id,removed_at&community_id=eq.${communityB}`,
+  )
   const memberBruno = membersB.body?.find((m) => m.username === 'bruno')
   const memberCarla = membersB.body?.find((m) => m.username === 'carla')
 
@@ -745,11 +748,7 @@ async function main() {
     p_community_id: communityB,
     p_member_id: memberBruno?.id,
   })
-  check(
-    'Un admin no puede auto-expulsarse',
-    selfRemove.status >= 400,
-    `HTTP ${selfRemove.status}`,
-  )
+  check('Un admin no puede auto-expulsarse', selfRemove.status >= 400, `HTTP ${selfRemove.status}`)
 
   const removeLastAdmin = await rpc(tokenB, 'set_member_admin', {
     p_community_id: communityB,
@@ -773,7 +772,10 @@ async function main() {
     p_username: 'bruno_error',
     p_pin: '1234',
   })
-  const membersAfterDup = await select(tokenB, `members?select=id,username&community_id=eq.${communityB}&username=eq.bruno_error`)
+  const membersAfterDup = await select(
+    tokenB,
+    `members?select=id,username&community_id=eq.${communityB}&username=eq.bruno_error`,
+  )
   const dupMemberId = membersAfterDup.body?.[0]?.id
 
   const removeClean = await rpc(tokenB, 'remove_member', {
@@ -783,7 +785,9 @@ async function main() {
   const dupStillExists = await select(tokenB, `members?select=id&id=eq.${dupMemberId}`)
   check(
     'Un miembro sin historial se elimina con borrado físico (deleted)',
-    removeClean.body?.[0]?.status === 'deleted' && Array.isArray(dupStillExists.body) && dupStillExists.body.length === 0,
+    removeClean.body?.[0]?.status === 'deleted' &&
+      Array.isArray(dupStillExists.body) &&
+      dupStillExists.body.length === 0,
     removeClean.body?.[0]?.status ?? `HTTP ${removeClean.status}`,
   )
 
@@ -807,7 +811,8 @@ async function main() {
   const carlaArchived = await select(tokenB, `members?select=id,removed_at&id=eq.${memberCarla.id}`)
   check(
     'Un miembro con historial de gastos se archiva con removed_at (archived)',
-    removeWithHistory.body?.[0]?.status === 'archived' && Boolean(carlaArchived.body?.[0]?.removed_at),
+    removeWithHistory.body?.[0]?.status === 'archived' &&
+      Boolean(carlaArchived.body?.[0]?.removed_at),
     removeWithHistory.body?.[0]?.status ?? `HTTP ${removeWithHistory.status}`,
   )
 
@@ -856,10 +861,7 @@ async function main() {
   )
 
   // Expulsar a alguien que tuvo sesión rota el código (ADR-0026), así que el de antes ya no vale.
-  const codeAfterRemovals = await select(
-    tokenB,
-    `communities?select=join_code&id=eq.${communityB}`,
-  )
+  const codeAfterRemovals = await select(tokenB, `communities?select=join_code&id=eq.${communityB}`)
   const currentCodeB = codeAfterRemovals.body?.[0]?.join_code
   check(
     'Expulsar a un miembro con sesión cambia el código de invitación',
@@ -930,7 +932,9 @@ async function main() {
   const tokensForA = await rpc(tokenA, 'get_community_push_tokens', {
     p_community_id: communityA,
   })
-  const hasSelfToken = tokensForA.body?.some((t) => t.expo_push_token === 'ExponentPushToken[userA-device1]')
+  const hasSelfToken = tokensForA.body?.some(
+    (t) => t.expo_push_token === 'ExponentPushToken[userA-device1]',
+  )
   check(
     'get_community_push_tokens no incluye el propio token del emisor',
     tokensForA.status === 200 && !hasSelfToken,
@@ -940,7 +944,9 @@ async function main() {
   const tokensForClara = await rpc(tokenPushC, 'get_community_push_tokens', {
     p_community_id: communityA,
   })
-  const claraSeesA = tokensForClara.body?.some((t) => t.expo_push_token === 'ExponentPushToken[userA-device1]')
+  const claraSeesA = tokensForClara.body?.some(
+    (t) => t.expo_push_token === 'ExponentPushToken[userA-device1]',
+  )
   check(
     'Otro miembro de la misma lista sí recibe el push token para notificarle',
     tokensForClara.status === 200 && Boolean(claraSeesA),
@@ -953,7 +959,9 @@ async function main() {
   const tokensForClaraAfter = await rpc(tokenPushC, 'get_community_push_tokens', {
     p_community_id: communityA,
   })
-  const claraSeesAAfter = tokensForClaraAfter.body?.some((t) => t.expo_push_token === 'ExponentPushToken[userA-device1]')
+  const claraSeesAAfter = tokensForClaraAfter.body?.some(
+    (t) => t.expo_push_token === 'ExponentPushToken[userA-device1]',
+  )
   check(
     'Al desregistrar el token desaparece de la lista de destinatarios',
     tokensForClaraAfter.status === 200 && !claraSeesAAfter,
@@ -1125,11 +1133,30 @@ async function main() {
   // Se exige el mensaje y no solo el código: sin el revoke, anon entraría en la función y
   // fallaría igual por su comprobación interna, con otro error que también es >= 400.
   const anonCalls = [
-    ['save_recipe', { p_id: recipeIdA, p_community_id: communityA, p_title: 'x x', p_servings: 1, p_instructions: '', p_ingredients: [] }],
+    [
+      'save_recipe',
+      {
+        p_id: recipeIdA,
+        p_community_id: communityA,
+        p_title: 'x x',
+        p_servings: 1,
+        p_instructions: '',
+        p_ingredients: [],
+      },
+    ],
     ['delete_recipe', { p_id: recipeIdA }],
-    ['upsert_meal_slot', { p_community_id: communityA, p_date: '2026-12-25', p_meal_type: 'lunch' }],
-    ['delete_meal_slot', { p_community_id: communityA, p_date: '2026-12-25', p_meal_type: 'lunch' }],
-    ['register_push_token', { p_community_id: communityA, p_expo_push_token: 'ExponentPushToken[nadie]' }],
+    [
+      'upsert_meal_slot',
+      { p_community_id: communityA, p_date: '2026-12-25', p_meal_type: 'lunch' },
+    ],
+    [
+      'delete_meal_slot',
+      { p_community_id: communityA, p_date: '2026-12-25', p_meal_type: 'lunch' },
+    ],
+    [
+      'register_push_token',
+      { p_community_id: communityA, p_expo_push_token: 'ExponentPushToken[nadie]' },
+    ],
     ['unregister_push_token', { p_expo_push_token: 'ExponentPushToken[nadie]' }],
     ['get_community_push_tokens', { p_community_id: communityA }],
   ]
@@ -1148,7 +1175,10 @@ async function main() {
 
   const deleteRecipeA = await rpc(tokenA, 'delete_recipe', { p_id: recipeIdA })
   const readAfterDelete = await select(tokenA, `recipes?id=eq.${recipeIdA}`)
-  const readIngredientsAfterDelete = await select(tokenA, `recipe_ingredients?recipe_id=eq.${recipeIdA}`)
+  const readIngredientsAfterDelete = await select(
+    tokenA,
+    `recipe_ingredients?recipe_id=eq.${recipeIdA}`,
+  )
   check(
     'Al borrar una receta se eliminan la receta y sus ingredientes en cascada',
     (deleteRecipeA.status === 200 || deleteRecipeA.status === 204) &&
@@ -1359,7 +1389,8 @@ async function main() {
     adoptWithOwnRow.body?.[0]?.status === 'ok' &&
       Array.isArray(temporalLeft.body) &&
       temporalLeft.body.length === 0,
-    adoptWithOwnRow.body?.[0]?.status ?? `HTTP ${adoptWithOwnRow.status} ${JSON.stringify(adoptWithOwnRow.body)}`,
+    adoptWithOwnRow.body?.[0]?.status ??
+      `HTTP ${adoptWithOwnRow.status} ${JSON.stringify(adoptWithOwnRow.body)}`,
   )
 
   const hostMembers = await select(
@@ -1480,8 +1511,227 @@ async function main() {
     `HTTP ${hugoSeesTokens.status}`,
   )
 
+  const tokenOwner = await signInAnonymously()
+  const tokenIntruder = await signInAnonymously()
+  const ownerCreate = await rpc(tokenOwner, 'create_community', {
+    p_name: `rls-test-sin-pin-${stamp}`,
+    p_username: 'olga',
+  })
+  const communityUnclaimed = ownerCreate.body?.[0]?.community_id ?? null
+  const unclaimedCode = ownerCreate.body?.[0]?.join_code
+  await rpc(tokenOwner, 'register_push_token', {
+    p_community_id: communityUnclaimed,
+    p_expo_push_token: 'ExponentPushToken[olga-movil]',
+    p_device_name: 'Móvil de Olga',
+  })
+  await rpc(tokenOwner, 'add_guest_member', {
+    p_community_id: communityUnclaimed,
+    p_username: 'invitado-sin-pin',
+  })
+  await rpc(tokenIntruder, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'ines',
+    p_pin: '1111',
+  })
+
+  const unclaimedMembers = async () => {
+    const res = await select(
+      tokenOwner,
+      `members?select=id,username,auth_user_id&community_id=eq.${communityUnclaimed}&removed_at=is.null`,
+    )
+    return Object.fromEntries((res.body ?? []).map((m) => [m.username, m]))
+  }
+  const before = await unclaimedMembers()
+
+  const ownerStateWithoutPin = await rpc(tokenOwner, 'my_member_pin_state', {
+    p_community_id: communityUnclaimed,
+  })
+  check(
+    'Quien crea una lista sin PIN tiene el estado none',
+    ownerStateWithoutPin.body === 'none',
+    JSON.stringify(ownerStateWithoutPin.body ?? `HTTP ${ownerStateWithoutPin.status}`),
+  )
+
+  const claimWithPin = await rpc(tokenIntruder, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'olga',
+    p_pin: '2222',
+  })
+  const afterClaimWithPin = await unclaimedMembers()
+  check(
+    'Una fila sin PIN con dueño no la reclama otra sesión que manda PIN',
+    claimWithPin.body?.[0]?.status === 'invalid_pin' &&
+      afterClaimWithPin.olga?.auth_user_id === authUserId(tokenOwner),
+    claimWithPin.body?.[0]?.status ??
+      `HTTP ${claimWithPin.status} ${JSON.stringify(claimWithPin.body)}`,
+  )
+
+  const claimWithoutPin = await rpc(tokenIntruder, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'olga',
+  })
+  check(
+    'Un cliente sin campo de PIN recibe username_taken sobre una fila sin PIN ajena',
+    claimWithoutPin.status === 200 && claimWithoutPin.body?.[0]?.status === 'username_taken',
+    claimWithoutPin.body?.[0]?.status ?? `HTTP ${claimWithoutPin.status}`,
+  )
+
+  const afterClaims = await unclaimedMembers()
+  const ownerTokensSeen = await rpc(tokenIntruder, 'get_community_push_tokens', {
+    p_community_id: communityUnclaimed,
+  })
+  check(
+    'Probar un nombre ajeno no cuesta la fila propia ni los avisos del dueño',
+    Boolean(before.ines) &&
+      afterClaims.ines?.id === before.ines.id &&
+      afterClaims.ines?.auth_user_id === authUserId(tokenIntruder) &&
+      afterClaims.olga?.id === before.olga?.id &&
+      JSON.stringify(ownerTokensSeen.body ?? null).includes('olga-movil'),
+    `ines ${afterClaims.ines?.id === before.ines?.id ? 'intacta' : 'cambió'}, HTTP ${ownerTokensSeen.status}`,
+  )
+
+  const ownerReentersWithoutPin = await rpc(tokenOwner, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'olga',
+  })
+  const ownerSetsPin = await rpc(tokenOwner, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'olga',
+    p_pin: '3333',
+  })
+  const ownerPinState = await rpc(tokenOwner, 'my_member_pin_state', {
+    p_community_id: communityUnclaimed,
+  })
+  check(
+    'El dueño de una fila sin PIN vuelve a entrar y puede dejarla con PIN',
+    ownerReentersWithoutPin.body?.[0]?.status === 'ok' &&
+      ownerSetsPin.body?.[0]?.status === 'ok' &&
+      ownerPinState.body === 'set',
+    `${ownerReentersWithoutPin.body?.[0]?.status}, ${ownerSetsPin.body?.[0]?.status}, ${JSON.stringify(ownerPinState.body)}`,
+  )
+
+  const guestWithoutPin = await rpc(tokenIntruder, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'invitado-sin-pin',
+  })
+  const guestWithBlankPin = await rpc(tokenIntruder, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'invitado-sin-pin',
+    p_pin: '',
+  })
+  const afterGuest = await unclaimedMembers()
+  check(
+    'Un invitado no se adopta sin PIN',
+    guestWithoutPin.body?.[0]?.status === 'username_taken' &&
+      guestWithBlankPin.body?.[0]?.status === 'username_taken' &&
+      afterGuest['invitado-sin-pin']?.auth_user_id === null &&
+      afterGuest.ines?.id === before.ines?.id,
+    `${guestWithoutPin.body?.[0]?.status}, ${guestWithBlankPin.body?.[0]?.status}`,
+  )
+
+  const resetInes = await rpc(tokenOwner, 'reset_member_pin', {
+    p_community_id: communityUnclaimed,
+    p_member_id: before.ines?.id,
+  })
+  const inesTempPin = resetInes.body?.[0]?.temp_pin
+  const inesBack = await rpc(tokenIntruder, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'ines',
+    p_pin: inesTempPin,
+  })
+  const inesState = await rpc(tokenIntruder, 'my_member_pin_state', {
+    p_community_id: communityUnclaimed,
+  })
+  check(
+    'Quien entra con un PIN temporal lo ve como expuesto',
+    inesBack.body?.[0]?.status === 'ok' && inesState.body === 'exposed',
+    `${inesBack.body?.[0]?.status ?? `HTTP ${inesBack.status}`}, ${JSON.stringify(inesState.body)}`,
+  )
+
+  const changeWithoutCurrent = await rpc(tokenIntruder, 'set_member_pin', {
+    p_community_id: communityUnclaimed,
+    p_new_pin: '4444',
+  })
+  const changeWithTemp = await rpc(tokenIntruder, 'set_member_pin', {
+    p_community_id: communityUnclaimed,
+    p_new_pin: '4444',
+    p_current_pin: inesTempPin,
+  })
+  const inesStateAfter = await rpc(tokenIntruder, 'my_member_pin_state', {
+    p_community_id: communityUnclaimed,
+  })
+  check(
+    'El temporal se cambia dando el temporal como actual, y deja de estar expuesto',
+    changeWithoutCurrent.body?.[0]?.status === 'wrong_pin' &&
+      changeWithTemp.body?.[0]?.status === 'ok' &&
+      inesStateAfter.body === 'set',
+    `${changeWithoutCurrent.body?.[0]?.status}, ${changeWithTemp.body?.[0]?.status}, ${JSON.stringify(inesStateAfter.body)}`,
+  )
+
+  const tokenPablo = await signInAnonymously()
+  const tokenPabloNewPhone = await signInAnonymously()
+  const pabloJoin = await rpc(tokenPablo, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'pablo',
+  })
+  const pabloId = (await unclaimedMembers()).pablo?.id
+  const resetPablo = await rpc(tokenOwner, 'reset_member_pin', {
+    p_community_id: communityUnclaimed,
+    p_member_id: pabloId,
+  })
+  const pabloTempPin = resetPablo.body?.[0]?.temp_pin
+  const pabloBack = await rpc(tokenPabloNewPhone, 'join_community', {
+    p_join_code: unclaimedCode,
+    p_username: 'pablo',
+    p_pin: pabloTempPin,
+  })
+  const pabloState = await rpc(tokenPabloNewPhone, 'my_member_pin_state', {
+    p_community_id: communityUnclaimed,
+  })
+  const pabloAfter = (await unclaimedMembers()).pablo
+  check(
+    'Un admin restablece el PIN de una fila sin PIN con dueño, y se recupera con el temporal',
+    pabloJoin.body?.[0]?.status === 'ok' &&
+      typeof pabloTempPin === 'string' &&
+      pabloBack.body?.[0]?.status === 'ok' &&
+      pabloState.body === 'exposed' &&
+      pabloAfter?.id === pabloId &&
+      pabloAfter?.auth_user_id === authUserId(tokenPabloNewPhone),
+    `${pabloJoin.body?.[0]?.status}, reset HTTP ${resetPablo.status}, ${pabloBack.body?.[0]?.status}, ${JSON.stringify(pabloState.body)}`,
+  )
+
+  const codeHelpers = await Promise.all([
+    rpc(tokenOwner, 'generate_join_code', {}),
+    rpc(tokenOwner, 'join_code_lifetime', {}),
+    rpcWithoutSession('generate_join_code', {}),
+    rpcWithoutSession('join_code_lifetime', {}),
+  ])
+  check(
+    'Ni una sesión ni anon ejecutan generate_join_code ni join_code_lifetime',
+    codeHelpers.every((res) => res.status >= 400),
+    `HTTP ${codeHelpers.map((res) => res.status).join(', ')}`,
+  )
+
+  const rotateAfterRevoke = await rpc(tokenOwner, 'rotate_join_code', {
+    p_community_id: communityUnclaimed,
+  })
+  check(
+    'rotate_join_code sigue sacando código sin que la sesión pueda llamar a generate_join_code',
+    rotateAfterRevoke.status === 200 &&
+      typeof rotateAfterRevoke.body?.[0]?.join_code === 'string' &&
+      rotateAfterRevoke.body[0].join_code !== unclaimedCode,
+    rotateAfterRevoke.body?.[0]?.join_code ? 'código nuevo' : `HTTP ${rotateAfterRevoke.status}`,
+  )
+
   await cleanup(
-    [communityA, communityB, communityLegacy, communityMulti, communityHost].filter(Boolean),
+    [
+      communityA,
+      communityB,
+      communityLegacy,
+      communityMulti,
+      communityHost,
+      communityUnclaimed,
+    ].filter(Boolean),
     [imagePathB, imagePathIntruso],
   )
 

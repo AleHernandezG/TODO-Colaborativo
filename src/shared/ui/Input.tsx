@@ -8,6 +8,7 @@ type InputProps = {
   onChangeText: (value: string) => void
   placeholder?: string
   error?: string | null
+  help?: string
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'
   autoCorrect?: boolean
   maxLength?: number
@@ -25,6 +26,7 @@ export function Input({
   onChangeText,
   placeholder,
   error = null,
+  help,
   autoCapitalize = 'sentences',
   autoCorrect = true,
   maxLength,
@@ -56,7 +58,7 @@ export function Input({
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         accessibilityLabel={label}
-        accessibilityHint={error ?? undefined}
+        accessibilityHint={error ?? help}
         style={{ minHeight: minTouchTarget, color: palette.text }}
         className={`rounded-md border bg-surface px-4 py-3 text-lg dark:bg-surface-dark ${
           error
@@ -72,6 +74,8 @@ export function Input({
         >
           {error}
         </Text>
+      ) : help ? (
+        <Text className="text-sm text-muted dark:text-muted-dark">{help}</Text>
       ) : null}
     </View>
   )

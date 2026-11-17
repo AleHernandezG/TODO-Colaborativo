@@ -47,7 +47,7 @@ panel (botón **Restore**) cuando haga falta.
 Desde Git Bash, en la raíz del repo:
 
 ```bash
-npx supabase link --project-ref <ref-del-ensayo>
+npx supabase link --project-ref dmbghwxsjjcxzbjblbzi
 npx supabase db push
 ```
 
@@ -73,6 +73,23 @@ la migración de ADR-0026, que copia los hashes de `members.pin_hash` a `member_
 4. Devuelve el fichero a su sitio y `npx supabase db push` otra vez.
 5. En el editor SQL del ensayo: `select exposed, count(*) from member_secrets group by 1;` tiene que
    dar filas con `exposed = true`, tantas como miembros tenían PIN.
+
+La B (`20261103120000_...sql`, ADR-0029) también toca filas que ya existen: borra los PIN expuestos
+de las filas con sesión y marca como expuestos los temporales sin usar. `test:rls` no lo ve, porque
+crea sus datos después. Tras aplicarla, en el ensayo y en el real, sobre los miembros activos:
+
+```sql
+select
+  count(*) filter (where s.exposed and m.auth_user_id is not null
+                     and s.updated_at < '<día del push>') as expuestos_con_sesion,
+  count(*) filter (where not s.exposed and m.auth_user_id is null) as temporales_sin_marcar
+from member_secrets s
+join members m on m.id = s.member_id
+where m.removed_at is null;
+```
+
+Las dos columnas tienen que dar 0. Un expuesto con sesión posterior al push es legítimo: alguien que
+entró con un temporal y aún no lo ha cambiado.
 
 ## 2. Pasar los tests contra el ensayo
 
