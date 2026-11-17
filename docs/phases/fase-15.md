@@ -1493,6 +1493,7 @@ El CLI que trae `npx` sin versión fijada es ya la 3.2.0, y en ella `db push`, `
 sustituye a `--linked`. El primer `db push` falló por eso contra `127.0.0.1:54322`, sin aplicar nada.
 Las órdenes de `CLAUDE.md`, de la skill `aplicar-migracion` y de la guía de ensayo siguen con
 `--linked`; queda para el cierre decidir si se fija la versión del CLI o se cambian las órdenes.
+Se decidió el mismo día, más abajo («El CLI de Supabase se queda sin fijar»).
 
 #### La B en el real (2026-11-17)
 
@@ -1579,3 +1580,26 @@ Con todo esto, Jest da 81 suites y 597 tests; lint y typecheck, igual que antes.
 Lo que se apuntó en el ROADMAP, «Lo que se arrastra»: la regla de cerrar el aviso vive en
 `use-pin-reminder.ts` sin test, los fallos contra una fila sin PIN que cuentan contra la sesión y
 la invalidación del código en `use-remove-member.ts`.
+
+#### El CLI de Supabase se queda sin fijar (2026-11-17)
+
+Alejandro dejó la decisión en manos de la sesión. Las órdenes vigentes pasan a `--remote`: las de
+`CLAUDE.md`, las skills `aplicar-migracion` y `supabase-data`, las guías `configurar-supabase.md`,
+`despliegue.md` y `ensayar-una-migracion.md`, el mensaje de `proteger-intocables.mjs` y su caso en
+`test-hooks.mjs`. Los diarios de fases anteriores, la auditoría y el traspaso se quedan con
+`--linked`, porque cuentan lo que se ejecutó entonces.
+
+Lo que se comprobó con el CLI 3.2.0: `migration list --linked` sigue yendo al proyecto enlazado,
+con el aviso «--linked is deprecated and will be removed in v4». Lo que falló en el primer
+`db push` de la B no fue `--linked`, sino la orden sin bandera, que en la v3 va a la base local.
+
+Lo descartado:
+
+- **Fijar el CLI como `devDependency`** (el paquete `supabase` de npm, MIT). Su `postinstall`
+  descarga el binario, y EAS lo haría en cada `npm ci` de un build que no lo usa.
+- **Fijarlo en cada orden** con `npx supabase@3.2.0`. Funciona, pero cada subida obliga a cambiar
+  la versión en todos los documentos, y lo normal es que se quede atrás.
+
+A cambio, el CLI que trae `npx` puede cambiar de versión mayor sin avisar. En la v3 eso salió bien
+por casualidad: sin bandera, la orden fue a una base local inexistente y no aplicó nada. Cuando
+salga la v4, antes del primer `db push` se leen sus notas de versión.

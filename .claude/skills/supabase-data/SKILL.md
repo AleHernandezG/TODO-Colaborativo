@@ -334,7 +334,7 @@ cuatro cifras se rompe en segundos.
   `member_id`. Esa comprobación va **antes** del bloque que suelta la fila propia de quien llama: si
   queda detrás, probar un nombre ajeno le cuesta a quien llama su fila y al dueño sus push tokens.
   Hasta que la B esté aplicada en el real, la fila sigue siendo reclamable: míralo con
-  `supabase migration list` antes de darlo por cerrado.
+  `supabase migration list --remote` antes de darlo por cerrado.
 
 ### Funciones internas: `revoke` también a `authenticated`
 
@@ -737,7 +737,7 @@ reproducir en otro proyecto.
 
 ```bash
 npx supabase migration new <nombre>
-npx supabase db push
+npx supabase db push --remote
 ```
 
 Las migraciones no se editan una vez aplicadas: se añade una nueva encima. Editar una ya
@@ -787,12 +787,14 @@ ningún flujo de la app.
 ## Tipos
 
 ```bash
-npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
+npx supabase gen types typescript --remote > src/shared/lib/db.types.ts
 ```
 
-`--linked` genera contra el proyecto remoto ya enlazado. `--local` apunta a la instancia de
-Docker, que en esta máquina no existe: la documentación de Supabase lo usa por defecto y falla
-con un error de `docker_engine` que no dice nada útil.
+`--remote` genera contra el proyecto enlazado. Desde la versión 3 del CLI, `gen types`,
+`db push` y `migration list` van **a la base local por defecto**, que es la de Docker y en esta
+máquina no existe: sin `--remote` fallan contra `127.0.0.1:54322` sin tocar nada. `--linked`
+todavía funciona con un aviso y desaparece en la v4 (fase 15, apartado 15, «Decisiones sobre la
+marcha»).
 
 Regenera **en el mismo cambio** en que alteres el esquema. Un `db.types.ts` desfasado es peor
 que no tenerlo: TypeScript pasa en verde y el fallo aparece en tiempo de ejecución.
@@ -804,7 +806,7 @@ ninguna pista de por qué. Pasó y estuvo commiteado así. Genera desde Git Bash
 codificación:
 
 ```powershell
-npx supabase gen types typescript --linked | Out-File -Encoding utf8 src/shared/lib/db.types.ts
+npx supabase gen types typescript --remote | Out-File -Encoding utf8 src/shared/lib/db.types.ts
 ```
 
 Si sospechas, los dos primeros bytes lo cantan: `ff fe` es UTF-16LE.

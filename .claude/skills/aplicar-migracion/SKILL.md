@@ -8,7 +8,7 @@ argument-hint: "[nombre del fichero .sql o «pendientes»]"
 # Aplicar una migración
 
 Argumentos: `$ARGUMENTS`. Si falta, son todas las de `supabase/migrations/` que
-`npx supabase migration list` da como no aplicadas en el real.
+`npx supabase migration list --remote` da como no aplicadas en el real.
 
 Una migración aplicada no se edita, se corrige con otra encima. Por eso se aplica primero a un
 proyecto de ensayo y solo después al real. `supabase db push` lo ejecuta Alejandro: el hook
@@ -26,10 +26,10 @@ proyecto de ensayo y solo después al real. `supabase db push` lo ejecuta Alejan
    Alejandro en el SQL editor o con su `.env`.
 4. **La orden**, para que la lance Alejandro desde la raíz del repo:
    ```bash
-   npx supabase db push
+   npx supabase db push --remote
    ```
 5. **Después**, ya aplicada:
-   - `npx supabase gen types typescript --linked > src/shared/lib/db.types.ts` desde Git Bash
+   - `npx supabase gen types typescript --remote > src/shared/lib/db.types.ts` desde Git Bash
      (en PowerShell 5.1 el `>` escribe UTF-16 y rompe ESLint)
    - `npm run typecheck`, `npm test`, `npm run test:rls` contra el real y `npm run test:realtime`
    - si una función cambió de firma, comprobar que no quedan dos sobrecargas (`PGRST203`)

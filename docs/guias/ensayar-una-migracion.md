@@ -48,11 +48,11 @@ Desde Git Bash, en la raíz del repo:
 
 ```bash
 npx supabase link --project-ref dmbghwxsjjcxzbjblbzi
-npx supabase db push
+npx supabase db push --remote
 ```
 
 `link` cambia a qué proyecto apunta la CLI en esta copia del repo. **Mientras esté enlazado al
-ensayo, todo `db push` y todo `gen types --linked` van al ensayo.** No regeneres `db.types.ts` en
+ensayo, todo `db push --remote` y todo `gen types --remote` van al ensayo.** No regeneres `db.types.ts` en
 este paso.
 
 `db push` enseña la lista de migraciones pendientes antes de aplicar: la primera vez serán todas.
@@ -65,12 +65,12 @@ El ensayo está vacío, así que un paso que copia filas corre con cero filas y 
 la migración de ADR-0026, que copia los hashes de `members.pin_hash` a `member_secrets`:
 
 1. Saca el fichero `20261012120000_...sql` de `supabase/migrations/` (muévelo fuera del repo).
-2. `npx supabase db push`: aplica todas las demás.
+2. `npx supabase db push --remote`: aplica todas las demás.
 3. Crea una lista con PIN usando las funciones viejas. Lo más corto es lanzar
    `node --env-file=.env.ensayo scripts/rls-isolation-test.mjs` sin `SUPABASE_SECRET_KEY` en
    `.env.ensayo`: sin esa clave el script no limpia y deja sus listas de prueba en la base. Fallarán
    las comprobaciones nuevas, es lo esperado.
-4. Devuelve el fichero a su sitio y `npx supabase db push` otra vez.
+4. Devuelve el fichero a su sitio y `npx supabase db push --remote` otra vez.
 5. En el editor SQL del ensayo: `select exposed, count(*) from member_secrets group by 1;` tiene que
    dar filas con `exposed = true`, tantas como miembros tenían PIN.
 
@@ -106,7 +106,7 @@ con `node --env-file=.env.ensayo --experimental-strip-types scripts/catalog-inge
 
 ```bash
 npx supabase link --project-ref mnjhkqpeeivitpfejoxq
-npx supabase migration list --linked
+npx supabase migration list --remote
 ```
 
 La lista tiene que enseñar como pendiente solo la migración nueva. Si enseña más, para y míralo
@@ -118,10 +118,10 @@ Solo con los pasos 1 y 2 en verde y las consultas de comprobación del ADR lanza
 del proyecto real:
 
 ```bash
-npx supabase db push
+npx supabase db push --remote
 npm run test:rls
 npm run test:realtime
-npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
+npx supabase gen types typescript --remote > src/shared/lib/db.types.ts
 npm run typecheck && npm run lint && npm test
 ```
 

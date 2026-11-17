@@ -454,7 +454,7 @@ npx expo export --platform android
 npx expo start
 
 # Tipos de Supabase, desde Git Bash (en PowerShell 5.1 el '>' escribe UTF-16 y rompe ESLint)
-npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
+npx supabase gen types typescript --remote > src/shared/lib/db.types.ts
 
 # Aislamiento entre listas, catálogo, gastos idempotentes, varias listas, PIN fuera de members y
 # RPC de recetas, gastos y menús. 113/113 contra el real (112/113 sin SUPABASE_SECRET_KEY)

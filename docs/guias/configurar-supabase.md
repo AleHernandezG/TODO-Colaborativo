@@ -57,7 +57,7 @@ guardó.
 ```bash
 npx supabase login
 npx supabase link --project-ref <project-ref>
-npx supabase db push
+npx supabase db push --remote
 ```
 
 Estos tres piden datos por teclado, así que **necesitan una terminal de verdad**. No funcionan
@@ -83,12 +83,12 @@ de aislamiento entre comunidades, no un bug normal.
 ## 5. Generar los tipos
 
 ```bash
-npx supabase gen types typescript --linked > src/shared/lib/db.types.ts
+npx supabase gen types typescript --remote > src/shared/lib/db.types.ts
 ```
 
-`--linked` va contra el proyecto remoto ya enlazado. `--local` es lo que sale por defecto en la
-documentación de Supabase y apunta a la instancia de Docker: sin Docker falla con un error que
-no explica nada.
+`--remote` va contra el proyecto enlazado. Sin él, la versión 3 del CLI apunta a la base local de
+Docker y, sin Docker, falla con un error que no explica nada. `--linked` hacía lo mismo hasta la
+v2; en la 3 sigue funcionando con un aviso y en la v4 desaparece.
 
 Ojo en PowerShell: el `>` escribe el fichero en UTF-8 **con BOM**, y ESLint lo marca. Quítalo
 después de generar:

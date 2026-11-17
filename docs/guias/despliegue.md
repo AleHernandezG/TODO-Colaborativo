@@ -236,7 +236,7 @@ propósito (la migración `20260802120000_keep_alive_ping.sql`), y ejecutarla es
 a Postgres, que es lo que cuenta como actividad. El `/auth/v1/health` daría 200 pero no toca la
 base, así que no serviría para evitar la pausa.
 
-Esa migración tiene que estar aplicada en el proyecto (`npx supabase db push`) antes de que el
+Esa migración tiene que estar aplicada en el proyecto (`npx supabase db push --remote`) antes de que el
 ping funcione; si no, la RPC no existe y el Action da 404.
 
 Para que funcione hay que darle las dos variables como **secrets del repo** (Settings → Secrets

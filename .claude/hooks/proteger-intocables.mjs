@@ -28,7 +28,7 @@ const PROTECTED_AREAS = [
     matches: (path) => path === 'src/shared/lib/db.types.ts',
     reason:
       'db.types.ts lo genera la CLI de Supabase. Cambia el esquema con una migración y regenera desde Git Bash con ' +
-      '`npx supabase gen types typescript --linked > src/shared/lib/db.types.ts` (ver la skill supabase-data).',
+      '`npx supabase gen types typescript --remote > src/shared/lib/db.types.ts` (ver la skill supabase-data).',
   },
   {
     matches: (path) => /^supabase\/migrations\/[^/]+\.sql$/.test(path) && isTrackedByGit(path),

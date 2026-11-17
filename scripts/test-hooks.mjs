@@ -51,7 +51,7 @@ const gitCases = [
   ['eas whoami', false],
   ['eas build:list --limit 5', false],
   ['eas update:list', false],
-  ['npx supabase gen types typescript --linked', false],
+  ['npx supabase gen types typescript --remote', false],
   ['npx supabase migration list', false],
   ['npx expo export --platform android', false],
   [GIT + 'status', false],
