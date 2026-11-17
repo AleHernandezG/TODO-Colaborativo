@@ -309,10 +309,10 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
   }
 
   const ITEMS = [
-    ['Leche entera', '×2', 'Lácteos · 0,95 € orientativo, visto hace 6 días', 'water_full'],
-    ['Huevos camperos', '×1', 'Huevos · 2,35 € orientativo, visto hace 6 días', 'egg'],
+    ['Leche entera', '×2', 'Lácteos', 'water_full'],
+    ['Huevos camperos', '×1', 'Huevos', 'egg'],
     ['Tomates pera', '×6', 'Fruta y verdura', 'nutrition'],
-    ['Pan de molde integral', '×1', 'Panadería · 1,45 € orientativo, visto hace 6 días', 'bakery_dining'],
+    ['Pan de molde integral', '×1', 'Panadería', 'bakery_dining'],
     ['Yogures naturales', '×8', 'Lácteos · tu foto', 'photo_camera'],
     ['Lentejas pardinas', '×1', 'Legumbres', 'grain'],
     ['Detergente líquido', '×1', 'Limpieza', 'soap'],
@@ -388,11 +388,7 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
 
   S.listKb = (o) => phone(o, {
     header: appHeader(o, 'Casa', ['group', 'picture_as_pdf']),
-    body: `${addRow(o, true, 'lech')}
-      <div class="row"><span class="thumb">${I('water_full')}</span><span class="main"><span class="t-lg">Leche entera Hacendado 1 l</span><span class="t-sm muted">Catálogo · 0,95 € orientativo, visto hace 6 días</span></span></div>
-      <div class="row"><span class="thumb">${I('water_full')}</span><span class="main"><span class="t-lg">Leche semidesnatada 6 × 1 l</span><span class="t-sm muted">Catálogo · 5,10 € orientativo, visto hace 6 días</span></span></div>
-      <div class="row"><span class="thumb">${I('edit')}</span><span class="main"><span class="t-lg">Añadir «lech» tal cual</span></span></div>
-      <div class="px t-sm muted" style="padding-top:8px">Precios de Mercadona, orientativos</div>`,
+    body: `${addRow(o, true, 'agua')}`,
     kb: true,
   });
 
@@ -577,7 +573,7 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
           'La cabecera lleva el selector y dos iconos de 48 dp: Miembros (con el código) y el PDF. Nada de texto al lado del título.',
           'El campo de añadir es la acción principal y va fijo arriba, para que el teclado no lo tape.',
           '«Ir a comprar» va en la barra de abajo, como secundaria. Se esconde mientras escribes.',
-          'Los comprados se pliegan en «Comprados (n)». El precio dice «orientativo» y su antigüedad.'] },
+          'Los comprados se pliegan en «Comprados (n)». Un artículo viejo enlazado al catálogo que enseñe precio dice «orientativo» y su antigüedad.'] },
         { name: 'Selector de listas', route: 'Dialog sobre /list', inc: 'T-16.3', s: 'switcher', notes: [
           'Igual que hoy (ADR-0025): radio con mis listas, «Crear otra lista» y «Unirme con un código».',
           '«Como Ana» se queda aquí, que es donde lo busca Maestro, y el nombre entero de la lista se lee sin cortar.'] },
@@ -693,7 +689,7 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
           'Lista virtualizada. Los pendientes primero; los 180 comprados plegados.',
           'El campo de añadir y la cabecera no se desplazan con la lista.'] },
         { name: 'Teclado abierto al añadir', route: '/list', inc: 'T-16.4', s: 'listKb', o: { force: 1 }, notes: [
-          'El campo sigue arriba y debajo salen las sugerencias del catálogo con su precio orientativo.',
+          'El campo sigue arriba y debajo no sale nada: se añade lo que se escribe (ADR-0030).',
           'La barra de pestañas queda bajo el teclado y «Ir a comprar» se esconde.'] },
         { name: 'Teclado abierto en un formulario', route: '/expenses/new', inc: 'T-16.5', s: 'newExpense', o: { kb: true, force: 1 }, notes: [
           'Guardar sube con el teclado. El teclado solo se abre al tocar el campo.',

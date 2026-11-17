@@ -1,6 +1,6 @@
 # ADR-0028: Navegación por pestañas con Lista y Gastos, sin Recetas ni Menú
 
-- Estado: Propuesto
+- Estado: Aceptado (2026-11-17)
 - Fecha: 2026-11-03
 - Relacionado: ADR-0004, ADR-0021, ADR-0022, ADR-0025, P-04
 

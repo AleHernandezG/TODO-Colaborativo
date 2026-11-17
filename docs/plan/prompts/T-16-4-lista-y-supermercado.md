@@ -12,8 +12,8 @@ Lo que se encuentra:
 - Las pestañas, AppHeader, Icon, IconButton y StatusStrip del incremento 3, y ScreenHeader y
   ActionBar del incremento 6 del T-15. El código de invitación ya está arriba de Miembros (hallazgo
   4 resuelto en el 3).
-- Recetas y Menú ya no tienen pantalla (ADR-0028), así que la lista solo se llena a mano o desde el
-  catálogo.
+- Recetas y Menú ya no tienen pantalla (ADR-0028) y el campo de añadir ya no sugiere productos del
+  catálogo (ADR-0030, quitado en el T-16.3): la lista solo se llena a mano, con lo que se escribe.
 - En la foto de partida: en el modo supermercado `fontSize: 13` y `borderRadius: 18` en línea.
 - Lo que midió el incremento 3 sobre «Ir a comprar» con la letra al 200 % (decisión 5 de su
   prompt, en `fase-16.md`).
@@ -84,8 +84,8 @@ Decisiones que tienes que tomar:
   6. Editar y Borrar como acciones de TalkBack sobre la fila (accessibilityActions): comprueba la
      API en React Native 0.86 con context7 antes de escribirla
 Ya decidido en el diseño, no se vuelve a abrir:
-  - el campo de añadir fijo arriba, bajo la cabecera, con las sugerencias del catálogo debajo y
-    su precio orientativo con su antigüedad
+  - el campo de añadir fijo arriba, bajo la cabecera, sin nada debajo mientras se escribe: se
+    añade lo que se escribe (ADR-0030)
   - comprado es tachado, texto muted y checkbox relleno con su marca; los comprados se pliegan al
     final en «Comprados (n)»
   - filas de rowMinHeight.default (56) en la lista y rowMinHeight.shopping (64) en el modo
@@ -108,14 +108,16 @@ Casos límite y errores (ADR-0016):
     reintentar, y no enseña «lista vacía»
   - 200 artículos (scripts/seed-200-items.mjs, contra una lista de prueba), nombre de 40
     caracteres, letra al máximo
-  - un artículo sin foto, con foto del catálogo y con foto propia (ADR-0014)
+  - un artículo sin foto, con foto del catálogo y con foto propia (ADR-0014). La del catálogo
+    solo la tienen los artículos que se enlazaron antes del T-16.3
 
 Reglas que aplican aunque no lo parezca:
   - Regla 1: ADR-0014 (foto) y ADR-0024 (categorías) están aceptados; si el diseño se aparta,
     te paras
   - Regla 5: nada de lo que se pinte sale de otra lista; las claves de query siguen llevando el
     communityId
-  - Regla 6: el precio de referencia sale con su antigüedad y «orientativo», y el estado de
+  - Regla 6: si la fila de un artículo viejo enlazado enseña precio de referencia, sale con su
+    antigüedad y «orientativo», y el estado de
     sincronización no dice «al día» con cola
   - Vocabulario: «lista» en la interfaz
 

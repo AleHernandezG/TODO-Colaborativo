@@ -108,20 +108,22 @@ vez `rounded-lg`.
 
 ## Espaciado y tamaños
 
-Escala de Tailwind, en múltiplos de 4. Lo habitual: `gap-2` entre elementos de una fila, `gap-3`
-entre filas o bloques, `p-4` de relleno de tarjeta, `px-4` de margen lateral de pantalla. Los medios
+Escala de Tailwind, en múltiplos de 4. Lo habitual: `gap-2` entre elementos de una fila que no se pulsan,
+`gap-3` entre pulsables y entre filas o bloques, `p-4` de relleno de tarjeta, `px-4` de margen lateral de pantalla. Los medios
 pasos (`0.5`, `1.5`) solo para ajustar un chip o una insignia.
 
 | Token de `@/theme`      | Valor       | Para qué                                                  |
 | ----------------------- | ----------- | --------------------------------------------------------- |
-| `minTouchTarget`        | 48 (hoy 44) | Alto y ancho mínimos de todo lo que se pulsa              |
+| `minTouchTarget`        | 48          | Alto y ancho mínimos de todo lo que se pulsa              |
 | `rowMinHeight.default`  | 56          | Fila de lista, de miembros, de gastos y opción de diálogo |
 | `rowMinHeight.shopping` | 64          | Fila del modo supermercado (RF-16 pide al menos 60)       |
 | `iconSize`              | 24          | Todos los iconos. No crece con la letra                   |
 
-`minTouchTarget` está todavía en 44 y lo sube el T-16.3 (P-02). `iconSize`, `rowMinHeight` y
+`minTouchTarget` subió de 44 a 48 en el incremento 6 del T-15 (P-02). `iconSize`, `rowMinHeight` y
 `tabLabelSize` ya están en `tokens.js`, y el T-16.3 los exporta desde `@/theme`. Entre dos
-pulsables hay 8 dp como mínimo, `gap-2`. Si el dibujo es más pequeño que 48, crece el área con `hitSlop`, no el dibujo.
+pulsables hay 8 dp como mínimo, y eso es `gap-3`: en nativo NativeWind toma 1 rem = 14, así que
+`gap-2` da 7 dp y no llega (medido en el POCO, [P-07](docs/plan/PREGUNTAS.md#p-07--gap-2-da-7-dp-en-android)).
+Si el dibujo es más pequeño que 48, crece el área con `hitSlop`, no el dibujo.
 
 ## Navegación
 
@@ -180,8 +182,8 @@ Lo que se pinta sale de `src/shared/ui`. Una pantalla no dibuja su propio botón
 | Componente                                                                          | Qué es                                                                                                | Lo crea |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------- |
 | `AppHeader`                                                                         | Cabecera de las pestañas, arriba                                                                      | T-16.3  |
-| `ScreenHeader`                                                                      | Cabecera de lo que se abre encima                                                                     | T-15.6  |
-| `ActionBar`                                                                         | La acción principal abajo, a todo el ancho, separada por `border-line`. Sube con el teclado           | T-15.6  |
+| `ScreenHeader`                                                                      | Cabecera de lo que se abre encima                                                                     | ya está |
+| `ActionBar`                                                                         | La acción principal abajo, a todo el ancho, separada por `border-line`. Sube con el teclado           | ya está |
 | `StatusStrip`                                                                       | La franja de conexión bajo la cabecera. Sustituye a `OfflineBanner` y `RealtimeStatus`                | T-16.3  |
 | `Icon`                                                                              | Un icono de Material Symbols, por `expo-symbols`, a `iconSize`                                        | T-16.3  |
 | `IconButton`                                                                        | Un `Icon` en un área de 48 × 48, `rounded-full`, con `accessibilityLabel` obligatorio                 | T-16.3  |
@@ -192,8 +194,8 @@ Lo que se pinta sale de `src/shared/ui`. Una pantalla no dibuja su propio botón
 | `Input`                                                                             | Etiqueta encima, campo de 48, ayuda o error debajo                                                    | ya está |
 | `Checkbox`, `QuantityStepper`, `Dialog`, `PickerDialog`, `SnackbarHost`, `BuildTag` | Sin cambios de papel                                                                                  | ya está |
 
-`ScreenHeader` y `ActionBar` los crea el incremento 6 del T-15, que pinta la pantalla del PIN antes
-del T-16.3. El campo del PIN no va aquí: vive en `features/community`.
+`ScreenHeader` y `ActionBar` los creó el incremento 6 del T-15 para la pantalla del PIN, antes del
+T-16.3. El campo del PIN no va aquí: vive en `features/community`.
 
 Las filas siguen el mismo orden siempre: lo que se marca o la inicial, la foto si la hay, el nombre
 en `text-lg` con su segunda línea en `text-sm muted`, y a la derecha la cantidad, la cifra o un
@@ -213,9 +215,9 @@ una pantalla, el contenido hace scroll y la `ActionBar` se queda fija.
 - Ninguna pantalla abre el teclado al entrar. La excepción es la que solo sirve para escribir una
   cosa, como Tu PIN.
 - El campo de añadir de la Lista va fijo arriba, bajo la cabecera, para que el teclado no lo tape.
-  Las sugerencias del catálogo salen debajo del campo, con su precio orientativo y la línea
-  «Precios de Mercadona, orientativos». Si un dato viene de Open Food Facts, su atribución va
-  visible en la pantalla que lo enseña.
+  Mientras se escribe no sale nada debajo: se añade lo que se escribe (ADR-0030). Si un artículo
+  viejo enlazado al catálogo enseña precio, va con «orientativo» y su antigüedad, y si un dato
+  viene de Open Food Facts, su atribución va visible en la pantalla que lo enseña.
 - La `ActionBar` sube con el teclado, así que Guardar siempre se ve. «Ir a comprar» se esconde
   mientras se escribe.
 - La barra de pestañas queda debajo del teclado, como hace Android por defecto.

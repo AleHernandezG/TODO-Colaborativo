@@ -247,6 +247,24 @@ y la decisión es «por ahora». RF-14 y RF-15 quedan fuera de la app hasta nuev
 Con eso el paquete pierde un incremento: el antiguo T-16.5, recetas y menú, desaparece y los
 siguientes bajan un número (gastos y miembros es el 5, la entrada el 6 y el cierre el 7).
 
+### Fuera las sugerencias del catálogo al añadir (2026-11-17, antes del incremento 3)
+
+Alejandro pidió quitar los productos de Mercadona que salen debajo del campo al escribir: con
+«agua» salen media docena de aguas de marca, y le molestan más de lo que ayudan. Quiere que se
+añada lo que uno escribe. Va en [ADR-0030](../adr/ADR-0030-alta-de-articulos-sin-sugerencias-del-catalogo.md),
+aceptado el 2026-11-17, como ADR-0028.
+
+Se hace como con Recetas y Menú: el T-16.3 quita `CatalogSuggestions` de `AddItemBar` y nada más.
+`features/catalog`, `search_catalog`, las tablas, la ingesta semanal y sus comprobaciones de
+`test:rls` se quedan. La categoría no cambia, porque sale del nombre (`inferItemCategory`). Lo que
+se pierde: un artículo nuevo ya no trae foto ni precio de referencia solo. Los que ya están
+enlazados conservan su foto (ADR-0014).
+
+Se metió en el T-16.3 y no en el T-16.4 para que el campo de añadir se diseñe ya sin nada debajo.
+Cambiaron el prompt del T-16.3, el del T-16.4 («Ya decidido», casos límite y regla 6), `DESIGN.md`
+(«Teclado») y los bocetos («Teclado abierto al añadir» y la segunda línea de las filas, que ya no
+lleva precio).
+
 ### Dos pestañas abajo, no arriba ni sin pestañas (incremento 2)
 
 Con dos destinos, Material recomienda pestañas arriba. Se le propusieron a Alejandro tres formas y

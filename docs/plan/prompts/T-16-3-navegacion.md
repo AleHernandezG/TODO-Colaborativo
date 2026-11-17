@@ -1,7 +1,8 @@
-# Prompt de arranque · T-16 · Incremento 3 · Pestañas, cabecera y fuera Recetas y Menú
+# Prompt de arranque · T-16 · Incremento 3 · Pestañas, cabecera y fuera Recetas, Menú y sugerencias
 
 Primer incremento del T-16 que toca código. Monta las dos pestañas de ADR-0028, la cabecera nueva y
-las piezas compartidas que usarán los incrementos siguientes, y esconde Recetas y Menú. Las
+las piezas compartidas que usarán los incrementos siguientes, y esconde Recetas, Menú y las
+sugerencias del catálogo al añadir. Las
 pantallas de dentro se quedan como están salvo la tarjeta del código en Miembros: cada una se rehace
 en su incremento. Va detrás del incremento 6 del T-15, que deja hechos `ScreenHeader` y `ActionBar`.
 
@@ -12,6 +13,9 @@ Lo que se encuentra:
 
 - ADR-0028 (dos pestañas nativas, Lista y Gastos; Recetas y Menú fuera de la app), `DESIGN.md`
   reescrito y los bocetos en `docs/diseno/bocetos.html`.
+- ADR-0030 (2026-11-17): el campo de añadir deja de sugerir productos del catálogo. Se esconde
+  como Recetas y Menú: `AddItemBar` deja de pintar `CatalogSuggestions`, y `features/catalog`, sus
+  tablas y la ingesta semanal se quedan. La categoría sigue saliendo del nombre.
 - Todo lo nativo que pide ya está en el APK 1.3.1 (`08f58498`): `react-native-screens` 4.26.2 con
   su `gamma/tabs/host/`, y `expo-symbols` 57.0.3 en el árbol como dependencia de expo-router, que en
   Android no tiene código nativo. Va por update, sin build. Falta verlo en el POCO, y es lo primero.
@@ -39,8 +43,9 @@ Se pega tal cual en la sesión.
 ```
 Vas a hacer el incremento 3 del paquete T-16 de docs/plan/ROADMAP.md: las dos pestañas de
 ADR-0028, AppHeader con el selector de listas, Icon, IconButton y StatusStrip en src/shared/ui,
-minTouchTarget a 48, el fallo 23, la tarjeta del código en Miembros y quitar las pantallas de
-Recetas y Menú. presentation/ y src/app/ cambian; domain/ y data/ no.
+minTouchTarget a 48, el fallo 23, la tarjeta del código en Miembros, quitar las pantallas de
+Recetas y Menú y quitar las sugerencias del catálogo del campo de añadir (ADR-0030).
+presentation/ y src/app/ cambian; domain/ y data/ no.
 
 No hagas commit, push, eas update, eas build ni supabase db push: los hooks los bloquean y los
 lanzo yo. Tampoco adb uninstall ni maestro cloud. Si al empezar git status trae algo, dímelo antes
@@ -58,6 +63,7 @@ Antes de nada, lee en este orden:
   4. docs/auditoria-2026-10-11.md, «Incremento 7», puntos 4 y 5
   5. La skill expo-stack: «La pila y el botón atrás» y «Pulido visual y movimiento»
   6. docs/adr/ADR-0025-varias-listas-por-usuario-y-lista-activa.md, el selector
+  7. docs/adr/ADR-0030-alta-de-articulos-sin-sugerencias-del-catalogo.md entero
 
 No explores fuera de esta lista y de src/app/, src/shared/ui/ y src/theme/. Para un símbolo, el
 LSP. Para NativeTabs y expo-symbols en la versión instalada, context7 o
@@ -73,6 +79,9 @@ Dónde escribes:
   - src/features/community/presentation/: el selector en AppHeader y la tarjeta del código arriba
     de Miembros, con Compartir como principal y Copiar y Generar como secundarias
   - src/features/*/presentation/: quitar los enlaces a recetas y menú, y los puntos 4 y 5
+  - src/features/items/presentation/components/AddItemBar.tsx: fuera CatalogSuggestions, el
+    estado picked y lo que solo servía para enlazar; el alta manda catalogProductId a null. Su
+    test cambia con él
   - package.json y package-lock.json: npx expo install expo-symbols, que debe fijar la 57.0.3. Si
     propone otra versión, te paras
   - src/shared/lib/i18n/es.json y en.json, a la vez. Los textos que solo usaban las pantallas
@@ -87,8 +96,11 @@ Dónde escribes:
 Qué no tocas:
   - las pantallas de Lista, modo supermercado, Gastos y Miembros por dentro, salvo la tarjeta del
     código y quitar enlaces: son de los incrementos 4 y 5
-  - domain/ y data/ de ninguna feature, y src/features/recipes y src/features/meal-planner: se
-    quedan enteras, en el array features de eslint.config.js y en test:rls
+  - domain/ y data/ de ninguna feature, y src/features/recipes, src/features/meal-planner y
+    src/features/catalog: se quedan enteras, en el array features de eslint.config.js y en
+    test:rls
+  - la foto del catálogo de los artículos que ya están enlazados (useCatalogProducts en
+    ItemsScreen, ADR-0014): sigue saliendo
   - app.json y el SDK. Si NativeTabs pide un build, te paras: la versión pasaría a 1.4.0
   - ADR-0028 si está aceptado: el hook lo protege. Si la implementación pide apartarse, me lo dices
   - las tablas, RPC y migraciones de recetas y menús
@@ -122,7 +134,9 @@ Casos límite y errores (ADR-0016):
   - StatusStrip: sin red, «Comprobando» a los 2 s y servidor inalcanzable a los ~12 s con el código,
     con los textos de DESIGN.md. Es región viva para TalkBack
   - un móvil que se queda en la 1.3.1 sin el update sigue enseñando Recetas y Menú y escribiendo en
-    sus tablas. Es esperado; no se arregla
+    sus tablas, y sigue sugiriendo productos al escribir. Es esperado; no se arregla
+  - escribir «agua» y añadir: entra «agua» tal cual, sin nada debajo del campo, con la categoría
+    que infiere el nombre y sin foto
 
 Reglas que aplican aunque no lo parezca:
   - Regla 1: ADR-0025 manda en el selector. No se añade un botón de salir de la lista
@@ -137,6 +151,7 @@ Donde sí te paras:
   - si el selector de listas tiene que salir de la cabecera
   - si npx expo export --platform android falla
   - si quitar Recetas y Menú rompe un test de domain/ o data/: algo de fuera los consume
+  - si quitar las sugerencias obliga a tocar domain/ o data/ de items o de catalog
 
 Orden de trabajo:
   1. El plan con las cinco decisiones y la lista de rutas que cambian, y esperas mi OK
@@ -144,7 +159,7 @@ Orden de trabajo:
      probar-en-android
   3. Pestañas, AppHeader, Icon, IconButton, StatusStrip, el token, el fallo 23 y la tarjeta del
      código, con tests de lo que tenga lógica (qué pestaña, qué hace atrás, la notificación, la key)
-  4. Quitar Recetas y Menú
+  4. Quitar Recetas y Menú, y las sugerencias del campo de añadir
   5. architecture-guard sobre src/app, src/shared/ui, src/theme y lo tocado en las features;
      después revisor-interfaz sobre la cabecera, la barra y la franja. Uno detrás de otro
   6. npx expo export --platform android, git diff sin nada nativo salvo la línea de expo-symbols, y
@@ -162,13 +177,18 @@ Documentación que cambia:
   - docs/guias/e2e-con-maestro.md: lo que cambie en los flujos
   - ROADMAP: el bloque «Estado»; los puntos 4 y 5 del incremento 7 del T-15 como hechos aquí
   - docs/tecnica/STACK.md: expo-symbols con su versión, licencia y fecha
-  - CLAUDE.md, la descripción del proyecto y las filas Receta y Menú semanal del vocabulario, y
-    docs/tecnica/GLOSARIO.md con lo mismo: que están escondidas desde este incremento (ADR-0028).
-    Hasta que se escondan, la app las tiene y esos textos dicen la verdad
+  - CLAUDE.md, la descripción del proyecto y las filas Receta, Menú semanal y Catálogo del
+    vocabulario, y docs/tecnica/GLOSARIO.md con lo mismo: que Recetas y Menú están escondidos
+    desde este incremento (ADR-0028) y que el catálogo ya no se sugiere al escribir, solo da la
+    foto de los artículos viejos (ADR-0030). Hasta que se escondan, la app los tiene y esos textos
+    dicen la verdad
+  - docs/especificacion-y-roadmap.md: RF-10 fuera de la app, como RF-14 y RF-15
 
 Terminado cuando:
   - en el POCO hay dos pestañas, Lista y Gastos, y no se llega a Recetas ni a Menú desde ningún
     sitio, con la versión del pie del update de este incremento
+  - escribir en el campo de añadir no saca nada debajo, y un artículo viejo con foto del catálogo
+    la sigue enseñando
   - npm run inspect:screen sale con 0 en AppHeader, la barra y la StatusStrip al 200 %, o lo que
     marque está en fase-16.md con su motivo
   - design-rules-exceptions.json tiene menos líneas que al empezar, y la cifra está apuntada
@@ -192,3 +212,5 @@ Al terminar: git status, qué entra en el commit, qué no y por qué, el mensaje
   en el POCO, y la 1.3.1 deja de recibir updates del T-16.
 - Que nadie quiere volver a ver Recetas y Menú antes del cierre del T-16. Si se quiere, se reponen
   sus rutas y se rediseñan en un incremento nuevo.
+- Que ADR-0030 está aceptado. Si sigue en Propuesto, la sesión lo pregunta antes de quitar las
+  sugerencias.
